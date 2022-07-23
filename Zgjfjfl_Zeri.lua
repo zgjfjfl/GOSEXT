@@ -217,7 +217,7 @@ end
 
 
 function Zeri:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "devZeri", name = "DevX Zeri v2.0"})
+    self.Menu = MenuElement({type = MENU, id = "zgZeri", name = "Zgjfjfl Zeri"})
     
     self.Menu:MenuElement({type = MENU, id = "BlockAA", name = "Block AA without Q passive"})
         self.Menu.BlockAA:MenuElement({id = "enabled", name = "Enabled", value = true, key = string.byte("T"), toggle = true})
@@ -280,11 +280,8 @@ function Zeri:castQ(target)
 end
 
 function Zeri:assessWOptions(target)
-    local distanceTarget = myHero.pos:DistanceTo(target.pos)
-    --if distance >= 1550 then return end
-	
-	local wData = {Type = GGPrediction.SPELLTYPE_LINE, Range= 1200, Speed = 2200, Delay = 0.6, Radius = 40,  Collision = false}
-	local w2Data = {Type = GGPrediction.SPELLTYPE_LINE, Range= 2700, Speed = 2200, Delay = 0.6, Radius = 100,  Collision = false}
+    local wData = {Type = GGPrediction.SPELLTYPE_LINE, Range= 1200, Speed = 2200, Delay = 0.6, Radius = 40,  Collision = false}
+    local w2Data = {Type = GGPrediction.SPELLTYPE_LINE, Range= 2700, Speed = 2200, Delay = 0.6, Radius = 100,  Collision = false}
     local direction = (target.pos - myHero.pos):Normalized()
     for distance = 50, 1100, 50 do
         local testPosition = myHero.pos + direction * distance
