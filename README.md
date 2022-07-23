@@ -1,1 +1,1 @@
-# GOSEXT Save some scripts for my own use
+Save some scripts for my own use
