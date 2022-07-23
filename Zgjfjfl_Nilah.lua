@@ -353,7 +353,8 @@ end
 
 function Nilah:Flee()
     local FleeETarget, FleeEDistance = self:getFleeETarget()
-    if FleeETarget and FleeEDistance < mousePos:DistanceTo(myHero.pos) and isSpellReady(_E) then
+    local distance = FleeETarget.pos:DistanceTo(myHero.pos)
+    if FleeETarget and FleeEDistance < mousePos:DistanceTo(myHero.pos) and distance <= 550 and isSpellReady(_E) then
         Control.CastSpell(HK_E, FleeETarget)
     end
 end
@@ -368,13 +369,6 @@ function Nilah:Draw()
     end
 end
 
-function Nilah:GetFleePos(target)
-    local myPos = Vector(myHero.pos.x, myHero.pos.y, myHero.pos.z)
-    local targetPos = Vector(target.pos.x, myHero.pos.y, target.pos.z)
-    local pos = myPos:Extended(targetPos, 550)
-    return pos
-end
-
 function Nilah:getFleeETarget()
     local FleeETarget = nil
     local FleeEDistance = math.huge
@@ -382,9 +376,8 @@ function Nilah:getFleeETarget()
     if self.Menu.Flee.E:Value() then
         for i = 1, GameHeroCount() do
             local hero = GameHero(i)
-            if hero and not hero.dead and hero.isAlly or hero.isEnemy then
-                local endPos = self:GetFleePos(hero)
-                local distance = mousePos:DistanceTo(endPos)
+            if hero and not hero.dead and (hero.isAlly or hero.isEnemy) and not hero.isMe then
+                local distance = mousePos:DistanceTo(hero.pos)
                 
                 if distance < FleeEDistance then
                     FleeEDistance = distance
@@ -397,9 +390,8 @@ function Nilah:getFleeETarget()
     if self.Menu.Flee.E:Value() then
         for i = 1, GameMinionCount() do
             local minion = GameMinion(i)
-            if minion and minion.isAlly or minion.isEnemy or minion.isJungle and not minion.dead then
-                local endPos = self:GetFleePos(minion)
-                local distance = mousePos:DistanceTo(endPos)
+            if minion and (minion.isAlly or minion.isEnemy or minion.isJungle) and not minion.dead then
+                local distance = mousePos:DistanceTo(minion.pos)
                 
                 if distance < FleeEDistance then
                     FleeEDistance = distance
