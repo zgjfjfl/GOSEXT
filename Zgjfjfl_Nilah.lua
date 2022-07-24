@@ -190,7 +190,7 @@ end
 class "Nilah"
         
 function Nilah:__init()	     
-    print("Zgjfjfl-Zeri Loaded") 
+    print("Zgjfjfl_Nilah Loaded")
     self:LoadMenu()
 	
     Callback.Add("Draw", function() self:Draw() end)
