@@ -271,7 +271,7 @@ function Ornn:Combo()
             local EPosition = myHero.pos + direction * distance
             local castPos = target.pos:Extended(myHero.pos, -500)
             local lineE = LineSegment(target.pos, castPos, EPosition)
-            if MapPosition:inWall(EPosition) and MapPosition:intersectsWall(lineE) and target.pos:DistanceTo(EPosition) < 300 and self.Menu.Combo.E:Value() then
+            if MapPosition:inWall(EPosition) and MapPosition:intersectsWall(lineE) and target.pos:DistanceTo(EPosition) < 300 and self.Menu.Combo.E:Value() and isSpellReady(_E) then
                 Control.CastSpell(HK_E, EPosition)
             end
         end
@@ -303,7 +303,7 @@ function Ornn:Harass()
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
             castSpellHigh(self.qSpell, HK_Q, target)
         end
-        if self.Menu.Harass.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+        if self.Menu.Harass.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
             castSpellHigh(self.qSpell, HK_W, target)
         end
     end
