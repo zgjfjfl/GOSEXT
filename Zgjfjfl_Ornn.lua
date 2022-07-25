@@ -272,7 +272,7 @@ function Ornn:Combo()
             local epos = target.pos:Extended(myHero.pos, -300)
             local lineE = LineSegment(target.pos, epos)
             if MapPosition:inWall(Position) and MapPosition:intersectsWall(lineE) and self.Menu.Combo.EWall:Value() and isSpellReady(_E) then
-                Control.CastSpell(HK_E, EPosition)
+                Control.CastSpell(HK_E, Position)
             end
         end
     end
