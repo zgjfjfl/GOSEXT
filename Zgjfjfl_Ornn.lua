@@ -2,6 +2,7 @@
 local Heroes ={"Ornn"}
 
 require "GGPrediction"
+require "2DGeometry"
 require "MapPositionGOS"
 
 local GameTurret = Game.Turret
