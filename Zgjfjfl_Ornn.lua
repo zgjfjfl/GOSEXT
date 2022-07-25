@@ -210,6 +210,7 @@ function Ornn:LoadMenu()
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "EQ", name = "[E] to Q", toggle = true, value = true})
 	self.Menu.Combo:MenuElement({id = "EWall", name = "[E] to Wall", toggle = true, value = true})
+	self.Menu.Combo:MenuElement({id = "ED", name = "[E] X distance enemy from wall", min = 0, max = 300, value = 300})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -238,42 +239,36 @@ function Ornn:onTickEvent()
    
 end
 
-function Ornn:castQE(target)
-    local qpos = myHero.pos + (target.pos - myHero.pos):Normalized() * 750
-        castSpellHigh(self.qSpell, HK_Q, target)
-	if isSpellReady(_E) and self.Menu.Combo.EQ:Value() then
-            DelayAction(function()
-                Control.CastSpell(HK_E, qpos)
-            end, 1.375
-            )
-	end
-end
-
-
-
 function Ornn:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
     local target = _G.SDK.TargetSelector:GetTarget(1000, _G.SDK.DAMAGE_TYPE_PHYSICAL);
     if target then
+	
+	local qcastpos = myHero.pos + (target.pos - myHero.pos):Normalized() * self.qSpell.Range
+        local ecastpos = myHero.pos + (target.pos - myHero.pos):Normalized() * self.eSpell.Range
+        local objpos = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())
+        local lineE = LineSegment(target.pos, objpos)
 
-        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
-            self:castQE(target)
+        if not MapPosition:intersectsWall(lineE) then
+            if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+                castSpellHigh(self.qSpell, HK_Q, target)
+	       if isSpellReady(_E) and self.Menu.Combo.EQ:Value() then
+                    DelayAction(function()
+                        Control.CastSpell(HK_E, qcastpos)
+                    end, 1.4
+                    )
+	       end
+            end
         end
 
         if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
             castSpellHigh(self.wSpell, HK_W, target)
         end
 
-        local direction = (target.pos - myHero.pos):Normalized()
-        for distance = 50, 800, 50 do
-            local Position = myHero.pos + direction * distance
-            local epos = target.pos:Extended(myHero.pos, -300)
-            local lineE = LineSegment(target.pos, epos)
-            if MapPosition:inWall(Position) and MapPosition:intersectsWall(lineE) and self.Menu.Combo.EWall:Value() and isSpellReady(_E) then
-                Control.CastSpell(HK_E, Position)
-            end
+        if MapPosition:inWall(ecastpos) and MapPosition:intersectsWall(lineE) and self.Menu.Combo.EWall:Value() and isSpellReady(_E) then
+            Control.CastSpell(HK_E, ecastpos)
         end
     end
 end	
