@@ -208,7 +208,8 @@ function Ornn:LoadMenu()
     self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
         self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "EQ", name = "[E] to Q", toggle = true, value = true})
+	self.Menu.Combo:MenuElement({id = "EWall", name = "[E] to Wall", toggle = true, value = true})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -238,15 +239,14 @@ function Ornn:onTickEvent()
 end
 
 function Ornn:castQE(target)
-    local pos = myHero.pos + (target.pos - myHero.pos):Normalized() * 750
-    self.isInEQ = true
-
+    local qpos = myHero.pos + (target.pos - myHero.pos):Normalized() * 750
         castSpellHigh(self.qSpell, HK_Q, target)
-        DelayAction(function()
-            Control.CastSpell(HK_E, pos)
-            self.isInEQ = false
-        end, 1.375
-        )
+	if isSpellReady(_E) and self.Menu.Combo.EQ:Value() then
+            DelayAction(function()
+                Control.CastSpell(HK_E, qpos)
+            end, 1.375
+            )
+	end
 end
 
 
@@ -268,10 +268,10 @@ function Ornn:Combo()
 
         local direction = (target.pos - myHero.pos):Normalized()
         for distance = 50, 800, 50 do
-            local EPosition = myHero.pos + direction * distance
-            local castPos = target.pos:Extended(myHero.pos, -500)
-            local lineE = LineSegment(target.pos, castPos, EPosition)
-            if MapPosition:inWall(EPosition) and MapPosition:intersectsWall(lineE) and target.pos:DistanceTo(EPosition) < 300 and self.Menu.Combo.E:Value() and isSpellReady(_E) then
+            local Position = myHero.pos + direction * distance
+            local epos = target.pos:Extended(myHero.pos, -300)
+            local lineE = LineSegment(target.pos, epos)
+            if MapPosition:inWall(Position) and MapPosition:intersectsWall(lineE) and self.Menu.Combo.EWall:Value() and isSpellReady(_E) then
                 Control.CastSpell(HK_E, EPosition)
             end
         end
