@@ -34,24 +34,6 @@ local function getDistance(Pos1, Pos2)
     return math.sqrt(getDistanceSqr(Pos1, Pos2))
 end
 
-local function getEnemyHeroes()
-    local EnemyHeroes = {}
-    for i = 1, Game.HeroCount() do
-        local Hero = Game.Hero(i)
-        if Hero.isEnemy and not Hero.dead then
-            table.insert(EnemyHeroes, Hero)
-        end
-    end
-    return EnemyHeroes
-end
-
-local function isValid(unit)
-    if (unit and unit.valid and unit.isTargetable and unit.alive and unit.visible and unit.networkID and unit.pathing and unit.health > 0) then
-        return true;
-    end
-    return false;
-end
-
 local function getEnemyHeroesWithinDistanceOfUnit(location, distance)
     local EnemyHeroes = {}
     for i = 1, Game.HeroCount() do
@@ -63,21 +45,10 @@ local function getEnemyHeroesWithinDistanceOfUnit(location, distance)
     return EnemyHeroes
 end
 
-
-local function getEnemyMinionsWithinDistanceOfLocation(location, distance)
-    local EnemyMinions = {}
-    for i = 1, Game.MinionCount() do
-        local minion = Game.Minion(i)
-        if minion and minion.isEnemy and not minion.dead and minion.pos:DistanceTo(location) < distance then
-            table.insert(EnemyMinions, minion)
-        end
-    end
-    return EnemyMinions
-end
-
 local function getEnemyHeroesWithinDistance(distance)
     return getEnemyHeroesWithinDistanceOfUnit(myHero.pos, distance)
 end
+
 local function doesMyChampionHaveBuff(buffName)
     for i = 0, myHero.buffCount do
         local buff = myHero:GetBuff(i)
@@ -86,48 +57,6 @@ local function doesMyChampionHaveBuff(buffName)
         end
     end
     return false
-end
-
-local function getChampionBuffCount(buffName)
-    for i = 0, myHero.buffCount do
-        local buff = myHero:GetBuff(i)
-        if buff.name == buffName then 
-            return buff.count
-        end
-    end
-    return -1
-end
-
-local function printChampionBuffs(champ)
-    for i = 0, champ.buffCount do
-        local buff = champ:GetBuff(i)
-        if buff.count > 0 then 
-            print(string.format("%s - stacks: %f count %f",buff.name, buff.stacks, buff.count))
-        end
-    end
-end
-
-local function doesThisChampionHaveBuff(target, buffName)
-    for i = 0, target.buffCount do
-        local buff = target:GetBuff(i)
-        if buff.name == buffName and buff.count > 0 then 
-            return true
-        end
-    end
-    return false
-end
-
-local function isTargetImmobile(target)
-    local buffTypeList = {5, 8, 12, 22, 23, 25, 30, 35} 
-	for i = 0, target.buffCount do
-        local buff = target:GetBuff(i)
-        for _, buffType in pairs(buffTypeList) do
-		    if buff.type == buffType and buff.count > 0 then
-                return true, buff.duration
-            end
-		end
-	end
-	return false, 0
 end
 
 local function castSpell(spellData, hotkey, target)
@@ -154,31 +83,6 @@ local function castSpellExtended(spellData, hotkey, target, extendAmount)
         local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), extendAmount) 
         Control.CastSpell(hotkey, castPos)	
     end
-end
-
-local _nextVectorCast = Game.Timer()
-local _nextSpellCast = Game.Timer()
-local _vectorMousePos = mousePos
-function VectorCast(startPos, endPos, hotkey)
-	if _nextSpellCast > Game.Timer() then return end	
-	if _nextVectorCast > Game.Timer() then return end
-
-	_nextVectorCast = Game.Timer() + 2
-	_nextSpellCast = Game.Timer() + .25
-    _vectorMousePos = mousePos
-
-	Control.SetCursorPos(startPos)	
-    orbwalker:SetMovement(false)
-    orbwalker:SetAttack(false)
-    
-	DelayAction(function()Control.KeyDown(hotkey) end,.05)
-	DelayAction(function()Control.SetCursorPos(endPos) end,.1)
-	DelayAction(function()
-        Control.KeyUp(hotkey) 
-        orbwalker:SetMovement(true)
-        orbwalker:SetAttack(true)
-    end,.15) 
-	DelayAction(function()Control.SetCursorPos(_vectorMousePos) end,.15)
 end
 
 class "Zeri"
@@ -371,9 +275,6 @@ function Zeri:Draw()
     end
 end
 
-----------------------------------------------------
--- Script starts here
----------------------
 function onLoadEvent()
     if table.contains(Heroes, myHero.charName) then
 		_G[myHero.charName]()
