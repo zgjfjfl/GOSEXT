@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle"}
 
 require "GGPrediction"
 require "2DGeometry"
@@ -86,6 +86,29 @@ local function castSpellHigh(spellData, hotkey, target)
     end
 end
 
+local function doesMyChampionHaveBuff(buffName)
+    for i = 0, myHero.buffCount do
+        local buff = myHero:GetBuff(i)
+        if buff.name == buffName and buff.count > 0 then 
+            return true
+        end
+    end
+    return false
+end
+
+local function getEnemyHeroesWithinDistanceOfUnit(location, distance)
+    local EnemyHeroes = {}
+    for i = 1, Game.HeroCount() do
+        local Hero = Game.Hero(i)
+        if Hero.isEnemy and not Hero.dead and Hero.pos:DistanceTo(location) < distance then
+            table.insert(EnemyHeroes, Hero)
+        end
+    end
+    return EnemyHeroes
+end
+local function getEnemyHeroesWithinDistance(distance)
+    return getEnemyHeroesWithinDistanceOfUnit(myHero.pos, distance)
+end
 
 ------------------------------------
 
@@ -206,10 +229,10 @@ function Ornn:Harass()
 end
 
 function Ornn:Draw()
-   if self.Menu.Draw.Q:Value() and isSpellReady(_Q)then
+   if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E)then
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 end
@@ -343,10 +366,10 @@ function JarvanIV:Flee()
 end
 
 function JarvanIV:Draw()
-   if self.Menu.Draw.Q:Value() and isSpellReady(_Q)then
+   if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E)then
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 end
@@ -424,7 +447,7 @@ function Poppy:Combo()
     local target = _G.SDK.TargetSelector:GetTarget(1000, _G.SDK.DAMAGE_TYPE_PHYSICAL);
     if target then
 	
-        local endPos = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())				
+        local endPos = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())
         if MapPosition:inWall(endPos) and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
             Control.CastSpell(HK_E, target)
         end
@@ -504,9 +527,160 @@ end
 
 
 function Poppy:Draw()
-   if self.Menu.Draw.Q:Value() and isSpellReady(_Q)then
+   if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
     end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+            Draw.Circle(myHero.pos, self.r2Spell.Range, Draw.Color(192, 255, 255, 255))
+    end
+
+end
+------------------------------
+class "Shyvana"
+        
+function Shyvana:__init()	     
+    print("Zgjfjfl-Shyvana Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 925, Speed = 1600, Collision = false}
+    self.e2Spell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.333, Radius = 345, Range = 925, Speed = 1575, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 160, Range = 850, Speed = 700, Collision = false}
+end
+
+function Shyvana:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgShyvana", name = "Zgjfjfl Shyvana"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "RHP", name = "[R] Use on target HP %", value = 50, min=0, max = 100 })
+        self.Menu.Combo:MenuElement({id = "RC", name = "[R] Use X enemies in range", value = 1, min = 1, max = 5})
+		
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        self.Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Flee:MenuElement({id = "R", name = "[R] to mouse", toggle = true, value = true})
+
+	
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+end
+
+function Shyvana:onTickEvent()
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:LaneClear()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+        self:Flee()
+    end
+
+end
+
+function Shyvana:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1000, _G.SDK.DAMAGE_TYPE_MAGICAL);
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < 500 and self.Menu.Combo.W:Value() and isSpellReady(_W) then
+            Control.CastSpell(HK_W)
+        end
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) then
+            castSpellHigh(self.eSpell, HK_E, target)
+        end
+        if myHero.pos:DistanceTo(target.pos) <= myHero.range+25 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+            Control.CastSpell(HK_Q)
+        end
+
+        local DragonForm = doesMyChampionHaveBuff("ShyvanaTransform")
+        if DragonForm then
+            if myHero.pos:DistanceTo(target.pos) < self.e2Spell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) then
+                castSpellHigh(self.e2Spell, HK_E, target)
+            end
+        end
+
+        if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and self.Menu.Combo.R:Value() and isSpellReady(_R) and (target.health/target.maxHealth <= self.Menu.Combo.RHP:Value() / 100) then
+        local numEnemies = getEnemyHeroesWithinDistance(self.rSpell.Range)
+            if #numEnemies >= self.Menu.Combo.RC:Value() then
+                castSpellHigh(self.rSpell, HK_R, target)
+            end
+        end
+    end
+end	
+
+function Shyvana:LaneClear()
+    local target = HealthPrediction:GetJungleTarget()
+    if not target then
+        target = HealthPrediction:GetLaneClearTarget()
+    end
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Clear.W:Value() and isSpellReady(_W) then
+            Control.CastSpell(HK_W)
+        end
+        if myHero.pos:DistanceTo(target.pos) <= myHero.range+25 and self.Menu.Clear.Q:Value() and isSpellReady(_Q) then
+            Control.CastSpell(HK_Q)
+        end
+        if self.Menu.Clear.E:Value() and isSpellReady(_E) then
+            bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
+            if bestCount > 0 then 
+                Control.CastSpell(HK_E, bestPosition)
+            end
+        end
+    end
+end
+
+function Shyvana:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range);
+    if target then
+
+        local DragonForm = doesMyChampionHaveBuff("ShyvanaTransform")
+        if DragonForm then
+            if myHero.pos:DistanceTo(target.pos) < self.e2Spell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) then
+                castSpellHigh(self.e2Spell, HK_E, target)
+            end
+        end
+            
+        if self.Menu.Harass.E:Value() and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
+            castSpellHigh(self.eSpell, HK_E, target)
+        end
+
+    end
+end
+function Shyvana:Flee()
+    if self.Menu.Flee.W:Value() and isSpellReady(_W) then
+        Control.CastSpell(HK_W)
+    end
+    if self.Menu.Flee.R:Value() and isSpellReady(_R) then
+        Control.CastSpell(HK_R, mousePos)
+    end
+end
+
+function Shyvana:Draw()
     if self.Menu.Draw.E:Value() and isSpellReady(_E)then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
@@ -515,6 +689,154 @@ function Poppy:Draw()
     end
 
 end
+------------------------------
+class "Trundle"
+        
+function Trundle:__init()	     
+    print("Zgjfjfl-Trundle Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 775, Range = 750, Speed = math.huge, Collision = false}
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 150, Range = 1000, Speed = math.huge, Collision = false}
+    self.rSpell = { Range = 650 }
+end
+
+function Trundle:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgTrundle", name = "Zgjfjfl Trundle"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "RHP", name = "[R] Use when self HP %", value = 60, min=0, max = 100 })
+		
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        self.Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Flee:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+	
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+end
+
+function Trundle:onTickEvent()
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:LaneClear()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+        self:Flee()
+    end
+
+end
+
+function Trundle:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and self.Menu.Combo.W:Value() and isSpellReady(_W) then
+            Control.CastSpell(HK_W, target)
+
+        end
+        if myHero.pos:DistanceTo(target.pos) <= myHero.range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+            Control.CastSpell(HK_Q)
+        end
+        
+        local pred = GGPrediction:SpellPrediction(self.eSpell)
+        pred:GetPrediction(target, myHero)
+        if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+            local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -75)
+            if self.Menu.Combo.E:Value() and isSpellReady(_E) then
+                Control.CastSpell(HK_E, castPos)
+            end
+        end
+
+        if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and self.Menu.Combo.R:Value() and isSpellReady(_R) and (myHero.health/myHero.maxHealth <= self.Menu.Combo.RHP:Value() / 100) then
+                Control.CastSpell(HK_R, target)
+            end
+
+    end
+end	
+
+function Trundle:LaneClear()
+    local target = HealthPrediction:GetJungleTarget()
+    if not target then
+        target = HealthPrediction:GetLaneClearTarget()
+    end
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < myHero.range and self.Menu.Clear.W:Value() and isSpellReady(_W) then
+            Control.CastSpell(HK_W, myHero)
+        end
+        if myHero.pos:DistanceTo(target.pos) <= myHero.range and self.Menu.Clear.Q:Value() and isSpellReady(_Q) then
+            Control.CastSpell(HK_Q)
+        end
+    end
+
+end
+
+function Trundle:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(myHero.rang);
+    if target then
+
+        if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= myHero.range then
+            Control.CastSpell(HK_Q)
+        end
+
+    end
+end
+function Trundle:Flee()   
+    if self.Menu.Flee.W:Value() and isSpellReady(_W) then
+        Control.CastSpell(HK_W, mousePos)
+    end
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range);
+    if target then
+    local pred = GGPrediction:SpellPrediction(self.eSpell)
+    pred:GetPrediction(target, myHero)
+    if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+        local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), 75)
+        if self.Menu.Flee.E:Value() and isSpellReady(_E) then
+            Control.CastSpell(HK_E, castPos)
+        end
+    end
+    end
+
+end
+
+function Trundle:Draw()   
+    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+            Draw.Circle(myHero.pos, self.r2Spell.Range, Draw.Color(192, 255, 255, 255))
+    end
+
+end
+
 
 
 ------------------------------
