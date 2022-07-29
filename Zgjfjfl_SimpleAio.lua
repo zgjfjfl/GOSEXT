@@ -302,7 +302,7 @@ function JarvanIV:Combo()
         local pred = GGPrediction:SpellPrediction(self.eSpell)
         pred:GetPrediction(target, myHero)
         if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
-            local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -50)
+            local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -100)
             if self.Menu.Combo.E:Value() and isSpellReady(_E) then
                 Control.CastSpell(HK_E, castPos)
 	            if isSpellReady(_Q) then
@@ -356,7 +356,7 @@ end
 
 function JarvanIV:Flee()
     if self.Menu.Flee.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) then
-        local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.qSpell.Range
+        local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.eSpell.Range
             Control.CastSpell(HK_E, pos)
             DelayAction(function()
                 Control.CastSpell(HK_Q, pos)
