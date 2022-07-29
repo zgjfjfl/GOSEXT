@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan"}
 
 require "GGPrediction"
 require "2DGeometry"
@@ -16,6 +16,13 @@ local HealthPrediction         = _G.SDK.HealthPrediction
 
 local function isSpellReady(spell)
     return  myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 and Game.CanUseSpell(spell) == 0
+end
+
+local function isValid(unit)
+    if (unit and unit.valid and unit.isTargetable and unit.alive and unit.visible and unit.networkID and unit.pathing and unit.health > 0) then
+        return true;
+    end
+    return false;
 end
 
 local function getDistanceSqr(Pos1, Pos2)
@@ -106,8 +113,20 @@ local function getEnemyHeroesWithinDistanceOfUnit(location, distance)
     end
     return EnemyHeroes
 end
+
 local function getEnemyHeroesWithinDistance(distance)
     return getEnemyHeroesWithinDistanceOfUnit(myHero.pos, distance)
+end
+
+local function getEnemyCount(range, unit)
+	local count = 0
+	for i, hero in ipairs(getEnemyHeroes()) do
+	local Range = range * range
+		if unit ~= hero and getDistanceSqr(unit, hero.pos) < Range and isValid(hero) then
+		count = count + 1
+		end
+	end
+	return count
 end
 
 ------------------------------------
@@ -167,7 +186,7 @@ function Ornn:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
     if target then
 	
 	local qcastpos = myHero.pos + (target.pos - myHero.pos):Normalized() * self.qSpell.Range
@@ -216,7 +235,7 @@ function Ornn:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range);
     if target then
             
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
@@ -296,7 +315,7 @@ function JarvanIV:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
     if target then
 
         local pred = GGPrediction:SpellPrediction(self.eSpell)
@@ -305,7 +324,7 @@ function JarvanIV:Combo()
             local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -100)
             if self.Menu.Combo.E:Value() and isSpellReady(_E) then
                 Control.CastSpell(HK_E, castPos)
-	            if isSpellReady(_Q) then
+	            if isSpellReady(_Q) and self.Menu.Combo.Q:Value() then
                     DelayAction(function()
                         Control.CastSpell(HK_Q, castPos)
                     end, 0.1
@@ -344,7 +363,7 @@ function JarvanIV:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
     if target then
             
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
@@ -444,7 +463,7 @@ function Poppy:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
     if target then
 	
         local endPos = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())
@@ -487,7 +506,7 @@ function Poppy:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range);
     if target then
             
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
@@ -499,7 +518,7 @@ end
 
 function Poppy:AutoW()
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
     if target then
     local blockobj = self.Menu.W.WB[target.charName] and self.Menu.W.WB[target.charName]:Value()
         if blockobj and target.pathing.isDashing then
@@ -602,7 +621,7 @@ function Shyvana:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000, _G.SDK.DAMAGE_TYPE_MAGICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
     if target then
         if myHero.pos:DistanceTo(target.pos) < 500 and self.Menu.Combo.W:Value() and isSpellReady(_W) then
             Control.CastSpell(HK_W)
@@ -685,7 +704,7 @@ function Shyvana:Draw()
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
     if self.Menu.Draw.R:Value() and isSpellReady(_R)then
-            Draw.Circle(myHero.pos, self.r2Spell.Range, Draw.Color(192, 255, 255, 255))
+            Draw.Circle(myHero.pos, self.rSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 
 end
@@ -797,7 +816,7 @@ function Trundle:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(myHero.rang);
+    local target = _G.SDK.TargetSelector:GetTarget(500);
     if target then
 
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= myHero.range then
@@ -826,17 +845,147 @@ end
 
 function Trundle:Draw()   
     if self.Menu.Draw.W:Value() and isSpellReady(_W) then
-            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+            Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
     if self.Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
     if self.Menu.Draw.R:Value() and isSpellReady(_R) then
-            Draw.Circle(myHero.pos, self.r2Spell.Range, Draw.Color(192, 255, 255, 255))
+            Draw.Circle(myHero.pos, self.rSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+
+end
+------------------------------
+class "Rakan"
+        
+function Rakan:__init()	     
+    print("Zgjfjfl-Rakan Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 65, Range = 900, Speed = 1850, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 250, Range = 600, Speed = 1700, Collision = false}
+    self.eSpell = {Range = 700}
+end
+
+function Rakan:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgRakan", name = "Zgjfjfl Rakan"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        --self.Menu.Combo:MenuElement({id = "RHP", name = "[R] Use when self HP %", value = 60, min=0, max = 100 })
+		
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        self.Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Flee:MenuElement({id = "E", name = "[E] to Ally", toggle = true, value = true})
+	
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+end
+
+function Rakan:onTickEvent()
+    for i = 1, GameHeroCount() do
+        local hero = GameHero(i)
+        if hero and not hero.dead and hero.isAlly and not hero.isMe and hero.charName == "Xayah" then
+            self.eSpell.Rang = 1000
+        end
+    end
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+        self:Flee()
     end
 
 end
 
+function Rakan:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1500);
+    if target then
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and isSpellReady(_W)then
+            for i = 1, GameHeroCount() do
+                local hero = GameHero(i)
+                if hero and not hero.dead and hero.isAlly and not hero.isMe then
+                    if myHero.pos:DistanceTo(hero.pos) <= self.eSpell.Range then
+                        if getEnemyCount(self.wSpell.Range, myHero.pos) == 0 and getEnemyCount(self.wSpell.Range, hero.pos) >= 1 then
+                            Control.CastSpell(HK_E, hero)
+                        end
+                    end
+                end
+            end
+        end
+
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+             castSpellHigh(self.wSpell, HK_W, target)
+        end
+    end
+end	
+
+function Rakan:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(myHero.rang);
+    if target then
+
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+    end
+end
+function Rakan:Flee()   
+    if self.Menu.Flee.W:Value() and isSpellReady(_W) then
+        local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.wSpell.Range
+            Control.CastSpell(HK_W, pos)
+
+
+    end
+
+    if self.Menu.Flee.E:Value() and isSpellReady(_E) then
+        for i = 1, GameHeroCount() do
+            local hero = GameHero(i)
+            if hero and not hero.dead and hero.isAlly and not hero.isMe then
+            local distance1 = hero.pos:DistanceTo(myHero.pos)
+            local distance2 = mousePos:DistanceTo(hero.pos)
+                 if  distance2< mousePos:DistanceTo(myHero.pos) and distance1 <= self.eSpell.Range then
+                    Control.CastSpell(HK_E, hero)
+                 end
+            end
+        end
+    end
+end
+
+function Rakan:Draw()
+    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+            Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+
+end
 
 
 ------------------------------
