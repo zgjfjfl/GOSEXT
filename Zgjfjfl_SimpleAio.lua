@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth"}
 
 require "GGPrediction"
 require "2DGeometry"
@@ -124,6 +124,18 @@ local function getEnemyCount(range, unit)
 	local Range = range * range
 		if unit ~= hero and getDistanceSqr(unit, hero.pos) < Range and isValid(hero) then
 		count = count + 1
+		end
+	end
+	return count
+end
+
+local function getMinionCount(range, unit)
+	local count = 0
+	for i = 1,GameMinionCount() do
+	local hero = GameMinion(i)
+	local Range = range * range
+		if hero.team ~= TEAM_ALLY and hero.dead == false and getDistanceSqr(unit, hero.pos) < Range then
+			count = count + 1
 		end
 	end
 	return count
@@ -876,7 +888,6 @@ function Rakan:LoadMenu()
         self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
-        --self.Menu.Combo:MenuElement({id = "RHP", name = "[R] Use when self HP %", value = 60, min=0, max = 100 })
 		
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -956,8 +967,6 @@ function Rakan:Flee()
     if self.Menu.Flee.W:Value() and isSpellReady(_W) then
         local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.wSpell.Range
             Control.CastSpell(HK_W, pos)
-
-
     end
 
     if self.Menu.Flee.E:Value() and isSpellReady(_E) then
@@ -975,6 +984,159 @@ function Rakan:Flee()
 end
 
 function Rakan:Draw()
+    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+            Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+
+end
+------------------------------
+class "Belveth"
+        
+function Belveth:__init()	     
+    print("Zgjfjfl-Belveth Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 50, Range = 450, Speed = myHero:GetSpellData(_E).speed, Collision =false}
+    self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 100, Range = 660, Speed = math.huge, Collision = false}
+    self.eSpell = {Range = 500}
+end
+
+function Belveth:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgBelveth", name = "Zgjfjfl Belveth"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "EHP", name = "[E] Use when self HP %", value = 30, min=0, max = 100 })
+		
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        self.Menu.Flee:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+	
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+end
+
+function Belveth:onTickEvent()
+    if doesMyChampionHaveBuff("BelvethE") and getEnemyCount(self.eSpell.Range, myHero.pos) == 0 and getMinionCount(self.eSpell.Range, myHero.pos) == 0 then
+        Control.CastSpell(HK_E)
+    end
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:LaneClear()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+        self:Flee()
+    end
+    self:KillSteal()
+
+end
+
+function Belveth:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
+    if target then
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+             castSpellHigh(self.wSpell, HK_W, target)
+        end
+
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero.health/myHero.maxHealth < self.Menu.Combo.EHP:Value()/100 then
+             Control.CastSpell(HK_E)
+        end
+
+    end
+end	
+
+function Belveth:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(myHero.rang);
+    if target then
+
+        if myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range and self.Menu.Combo.W:Value() and isSpellReady(_W) then
+             castSpellHigh(self.wSpell, HK_W, target)
+        end
+    end
+end
+
+function Belveth:LaneClear()
+    local target = HealthPrediction:GetJungleTarget()
+    if not target then
+        target = HealthPrediction:GetLaneClearTarget()
+    end
+    if target then
+        if self.Menu.Clear.W:Value() and isSpellReady(_W) then
+            bestPosition, bestCount = getAOEMinion(self.wSpell.Range, self.wSpell.Radius)
+            if bestCount > 0 then 
+                Control.CastSpell(HK_W, bestPosition)
+            end
+        end
+        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+             Control.CastSpell(HK_Q, target)
+        end
+    end
+end
+
+function Belveth:Flee()   
+    if self.Menu.Flee.Q:Value() and isSpellReady(_Q) then
+        Control.CastSpell(HK_Q, mousePos)
+    end
+end
+
+function Belveth:KillSteal()
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range);
+    if target then
+
+    local elvl = myHero:GetSpellData(_Q).level
+    local ebaseDmg  = 2 * elvl + 6
+    local eadDmg = myHero.totalDamage * 0.06
+    local exttimes = ((myHero.attackSpeed / 0.85) - 1) / 0.333
+    local emaxDmg = (ebaseDmg + eadDmg) * (6 + exttimes) * 4
+  	if isSpellReady(_E) and self.Menu.KS.E:Value() then
+			if emaxDmg > target.health and target.health/target.maxHealth < 0.25 and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+		             Control.CastSpell(HK_E)
+			end	
+	    end
+    end
+end
+
+
+function Belveth:Draw()
     if self.Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
