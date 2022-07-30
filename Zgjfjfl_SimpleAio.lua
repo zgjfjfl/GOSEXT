@@ -1205,7 +1205,7 @@ end
 function Nasus:onTickEvent()
 
     local numEnemies = getEnemyHeroesWithinDistance(700)
-    if #numEnemies >= 1 and myHero.health/myHero.maxHealth <= self.Menu.Combo.RHP:Value()/100 and self.Menu.Combo.R:Value() then
+    if #numEnemies >= 1 and myHero.health/myHero.maxHealth <= self.Menu.Combo.RHP:Value()/100 and self.Menu.Combo.R:Value() and isSpellReady(_R) then
         Control.CastSpell(HK_R)
    end
 
