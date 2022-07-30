@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed"}
 
 require "GGPrediction"
 require "2DGeometry"
@@ -101,6 +101,16 @@ local function doesMyChampionHaveBuff(buffName)
         end
     end
     return false
+end
+
+function getBuffData(unit, buffname)
+  for i = 0, unit.buffCount do
+    local buff = unit:GetBuff(i)
+    if buff.name == buffname and buff.count > 0 then 
+      return buff
+    end
+  end
+  return {type = 0, name = "", startTime = 0, expireTime = 0, duration = 0, stacks = 0, count = 0}
 end
 
 local function getEnemyHeroesWithinDistanceOfUnit(location, distance)
@@ -635,7 +645,7 @@ function Shyvana:Combo()
 
     local target = _G.SDK.TargetSelector:GetTarget(1000);
     if target then
-        if myHero.pos:DistanceTo(target.pos) < 500 and self.Menu.Combo.W:Value() and isSpellReady(_W) then
+        if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Combo.W:Value() and isSpellReady(_W) then
             Control.CastSpell(HK_W)
         end
         if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) then
@@ -788,7 +798,7 @@ function Trundle:Combo()
             Control.CastSpell(HK_W, target)
 
         end
-        if myHero.pos:DistanceTo(target.pos) <= myHero.range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+        if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
             Control.CastSpell(HK_Q)
         end
         
@@ -814,10 +824,10 @@ function Trundle:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target then
-        if myHero.pos:DistanceTo(target.pos) < myHero.range and self.Menu.Clear.W:Value() and isSpellReady(_W) then
+        if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Clear.W:Value() and isSpellReady(_W) then
             Control.CastSpell(HK_W, myHero)
         end
-        if myHero.pos:DistanceTo(target.pos) <= myHero.range and self.Menu.Clear.Q:Value() and isSpellReady(_Q) then
+        if myHero.pos:DistanceTo(target.pos) <= 300 and self.Menu.Clear.Q:Value() and isSpellReady(_Q) then
             Control.CastSpell(HK_Q)
         end
     end
@@ -958,7 +968,7 @@ function Rakan:Harass()
     local target = _G.SDK.TargetSelector:GetTarget(myHero.rang);
     if target then
 
-        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) then
              castSpellHigh(self.qSpell, HK_Q, target)
         end
     end
@@ -985,7 +995,7 @@ end
 
 function Rakan:Draw()
     if self.Menu.Draw.W:Value() and isSpellReady(_W) then
-            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+            Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
     if self.Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
@@ -1083,10 +1093,10 @@ function Belveth:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(myHero.rang);
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
     if target then
 
-        if myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range and self.Menu.Combo.W:Value() and isSpellReady(_W) then
+        if myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range and self.Menu.Harass.W:Value() and isSpellReady(_W) then
              castSpellHigh(self.wSpell, HK_W, target)
         end
     end
@@ -1128,7 +1138,7 @@ function Belveth:KillSteal()
     local exttimes = ((myHero.attackSpeed / 0.85) - 1) / 0.333
     local emaxDmg = (ebaseDmg + eadDmg) * (6 + exttimes) * 4
   	if isSpellReady(_E) and self.Menu.KS.E:Value() then
-			if emaxDmg > target.health and target.health/target.maxHealth < 0.25 and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+			if emaxDmg >= target.health and target.health/target.maxHealth < 0.25 and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
 		             Control.CastSpell(HK_E)
 			end	
 	    end
@@ -1138,7 +1148,7 @@ end
 
 function Belveth:Draw()
     if self.Menu.Draw.W:Value() and isSpellReady(_W) then
-            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+            Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
     if self.Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
@@ -1148,7 +1158,229 @@ function Belveth:Draw()
     end
 
 end
+-------------------------------
+class "Nasus"
+        
+function Nasus:__init()	     
+    print("Zgjfjfl-Nasus Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.wSpell = { Range = 700 }
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 400, Range = 650, Speed = math.huge, Collision =false}
+end
 
+function Nasus:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgNasus", name = "Zgjfjfl Nasus"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R] ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "RHP", name = "[R] Use when self HP %", value=30, min=10, max=100})
+
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "EH", name = "E hits x minions", value = 3, min = 1, max = 6})
+
+    self.Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
+        self.Menu.LastHit:MenuElement({id = "Q", name = "Q", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+end
+
+function Nasus:onTickEvent()
+
+    local numEnemies = getEnemyHeroesWithinDistance(700)
+    if #numEnemies >= 1 and myHero.health/myHero.maxHealth <= self.Menu.Combo.RHP:Value()/100 and self.Menu.Combo.R:Value() then
+        Control.CastSpell(HK_R)
+   end
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:LaneClear()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
+        self:LastHit()
+    end
+    self:KillSteal()
+
+end
+
+function Nasus:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             Control.CastSpell(HK_Q)
+        end
+
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+             Control.CastSpell(HK_W, target)
+        end
+
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+             castSpellHigh(self.eSpell, HK_E, target)
+        end
+
+    end
+end	
+
+function Nasus:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Harass.Q:Value() and isSpellReady(_Q) then
+             Control.CastSpell(HK_Q)
+        end
+
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) then
+             castSpellHigh(self.eSpell, HK_E, target)
+        end
+    end
+end
+
+function Nasus:LaneClear()
+    local target = HealthPrediction:GetJungleTarget()
+    if not target then
+        target = HealthPrediction:GetLaneClearTarget()
+    end
+    if target then
+        if self.Menu.Clear.E:Value() and isSpellReady(_E) then
+            bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
+            if bestCount >= self.Menu.Clear.EH:Value() then 
+                Control.CastSpell(HK_E, bestPosition)
+            end
+        end
+    if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < 300 and self:qDmg() >= target.health then
+        Control.CastSpell(HK_Q)
+        Control.Attack(target)
+    end
+    end
+end
+
+function Nasus:LastHit()
+    local target = HealthPrediction:GetJungleTarget()
+    if not target then
+        target = HealthPrediction:GetLaneClearTarget()
+    end
+    if target then
+    
+      if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < 300 and self:qDmg() >= target.health then
+        Control.CastSpell(HK_Q)
+        Control.Attack(target)
+    end
+    end
+end
+
+function Nasus:KillSteal()
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range);
+    if target then
+
+    local elvl = myHero:GetSpellData(_E).level
+    local ebaseDmg = 40 * elvl + 15
+    local eapDmg = 0.6 * myHero.ap
+    local eDmg = ebaseDmg + eapDmg
+
+        if isSpellReady(_E) and self.Menu.KS.E:Value() and eDmg >= target.health and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+            Control.CastSpell(HK_E, target)
+        end
+
+        if isSpellReady(_Q) and self.Menu.KS.Q:Value() and self:qDmg() >= target.health and myHero.pos:DistanceTo(target.pos) < 300 then
+            Control.CastSpell(HK_Q)
+            Control.Attack(target)
+        end	
+    end
+end 
+
+function Nasus:qDmg()
+    local qlvl = myHero:GetSpellData(_Q).level
+    local qbaseDmg  = 20 * qlvl + 10
+    local qDmg = qbaseDmg + getBuffData(myHero, "NasusQStacks").stacks
+return qDmg
+end
+
+function Nasus:Draw()
+    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+            Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+end
+------------------------------
+
+class "Singed"
+        
+function Singed:__init()	     
+    print("Zgjfjfl-Singed Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Tick", function() self:onTickEvent() end)
+end
+
+function Singed:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgSinged", name = "Zgjfjfl Singed"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+
+end
+
+function Singed:onTickEvent()
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+
+end
+
+function Singed:Combo()
+
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
+    if target then
+        
+        local wcastpos = myHero.pos:Extended(target.pos, -400)
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) < 300 then
+        orbwalker:SetAttack(false)
+            Control.CastSpell(HK_W, wcastpos)
+            DelayAction(function() Control.SetCursorPos(target) end, 0.25)
+            DelayAction(function() Control.SetCursorPos(mousePos) end, 0.5)
+            Control.CastSpell(HK_E)
+            DelayAction(function() orbwalker:SetAttack(true) end, 1)
+        end
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) and not isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) < 1000 then
+            Control.CastSpell(HK_W, target)
+        end
+
+
+    end
+end	
 
 ------------------------------
 
