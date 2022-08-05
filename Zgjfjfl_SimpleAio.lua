@@ -805,7 +805,7 @@ function Trundle:Combo()
         local pred = GGPrediction:SpellPrediction(self.eSpell)
         pred:GetPrediction(target, myHero)
         if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
-            local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -75)
+            local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -100)
             if self.Menu.Combo.E:Value() and isSpellReady(_E) then
                 Control.CastSpell(HK_E, castPos)
             end
