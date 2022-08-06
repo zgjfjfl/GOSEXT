@@ -99,7 +99,7 @@ function Nilah:__init()
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)    
     self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 665, Speed = math.huge, Collision = false}
-    self.eSpell = { Range = 550 }
+    self.rSpell = { Range = 425 }
     
 end
 
@@ -113,6 +113,7 @@ function Nilah:LoadMenu() --MainMenu
         self.Menu.Combo:MenuElement({id = "WRange", name = "Use W when enemies within X range", min=0, max = 1000, value = 500})
         self.Menu.Combo:MenuElement({id = "WCount", name = "Use W when X enemies within range", min = 0, max = 5, value=2})
         self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+	self.Menu.Combo:MenuElement({id = "Eammo", name = "[E] Safe 1 Ammo for Kills or Flee", value = true})
         self.Menu.Combo:MenuElement({id = "ETHP", name = "Use E when target HP %", value =  50, min=0, max = 100 })
         self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "RCount", name = "Use R when can hit >= X enemies", min = 0, max = 5, value=2})
@@ -120,15 +121,16 @@ function Nilah:LoadMenu() --MainMenu
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Harass:MenuElement({id = "Mana", name = "Min Mana to Harass", value = 30, min = 0, max = 100})
 
     self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
         self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
         self.Menu.Clear:MenuElement({id = "QT", name = "[Q] Turret", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "Mana", name = "Min Mana to Clear", value = 30, min = 0, max = 100})
 			
     self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
         self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
         self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-
 
     self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
         self.Menu.Flee:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
@@ -170,15 +172,21 @@ function Nilah:Combo()
             Control.CastSpell(HK_W)
         end
                 
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and target.health/target.maxHealth <= self.Menu.Combo.ETHP:Value()/100 then
-            Control.CastSpell(HK_E, target)
+        if self.Menu.Combo.Eammo:Value() then
+            if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero:GetSpellData(_E).ammo > 1 and target.health/target.maxHealth <= self.Menu.Combo.ETHP:Value()/100 then
+                Control.CastSpell(HK_E, target)
+            end
+        elseif not self.Menu.Combo.Eammo:Value() then
+            if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero:GetSpellData(_E).ammo > 0 and target.health/target.maxHealth <= self.Menu.Combo.ETHP:Value()/100 then
+                Control.CastSpell(HK_E, target)
+            end
         end
 
         if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
             castSpellHigh(self.qSpell, HK_Q, target)
         end
 			        
-	    local numEnemies = getEnemyHeroesWithinDistance(425)
+	    local numEnemies = getEnemyHeroesWithinDistance(self.rSpell.Range)
 		if self.Menu.Combo.R:Value() and isSpellReady(_R) and #numEnemies >= self.Menu.Combo.RCount:Value() then
             Control.CastSpell(HK_R)
         end
@@ -193,7 +201,7 @@ function Nilah:Harass()
     local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range, _G.SDK.DAMAGE_TYPE_PHYSICAL);
     if target then
             
-        if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+        if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and myHero.mana/myHero.maxMana >= self.Menu.Harass.Mana:Value() / 100 then
             castSpellHigh(self.qSpell, HK_Q, target)
         end
 
@@ -206,7 +214,7 @@ function Nilah:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target then
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) then
+        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.mana/myHero.maxMana >= self.Menu.Clear.Mana:Value() / 100 then
             bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
             if bestCount > 0 then 
                 Control.CastSpell(HK_Q, bestPosition)
