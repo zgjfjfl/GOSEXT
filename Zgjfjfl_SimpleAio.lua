@@ -801,14 +801,9 @@ function Trundle:Combo()
         if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
             Control.CastSpell(HK_Q)
         end
-        
-        local pred = GGPrediction:SpellPrediction(self.eSpell)
-        pred:GetPrediction(target, myHero)
-        if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
-            local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -100)
-            if self.Menu.Combo.E:Value() and isSpellReady(_E) then
-                Control.CastSpell(HK_E, castPos)
-            end
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) > 300 then
+	local castPos = Vector(myHero.pos) + Vector(Vector(target.pos) - Vector(myHero.pos)):Normalized() * (myHero.pos:DistanceTo(target.pos) + 100)
+            Control.CastSpell(HK_E, castPos)
         end
 
         if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and self.Menu.Combo.R:Value() and isSpellReady(_R) and (myHero.health/myHero.maxHealth <= self.Menu.Combo.RHP:Value() / 100) then
