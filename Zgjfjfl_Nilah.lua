@@ -99,12 +99,11 @@ function Nilah:__init()
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)    
     self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 665, Speed = math.huge, Collision = false}
-    self.rSpell = { Range = 425 }
-    
+    self.eSpell = { Range = 550 }
+    self.rSpell = { Range = 425 }  
 end
 
-
-function Nilah:LoadMenu() --MainMenu
+function Nilah:LoadMenu()
     self.Menu = MenuElement({type = MENU, id = "zgNilah", name = "Zgjfjfl Nilah"})
             
     self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
@@ -117,7 +116,6 @@ function Nilah:LoadMenu() --MainMenu
         self.Menu.Combo:MenuElement({id = "ETHP", name = "Use E when target HP %", value =  50, min=0, max = 100 })
         self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "RCount", name = "Use R when can hit >= X enemies", min = 0, max = 5, value=2})
-
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -140,7 +138,6 @@ function Nilah:LoadMenu() --MainMenu
         self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 
 end
-
 
 function Nilah:onTickEvent()
 
