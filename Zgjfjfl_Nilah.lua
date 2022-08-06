@@ -113,7 +113,7 @@ function Nilah:LoadMenu() --MainMenu
         self.Menu.Combo:MenuElement({id = "WRange", name = "Use W when enemies within X range", min=0, max = 1000, value = 500})
         self.Menu.Combo:MenuElement({id = "WCount", name = "Use W when X enemies within range", min = 0, max = 5, value=2})
         self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-	self.Menu.Combo:MenuElement({id = "Eammo", name = "[E] Safe 1 Ammo for Kills or Flee", value = true})
+	self.Menu.Combo:MenuElement({id = "Eammo", name = "[E] Save 1 stock for Kills or Flee or Manual", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "ETHP", name = "Use E when target HP %", value =  50, min=0, max = 100 })
         self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "RCount", name = "Use R when can hit >= X enemies", min = 0, max = 5, value=2})
