@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr"}
 
 require "GGPrediction"
 require "2DGeometry"
@@ -1375,8 +1375,107 @@ function Singed:Combo()
 
 
     end
+end
+------------------------------
+class "Udyr"
+        
+function Udyr:__init()	     
+    print("Zgjfjfl-Udyr Loaded") 
+    self:LoadMenu()
+
+    Callback.Add("Tick", function() self:onTickEvent() end)
+
+  end
+
+function Udyr:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgUdyr", name = "Zgjfjfl Udyr"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Whp", name = "[W] use when X% hp ", value = 50, min = 0, max = 100})
+        self.Menu.Combo:MenuElement({id = "W2hp", name = "use AwakenedW when self X% hp ", value = 30, min = 0, max = 100})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Jungle Clear"})
+        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "Whp", name = "[W] use when self X% hp", value = 30, min = 0, max = 100})
+        self.Menu.Clear:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+
+end
+
+function Udyr:onTickEvent()
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:JungleClear()
+    end
+
+   end
+
+function Udyr:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(800);
+    if target then
+    local hasAwakened = doesMyChampionHaveBuff("udyrprecastready")
+    local R1 = getBuffData(myHero, "UdyrRActivation")
+
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and not hasAwakened then
+            Control.CastSpell(HK_E)
+        end
+
+        if self.Menu.Combo.R:Value() and isSpellReady(_R) and (not isSpellReady(_E) or hasAwakened) and R1.duration < 0.5 and myHero.pos:DistanceTo(target.pos) < 370 then
+            Control.CastSpell(HK_R)
+        end
+
+        if self.Menu.Combo.E:Value() and isSpellReady(_Q) and not isSpellReady(_E) and not isSpellReady(_R) and not hasAwakened and myHero.pos:DistanceTo(target.pos) < 200 then
+            Control.CastSpell(HK_Q)
+        end
+
+        if myHero.health/myHero.maxHealth <= self.Menu.Combo.Whp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and not hasAwakened then
+            Control.CastSpell(HK_W)
+        end
+        if myHero.health/myHero.maxHealth <= self.Menu.Combo.W2hp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and hasAwakened then
+            Control.CastSpell(HK_W)
+        end
+
+    end
 end	
 
+function Udyr:JungleClear()
+    local c = getMinionCount(400, myHero.pos)
+    local hasAwakened = doesMyChampionHaveBuff("udyrprecastready")
+    local haspassiveAA = doesMyChampionHaveBuff("UdyrPAttackReady")
+    local R1 = getBuffData(myHero, "UdyrRActivation")
+    local target = HealthPrediction:GetJungleTarget()
+    if target and not haspassiveAA then
+        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and c == 1 then
+            Control.CastSpell(HK_Q)
+                if hasAwakened then
+                    Control.CastSpell(HK_Q)
+                end
+        elseif not hasAwakened and isSpellReady(_R) and not isSpellReady(_Q) then
+                Control.CastSpell(HK_R)
+        end
+        if self.Menu.Clear.R:Value() and isSpellReady(_R) and c > 1 then
+            Control.CastSpell(HK_R)
+                if hasAwakened and R1.duration < 0.5 then
+                    Control.CastSpell(HK_R)
+                end
+        elseif not hasAwakened and isSpellReady(_Q) and not isSpellReady(_R) then
+                Control.CastSpell(HK_Q)
+        end
+        if myHero.health/myHero.maxHealth <= self.Menu.Clear.Whp:Value()/100 and self.Menu.Clear.W:Value() and isSpellReady(_W) and not hasAwakened then
+            Control.CastSpell(HK_W)
+        end
+    end
+end
 ------------------------------
 
 function onLoadEvent()
