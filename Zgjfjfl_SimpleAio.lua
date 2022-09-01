@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio"}
 
 require "GGPrediction"
 require "2DGeometry"
@@ -1077,7 +1077,7 @@ function Belveth:Combo()
              castSpellHigh(self.wSpell, HK_W, target)
         end
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero.health/myHero.maxHealth < self.Menu.Combo.EHP:Value()/100 then
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and getEnemyCount(self.eSpell.Range, myHero.pos) > 0 and myHero.health/myHero.maxHealth < self.Menu.Combo.EHP:Value()/100 then
              Control.CastSpell(HK_E)
         end
 
@@ -1127,17 +1127,21 @@ function Belveth:KillSteal()
     local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range);
     if target then
 
+  	if isSpellReady(_E) and self.Menu.KS.E:Value() then
+			if self:getemaxDmg(target) >= target.health and target.health/target.maxHealth < 0.25 and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+		             Control.CastSpell(HK_E)
+			end	
+	    end
+    end
+end
+
+function Belveth:getemaxDmg(target)
     local elvl = myHero:GetSpellData(_Q).level
     local ebaseDmg  = 2 * elvl + 6
     local eadDmg = myHero.totalDamage * 0.06
     local exttimes = ((myHero.attackSpeed / 0.85) - 1) / 0.333
     local emaxDmg = (ebaseDmg + eadDmg) * (6 + exttimes) * 4
-  	if isSpellReady(_E) and self.Menu.KS.E:Value() then
-			if emaxDmg >= target.health and target.health/target.maxHealth < 0.25 and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
-		             Control.CastSpell(HK_E)
-			end	
-	    end
-    end
+return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, emaxDmg) 
 end
 
 
@@ -1269,7 +1273,7 @@ function Nasus:LaneClear()
                 Control.CastSpell(HK_E, bestPosition)
             end
         end
-    if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < 300 and self:qDmg() >= target.health then
+    if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < 300 and self:getqDmg(target) >= target.health then
         Control.CastSpell(HK_Q)
         Control.Attack(target)
     end
@@ -1283,7 +1287,7 @@ function Nasus:LastHit()
     end
     if target then
     
-      if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < 300 and self:qDmg() >= target.health then
+      if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < 300 and self:getqDmg(target) >= target.health then
         Control.CastSpell(HK_Q)
         Control.Attack(target)
     end
@@ -1296,28 +1300,33 @@ function Nasus:KillSteal()
     local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range);
     if target then
 
-    local elvl = myHero:GetSpellData(_E).level
-    local ebaseDmg = 40 * elvl + 15
-    local eapDmg = 0.6 * myHero.ap
-    local eDmg = ebaseDmg + eapDmg
-
-        if isSpellReady(_E) and self.Menu.KS.E:Value() and eDmg >= target.health and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+        if isSpellReady(_E) and self.Menu.KS.E:Value() and self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
             Control.CastSpell(HK_E, target)
         end
 
-        if isSpellReady(_Q) and self.Menu.KS.Q:Value() and self:qDmg() >= target.health and myHero.pos:DistanceTo(target.pos) < 300 then
+        if isSpellReady(_Q) and self.Menu.KS.Q:Value() and self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < 300 then
             Control.CastSpell(HK_Q)
             Control.Attack(target)
         end	
     end
 end 
 
-function Nasus:qDmg()
+function Nasus:getqDmg(target)
     local qlvl = myHero:GetSpellData(_Q).level
     local qbaseDmg  = 20 * qlvl + 10
-    local qDmg = qbaseDmg + getBuffData(myHero, "NasusQStacks").stacks
-return qDmg
+    local qDmg = qbaseDmg + getBuffData(myHero, "NasusQStacks").stacks + myHero.totalDamage
+return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
+
+function Nasus:geteDmg(target)
+    local elvl = myHero:GetSpellData(_E).level
+    local ebaseDmg = 40 * elvl + 15
+    local eapDmg = 0.6 * myHero.ap
+    local eDmg = ebaseDmg + eapDmg
+return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
+end
+
+
 
 function Nasus:Draw()
     if self.Menu.Draw.W:Value() and isSpellReady(_W) then
@@ -1411,7 +1420,7 @@ function Udyr:onTickEvent()
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_JUNGLECLEAR] then
         self:JungleClear()
     end
 
@@ -1475,6 +1484,177 @@ function Udyr:JungleClear()
             Control.CastSpell(HK_W)
         end
     end
+end
+------------------------------
+class "Galio"
+        
+function Galio:__init()	     
+    print("Zgjfjfl-Galio Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 150, Range = 825, Speed = 1400, Collision =false}
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 160, Range = 650, Speed = 2300, Collision = false}
+    self.wSpell = {Range = 480}
+end
+
+function Galio:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgGalio", name = "Zgjfjfl Galio"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+		
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Auto", name = "Auto W"})
+        self.Menu.Auto:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Auto:MenuElement({id = "WHP", name = "Auto W self HP%&enemies inwrange", value = 30, min=0, max = 100 })
+        self.Menu.Auto:MenuElement({type = MENU, id = "WB", name = "Auto W If Enemy dash on ME"})
+            DelayAction(function()
+                for i, Hero in pairs(getEnemyHeroes()) do
+                    self.Menu.Auto.WB:MenuElement({id = Hero.charName, name =Hero.charName, value = false})		
+                end		
+            end,0.2)
+
+    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        self.Menu.Flee:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+	
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+end
+
+function Galio:onTickEvent()
+     if Control.IsKeyDown(HK_W) then
+          orbwalker:SetAttack(false)
+     else
+          orbwalker:SetAttack(true)
+     end
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+        self:Flee()
+    end
+    self:AutoW()
+    self:KillSteal()
+
+end
+
+function Galio:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
+    if target then
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+
+        local pred = GGPrediction:SpellPrediction(self.eSpell)
+        pred:GetPrediction(target, myHero)
+            if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+            local lineE = LineSegment(myHero.pos, pred.CastPosition)
+                if not MapPosition:intersectsWall(lineE) then
+                    if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
+                         castSpellHigh(self.eSpell, HK_E, target)
+                    end
+                end
+            end
+
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+             Control.KeyDown(HK_W)
+                    DelayAction(function() Control.KeyUp(HK_W) end, 2)
+        end
+    end
+end	
+
+function Galio:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    if target then
+
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+    end
+end
+
+function Galio:AutoW()
+
+        if self.Menu.Auto.W:Value() and isSpellReady(_W) and getEnemyCount(self.wSpell.Range, myHero.pos) > 0 and myHero.health/myHero.maxHealth < self.Menu.Auto.WHP:Value()/100 then
+             Control.KeyDown(HK_W)
+                    DelayAction(function() Control.KeyUp(HK_W) end, 2)
+        end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1000);
+    if target then
+        local obj = self.Menu.Auto.WB[target.charName] and self.Menu.Auto.WB[target.charName]:Value()
+        if obj and target.pathing.isDashing then
+        local vct = Vector(target.pathing.endPos.x, target.pathing.endPos.y, target.pathing.endPos.z)
+            if vct:DistanceTo(myHero.pos) < self.wSpell.Range then
+             Control.KeyDown(HK_W)
+                    DelayAction(function() Control.KeyUp(HK_W) end, 2)
+            end
+        end
+    end
+end
+
+function Galio:Flee()   
+    if self.Menu.Flee.E:Value() and isSpellReady(_E) then
+        local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.eSpell.Range
+            Control.CastSpell(HK_E, pos)
+    end
+end
+
+function Galio:KillSteal()
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    if target then
+
+  	if isSpellReady(_Q) and self.Menu.KS.Q:Value() then
+			if self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+		             castSpellHigh(self.qSpell, HK_Q, target)
+			end	
+	    end
+    end
+end
+
+function Galio:getqDmg(target)
+    local qlvl = myHero:GetSpellData(_Q).level
+    local qbaseDmg  = 35 * qlvl + 35
+    local qapDmg = myHero.ap * 0.75
+    local qDmg = qbaseDmg + qapDmg
+return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, qDmg) 
+end
+
+
+function Galio:Draw()
+    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+            Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(225, 225, 125, 10))
+    end
+    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+            Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(225, 225, 0, 10))
+    end
+
 end
 ------------------------------
 

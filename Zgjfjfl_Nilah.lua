@@ -15,7 +15,7 @@ local HealthPrediction         = _G.SDK.HealthPrediction
 
 
 local function isSpellReady(spell)
-    return  myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 and Game.CanUseSpell(spell) == 0
+    return  myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 and myHero:GetSpellData(spell).mana <= myHero.mana and Game.CanUseSpell(spell) == 0
 end
 
 local function getDistanceSqr(Pos1, Pos2)
@@ -162,7 +162,7 @@ function Nilah:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
     if target then
         local numEnemies = getEnemyHeroesWithinDistance(self.Menu.Combo.WRange:Value())
         if  #numEnemies >= self.Menu.Combo.WCount:Value() and isSpellReady(_W) and self.Menu.Combo.W:Value() then
@@ -195,7 +195,7 @@ function Nilah:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
     if target then
             
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and myHero.mana/myHero.maxMana >= self.Menu.Harass.Mana:Value() / 100 then
@@ -232,31 +232,37 @@ function Nilah:KillSteal()
     
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
     if target then
-
-    local qlvl = myHero:GetSpellData(_Q).level
-    local qbaseDmg  = 5 * qlvl
-    local qadDmg = myHero.totalDamage * (0.1 *qlvl + 0.8 )
-    local qDmg = qbaseDmg * (myHero.critChance + 1) + qadDmg * (myHero.critChance + 1)
-		
-    local elvl = myHero:GetSpellData(_E).level
-    local ebaseDmg  = 40 + elvl * 25
-    local eadDmg = myHero.totalDamage * 0.2
-    local eDmg = ebaseDmg + eadDmg
 		
     	if isSpellReady(_Q) and self.Menu.KS.Q:Value() then
-			if qDmg > target.health and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+			if self:getqDmg(target) > target.health and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
 		             castSpellHigh(self.qSpell, HK_Q, target)
 			end	
 	    end
-		if isSpellReady(_E) and self.Menu.KS.E:Value() and self.Menu.KS.Q:Value()then 
-			if target.health <= qDmg + eDmg and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
+		if isSpellReady(_E) and self.Menu.KS.E:Value() and not isSpellReady(_Q) then 
+			if target.health <= self:geteDmg(target) and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
 				Control.CastSpell(HK_E, target)	
 			end	
 	    end
 
 	end
+end
+
+function Nilah:getqDmg(target)
+    local qlvl = myHero:GetSpellData(_Q).level
+    local qbaseDmg  = 5 * qlvl
+    local qadDmg = myHero.totalDamage * (0.1 *qlvl + 0.8 )
+    local qDmg = qbaseDmg * (myHero.critChance + 1) + qadDmg * (myHero.critChance + 1)
+    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg)
+end
+
+function Nilah:geteDmg(target)
+    local elvl = myHero:GetSpellData(_E).level
+    local ebaseDmg  = 40 + elvl * 25
+    local eadDmg = myHero.bonusDamage * 0.2
+    local eDmg = ebaseDmg + eadDmg
+    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg)
 end
 
 function Nilah:Flee()
