@@ -1432,59 +1432,63 @@ function Udyr:Combo()
 
     local target = _G.SDK.TargetSelector:GetTarget(800);
     if target then
-    local hasAwakened = doesMyChampionHaveBuff("udyrprecastready")
+    local hasAwakenedQ = doesMyChampionHaveBuff("udyrqrecastready")
+    local hasAwakenedW = doesMyChampionHaveBuff("udyrwrecastready")
+    local hasAwakenedE = doesMyChampionHaveBuff("udyrerecastready")
+    local hasAwakenedR = doesMyChampionHaveBuff("udyrrrecastready")
     local R1 = getBuffData(myHero, "UdyrRActivation")
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and not hasAwakened then
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and not hasAwakenedE and not hasAwakenedR then
             Control.CastSpell(HK_E)
         end
 
-        if self.Menu.Combo.R:Value() and isSpellReady(_R) and (not isSpellReady(_E) or hasAwakened) and R1.duration < 0.5 and myHero.pos:DistanceTo(target.pos) < 370 then
+        if self.Menu.Combo.R:Value() and isSpellReady(_R) and (not isSpellReady(_E) or hasAwakenedE or hasAwakenedR) and R1.duration < 0.5 and myHero.pos:DistanceTo(target.pos) < 450 then
             Control.CastSpell(HK_R)
         end
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_Q) and not isSpellReady(_E) and not isSpellReady(_R) and not hasAwakened and myHero.pos:DistanceTo(target.pos) < 200 then
+        if self.Menu.Combo.E:Value() and isSpellReady(_Q) and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_R) or not hasAwakenedR) and not hasAwakenedQ and myHero.pos:DistanceTo(target.pos) < 250 then
             Control.CastSpell(HK_Q)
         end
 
-        if myHero.health/myHero.maxHealth <= self.Menu.Combo.Whp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and not hasAwakened then
+        if myHero.health/myHero.maxHealth <= self.Menu.Combo.Whp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and getEnemyCount(600, myHero.pos) > 0 then
             Control.CastSpell(HK_W)
         end
-        if myHero.health/myHero.maxHealth <= self.Menu.Combo.W2hp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and hasAwakened then
+        if myHero.health/myHero.maxHealth <= self.Menu.Combo.W2hp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and hasAwakenedW and getEnemyCount(600, myHero.pos) > 0 then
             Control.CastSpell(HK_W)
         end
-
     end
 end	
 
 function Udyr:JungleClear()
-    local c = getMinionCount(400, myHero.pos)
-    local hasAwakened = doesMyChampionHaveBuff("udyrprecastready")
+    local c = getMinionCount(450, myHero.pos)
+    local hasAwakenedQ = doesMyChampionHaveBuff("udyrqrecastready")
+    local hasAwakenedR = doesMyChampionHaveBuff("udyrrrecastready")
     local haspassiveAA = doesMyChampionHaveBuff("UdyrPAttackReady")
     local R1 = getBuffData(myHero, "UdyrRActivation")
     local target = HealthPrediction:GetJungleTarget()
     if target and not haspassiveAA then
         if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and c == 1 then
             Control.CastSpell(HK_Q)
-                if hasAwakened then
+                if hasAwakenedQ then
                     Control.CastSpell(HK_Q)
                 end
-        elseif not hasAwakened and isSpellReady(_R) and not isSpellReady(_Q) then
+        elseif not hasAwakenedR and isSpellReady(_R) and not isSpellReady(_Q) then
                 Control.CastSpell(HK_R)
         end
         if self.Menu.Clear.R:Value() and isSpellReady(_R) and c > 1 then
             Control.CastSpell(HK_R)
-                if hasAwakened and R1.duration < 0.5 then
+                if hasAwakenedR and R1.duration < 0.5 then
                     Control.CastSpell(HK_R)
                 end
-        elseif not hasAwakened and isSpellReady(_Q) and not isSpellReady(_R) then
+        elseif not hasAwakenedQ and isSpellReady(_Q) and not isSpellReady(_R) then
                 Control.CastSpell(HK_Q)
         end
-        if myHero.health/myHero.maxHealth <= self.Menu.Clear.Whp:Value()/100 and self.Menu.Clear.W:Value() and isSpellReady(_W) and not hasAwakened then
+        if myHero.health/myHero.maxHealth <= self.Menu.Clear.Whp:Value()/100 and self.Menu.Clear.W:Value() and isSpellReady(_W) then
             Control.CastSpell(HK_W)
         end
     end
 end
+
 ------------------------------
 class "Galio"
         
