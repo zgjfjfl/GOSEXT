@@ -1732,7 +1732,7 @@ function Yorick:Combo()
     local target = _G.SDK.TargetSelector:GetTarget(1100);
     if target then
         if myHero.pos:DistanceTo(target.pos) <= 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
-             Control.KeyDown(HK_Q)
+             Control.CastSpell(HK_Q)
         end
 
         if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
@@ -1745,7 +1745,7 @@ function Yorick:Combo()
 
         local R2 = myHero:GetSpellData(_R).mana == 0
         if self.Menu.Combo.R1:Value() and isSpellReady(_R) and not R2 and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range then
-             Control.KeyDown(HK_R, target)
+             Control.CastSpell(HK_R, target)
         end
 
     end
