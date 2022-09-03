@@ -1707,7 +1707,7 @@ end
 
 function Yorick:onTickEvent()
     if myHero:GetSpellData(_Q).mana == 0 then
-         Control.KeyDown(HK_Q)
+         Control.CastSpell(HK_Q)
     end
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
