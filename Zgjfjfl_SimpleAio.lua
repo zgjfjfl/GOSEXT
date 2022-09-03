@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick"}
 
 require "GGPrediction"
 require "2DGeometry"
@@ -1657,6 +1657,186 @@ function Galio:Draw()
     end
     if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(225, 225, 0, 10))
+    end
+
+end
+------------------------------
+class "Yorick"
+        
+function Yorick:__init()	     
+    print("Zgjfjfl-Yorick Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 225, Range = 600, Speed = math.huge, Collision =false}
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.33, Radius = 80, Range = 1100, Speed = 1800, Collision = false}
+    self.rSpell = {Range = 600}
+
+end
+
+function Yorick:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgYorick", name = "Zgjfjfl Yorick"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R1", name = "[R1] ", toggle = true, value = true})
+		
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
+
+    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        self.Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+	
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+end
+
+function Yorick:onTickEvent()
+    if myHero:GetSpellData(_Q).mana == 0 then
+         Control.KeyDown(HK_Q)
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:LaneClear()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+        self:Flee()
+    end
+    self:KillSteal()
+
+end
+
+function Yorick:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1100);
+    if target then
+        if myHero.pos:DistanceTo(target.pos) <= 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             Control.KeyDown(HK_Q)
+        end
+
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+             castSpellHigh(self.wSpell, HK_W, target)
+        end
+
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+             castSpellHigh(self.eSpell, HK_E, target)
+        end
+
+        local R2 = myHero:GetSpellData(_R).mana == 0
+        if self.Menu.Combo.R1:Value() and isSpellReady(_R) and not R2 and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range then
+             Control.KeyDown(HK_R, target)
+        end
+
+    end
+end	
+
+function Yorick:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    if target then
+
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) then
+             castSpellHigh(self.eSpell, HK_E, target)
+        end
+    end
+end
+
+function Yorick:LaneClear()
+    local target = HealthPrediction:GetLaneClearTarget()
+    if target then
+
+        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
+            Control.CastSpell(HK_Q)
+            Control.Attack(target)
+        end
+        if self.Menu.Clear.E:Value() and isSpellReady(_E) then
+            bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
+            if bestCount > 0 then 
+                Control.CastSpell(HK_E, bestPosition)
+            end
+        end
+    end
+end
+
+function Yorick:Flee()
+    local target = _G.SDK.TargetSelector:GetTarget(self.wSpell.Range);
+    if target then
+
+        if self.Menu.Flee.W:Value() and isSpellReady(_W) then
+            if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+                 castSpellHigh(self.wSpell, HK_W, target)
+            end
+         end
+    end
+end
+
+function Yorick:KillSteal()
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    if target then
+
+  	if isSpellReady(_Q) and self.Menu.KS.Q:Value() then
+	    if self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= 300 then
+	        Control.CastSpell(HK_Q)
+	        Control.Attack(target)
+	    end	
+	end
+
+  	if isSpellReady(_E) and self.Menu.KS.E:Value() then
+	    if self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
+	        castSpellHigh(self.eSpell, HK_E, target)
+	    end	
+	end
+    end
+end
+
+function Yorick:getqDmg(target)
+    local qlvl = myHero:GetSpellData(_Q).level
+    local qbaseDmg  = 25 * qlvl + 5
+    local qadDmg = myHero.totalDamage * 0.4
+    local qDmg = qbaseDmg + qadDmg + myHero.totalDamage
+return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
+end
+
+function Yorick:geteDmg(target)
+    local elvl = myHero:GetSpellData(_Q).level
+    local ebaseDmg  = 35 * elvl + 35
+    local eapDmg = myHero.ap * 0.7
+    local eDmg = ebaseDmg + eapDmg
+return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
+end
+
+
+function Yorick:Draw()
+    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+            Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(225, 225, 125, 10))
     end
 
 end
