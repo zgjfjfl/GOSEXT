@@ -1140,13 +1140,12 @@ end
 function Belveth:geteDmg(target)
     local missingHP = (1 - (target.health / target.maxHealth))	
     local elvl = myHero:GetSpellData(_Q).level
-    local ebaseDmg  = (2 * elvl + 6) * (1 + missingHP * 3)
-    local eadDmg = myHero.totalDamage * (0.06 + missingHP * 0.18)
-    local exttimes = ((myHero.attackSpeed / 0.85) - 1) / 0.333
-    local eDmg = (ebaseDmg + eadDmg) * (6 + exttimes)
+    local ebaseDmg  = 2 * elvl + 6
+    local eadDmg = myHero.totalDamage * 0.06
+    local exttimes = math.floor(((myHero.attackSpeed / 0.85 - 1) / 0.333) + 0.5)
+    local eDmg = (ebaseDmg + eadDmg) * (1 + missingHP * 3) * (6 + exttimes)
 return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg) 
 end
-
 
 function Belveth:Draw()
     if self.Menu.Draw.W:Value() and isSpellReady(_W) then
