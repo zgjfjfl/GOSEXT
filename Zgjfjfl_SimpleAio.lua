@@ -1043,7 +1043,8 @@ function Belveth:LoadMenu()
 end
 
 function Belveth:onTickEvent()
-    if doesMyChampionHaveBuff("BelvethE") and getEnemyCount(self.eSpell.Range, myHero.pos) == 0 and getMinionCount(self.eSpell.Range, myHero.pos) == 0 then
+    local castingE = doesMyChampionHaveBuff("BelvethE")
+    if castingE and getEnemyCount(self.eSpell.Range, myHero.pos) == 0 and getMinionCount(self.eSpell.Range, myHero.pos) == 0 then
         Control.CastSpell(HK_E)
     end
 
@@ -1069,11 +1070,12 @@ function Belveth:Combo()
 
     local target = _G.SDK.TargetSelector:GetTarget(1000);
     if target then
-        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+    local castingE = doesMyChampionHaveBuff("BelvethE")
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and not castingE then
              castSpellHigh(self.qSpell, HK_Q, target)
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and not castingE then
              castSpellHigh(self.wSpell, HK_W, target)
         end
 
@@ -1128,20 +1130,21 @@ function Belveth:KillSteal()
     if target then
 
   	if isSpellReady(_E) and self.Menu.KS.E:Value() then
-			if self:getemaxDmg(target) >= target.health and target.health/target.maxHealth < 0.25 and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+			if self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
 		             Control.CastSpell(HK_E)
 			end	
 	    end
     end
 end
 
-function Belveth:getemaxDmg(target)
+function Belveth:geteDmg(target)
+    local missingHP = (1 - (target.health / target.maxHealth))	
     local elvl = myHero:GetSpellData(_Q).level
-    local ebaseDmg  = 2 * elvl + 6
-    local eadDmg = myHero.totalDamage * 0.06
+    local ebaseDmg  = (2 * elvl + 6) * (1 + missingHP * 3)
+    local eadDmg = myHero.totalDamage * (0.06 + missingHP * 0.18)
     local exttimes = ((myHero.attackSpeed / 0.85) - 1) / 0.333
-    local emaxDmg = (ebaseDmg + eadDmg) * (6 + exttimes) * 4
-return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, emaxDmg) 
+    local eDmg = (ebaseDmg + eadDmg) * (6 + exttimes)
+return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg) 
 end
 
 
