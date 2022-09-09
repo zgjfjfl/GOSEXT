@@ -1718,7 +1718,6 @@ function Yorick:LoadMenu()
         self.Menu.LastHit:MenuElement({id = "Q", name = "Q", toggle = true, value = true})
 	
     self.Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
-	self.Menu.Auto:MenuElement({id = "Q2", name = "AutoQ2 activate Mist Walker", value = true})
         self.Menu.Auto:MenuElement({id = "W", name = "AutoW on Immobile Target", value = true})
 
     self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
@@ -1735,7 +1734,7 @@ function Yorick:LoadMenu()
 end
 
 function Yorick:onTickEvent()
-    if self.Menu.Auto.Q2:Value() and myHero:GetSpellData(_Q).mana == 0 then
+    if myHero:GetSpellData(_Q).mana == 0 then
          Control.CastSpell(HK_Q)
     end
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
@@ -1802,7 +1801,7 @@ function Yorick:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target then
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).mana ~= 0 and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
+        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
             Control.CastSpell(HK_Q)
             Control.Attack(target)
         end
@@ -1822,7 +1821,7 @@ function Yorick:LastHit()
     end
     if target then
     
-        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).mana ~= 0 and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
+        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
             Control.CastSpell(HK_Q)
             Control.Attack(target)
         end
