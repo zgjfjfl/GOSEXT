@@ -151,6 +151,16 @@ local function getMinionCount(range, unit)
 	return count
 end
 
+local function isImmobile(unit)
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
+		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35 or buff.name == "recall") and buff.count > 0 then
+			return true
+		end
+	end
+	return false
+end
+
 ------------------------------------
 
 class "Ornn"
@@ -1693,6 +1703,9 @@ function Yorick:LoadMenu()
     self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
         self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
         self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
+	
+    self.Menu:MenuElement({type = MENU, id = "AutoW", name = "AutoW"})		
+        self.Menu.AutoW:MenuElement({id = "W", name = "AutoW on Immobile Target", value = true})
 
     self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
         self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -1724,7 +1737,7 @@ function Yorick:onTickEvent()
         self:Flee()
     end
     self:KillSteal()
-
+    self:AutoW()
 end
 
 function Yorick:Combo()
@@ -1832,6 +1845,17 @@ function Yorick:geteDmg(target)
 return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
 end
 
+function Yorick:AutoW()
+    if _G.SDK.Attack:IsActive() then return end
+    local target = _G.SDK.TargetSelector:GetTarget(self.wSpell.Range)
+    if target then
+        if self.Menu.AutoW.W:Value() and isSpellReady(_W) and isImmobile(target) then
+            if myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
+                castSpellHigh(self.wSpell, HK_W, target)
+            end
+        end
+    end
+end
 
 function Yorick:Draw()
     if self.Menu.Draw.W:Value() and isSpellReady(_W) then
