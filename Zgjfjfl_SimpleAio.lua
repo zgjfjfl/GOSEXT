@@ -1735,7 +1735,7 @@ function Yorick:LoadMenu()
 end
 
 function Yorick:onTickEvent()
-    if self.Menu.Auto.W:Value() and myHero:GetSpellData(_Q).mana == 0 then
+    if self.Menu.Auto.Q2:Value() and myHero:GetSpellData(_Q).mana == 0 then
          Control.CastSpell(HK_Q)
     end
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
