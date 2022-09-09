@@ -161,6 +161,16 @@ local function isImmobile(unit)
 	return false
 end
 
+local function isInvulnerable(unit)
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
+		if buff and buff.type == 18 and buff.count > 0 then
+			return true
+            	end
+	end
+	return false
+end
+
 ------------------------------------
 
 class "Ornn"
@@ -1847,6 +1857,12 @@ end
 
 function Yorick:AutoW()
     if _G.SDK.Attack:IsActive() then return end
+    for i, target in pairs(getEnemyHeroes()) do
+        if self.Menu.AutoW.W:Value() and isSpellReady(_W) and isInvulnerable(target) and myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
+            Control.CastSpell(HK_W, target)
+        end
+    end
+			
     local target = _G.SDK.TargetSelector:GetTarget(self.wSpell.Range)
     if target then
         if self.Menu.AutoW.W:Value() and isSpellReady(_W) and isImmobile(target) then
