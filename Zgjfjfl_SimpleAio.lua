@@ -1694,7 +1694,7 @@ function Yorick:__init()
     self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 225, Range = 600, Speed = math.huge, Collision =false}
     self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.33, Radius = 80, Range = 1100, Speed = 1800, Collision = false}
     self.rSpell = {Range = 600}
-
+    self.lastQTick = GetTickCount()
 end
 
 function Yorick:LoadMenu() 
@@ -1712,6 +1712,7 @@ function Yorick:LoadMenu()
 
     self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
         self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "Q2", name = "[Q2] activate Mist Walker", toggle = true, value = true})
         self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
 	
     self.Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
@@ -1734,9 +1735,6 @@ function Yorick:LoadMenu()
 end
 
 function Yorick:onTickEvent()
-    if myHero:GetSpellData(_Q).mana == 0 then
-         Control.CastSpell(HK_Q)
-    end
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
@@ -1774,8 +1772,8 @@ function Yorick:Combo()
              castSpellHigh(self.eSpell, HK_E, target)
         end
 
-        local R2 = myHero:GetSpellData(_R).mana == 0
-        if self.Menu.Combo.R1:Value() and isSpellReady(_R) and not R2 and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range then
+        local R2ready = myHero:GetSpellData(_R).mana == 0
+        if self.Menu.Combo.R1:Value() and isSpellReady(_R) and not R2ready and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range then
              Control.CastSpell(HK_R, target)
         end
 
@@ -1801,10 +1799,17 @@ function Yorick:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target then
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
+        local Q2ready = myHero:GetSpellData(_Q).mana == 0
+        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and self.lastQTick + 300 < GetTickCount() and not Q2ready and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
             Control.CastSpell(HK_Q)
+            self.lastQTick = GetTickCount()
             Control.Attack(target)
         end
+
+        if self.Menu.Clear.Q2:Value() and Q2ready then
+            Control.CastSpell(HK_Q)
+        end
+
         if self.Menu.Clear.E:Value() and isSpellReady(_E) then
             bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
             if bestCount > 0 then 
@@ -1820,9 +1825,10 @@ function Yorick:LastHit()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target then
-    
-        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
+        local Q2ready = myHero:GetSpellData(_Q).mana == 0
+        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and self.lastQTick + 300 < GetTickCount() and not Q2ready and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
             Control.CastSpell(HK_Q)
+            self.lastQTick = GetTickCount()
             Control.Attack(target)
         end
     end
