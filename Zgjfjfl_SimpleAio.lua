@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern"}
 
 require "GGPrediction"
 require "2DGeometry"
@@ -957,7 +957,7 @@ function Rakan:Combo()
              castSpellHigh(self.qSpell, HK_Q, target)
         end
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and isSpellReady(_W)then
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and isSpellReady(_W) then
             for i = 1, GameHeroCount() do
                 local hero = GameHero(i)
                 if hero and not hero.dead and hero.isAlly and not hero.isMe then
@@ -1420,6 +1420,10 @@ function Udyr:__init()
 
 function Udyr:LoadMenu() 
     self.Menu = MenuElement({type = MENU, id = "zgUdyr", name = "Zgjfjfl Udyr"})
+
+    self.Menu:MenuElement({type = MENU, id = "Style", name = "Playstyle Set"})
+        self.Menu.Style:MenuElement({id = "MainR", name = "Main R Playstyle", value = true})
+        self.Menu.Style:MenuElement({id = "MainQ", name = "Main Q Playstyle", value = false})
             
     self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
         self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -1459,23 +1463,34 @@ function Udyr:Combo()
     local hasAwakenedE = doesMyChampionHaveBuff("udyrerecastready")
     local hasAwakenedR = doesMyChampionHaveBuff("udyrrrecastready")
     local R1 = getBuffData(myHero, "UdyrRActivation")
+    local haspassiveAA = doesMyChampionHaveBuff("UdyrPAttackReady")
 
         if self.Menu.Combo.E:Value() and isSpellReady(_E) and not hasAwakenedE and not hasAwakenedR then
             Control.CastSpell(HK_E)
         end
 
-        if self.Menu.Combo.R:Value() and isSpellReady(_R) and (not isSpellReady(_E) or hasAwakenedE or hasAwakenedR) and R1.duration < 0.5 and myHero.pos:DistanceTo(target.pos) < 450 then
-            Control.CastSpell(HK_R)
+        if self.Menu.Style.MainR:Value() then
+            if self.Menu.Combo.R:Value() and isSpellReady(_R) and (not isSpellReady(_E) or hasAwakenedE or hasAwakenedR) and R1.duration < 1.5 and myHero.pos:DistanceTo(target.pos) < 450 then
+                Control.CastSpell(HK_R)
+            end
+            if self.Menu.Combo.E:Value() and isSpellReady(_Q) and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_R) or not hasAwakenedR) and not hasAwakenedQ and myHero.pos:DistanceTo(target.pos) < 300 then
+                Control.CastSpell(HK_Q)
+            end
         end
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_Q) and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_R) or not hasAwakenedR) and not hasAwakenedQ and myHero.pos:DistanceTo(target.pos) < 250 then
-            Control.CastSpell(HK_Q)
+        if self.Menu.Style.MainQ:Value() then
+            if self.Menu.Combo.E:Value() and isSpellReady(_Q) and (not isSpellReady(_E) or hasAwakenedE or (hasAwakenedQ and not haspassiveAA)) and myHero.pos:DistanceTo(target.pos) < 300 then
+                Control.CastSpell(HK_Q)
+            end
+            if self.Menu.Combo.R:Value() and isSpellReady(_R) and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_Q) or not hasAwakenedQ) and not hasAwakenedR and myHero.pos:DistanceTo(target.pos) < 450 then
+                Control.CastSpell(HK_R)
+            end
         end
 
-        if myHero.health/myHero.maxHealth <= self.Menu.Combo.Whp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and getEnemyCount(600, myHero.pos) > 0 then
+        if myHero.health/myHero.maxHealth <= self.Menu.Combo.Whp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and getEnemyCount(600, myHero.pos) >= 1 then
             Control.CastSpell(HK_W)
         end
-        if myHero.health/myHero.maxHealth <= self.Menu.Combo.W2hp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and hasAwakenedW and getEnemyCount(600, myHero.pos) > 0 then
+        if myHero.health/myHero.maxHealth <= self.Menu.Combo.W2hp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and hasAwakenedW and getEnemyCount(600, myHero.pos) >= 1 then
             Control.CastSpell(HK_W)
         end
     end
@@ -1911,7 +1926,89 @@ function Yorick:Draw()
 
 end
 ------------------------------
+class "Ivern"
+        
+function Ivern:__init()	     
+    print("Zgjfjfl-Ivern Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1100, Speed = 1300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.eSpell = { Range = 750 }
+    self.rSpell = { Range = 800 }
+    self.lastQTick = GetTickCount()
+    self.lastRTick = GetTickCount()
+end
 
+function Ivern:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgIvern", name = "Zgjfjfl Ivern"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Auto", name = "Auto E"})
+        self.Menu.Auto:MenuElement({id = "Eally", name = "[E] auto on ally,when enemies inrange", toggle = true, value = true})
+        self.Menu.Auto:MenuElement({id = "Eself", name = "[E] auto on self,when enemies inrange", toggle = true, value = true})
+	
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+end
+
+function Ivern:onTickEvent()
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    self:AutoE()
+end
+
+function Ivern:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range);
+    if target then
+        local Q2ready = myHero:GetSpellData(_Q).mana == 0
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.lastQTick + 300 < GetTickCount() and not Q2ready and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+            self.lastQTick = GetTickCount()
+        end
+        local R2ready = myHero:GetSpellData(_R).mana == 0
+        if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and self.lastRTick + 300 < GetTickCount() and not R2ready and self.Menu.Combo.R:Value() and isSpellReady(_R) then
+             Control.CastSpell(HK_R, target)
+            self.lastRTick = GetTickCount()
+        end
+    end
+end	
+
+function Ivern:AutoE()
+    if _G.SDK.Attack:IsActive() then return end
+        for i = 1, GameHeroCount() do
+        local hero = GameHero(i)
+            if hero and not hero.dead and hero.isAlly and not hero.isMe then
+                if myHero.pos:DistanceTo(hero.pos) <= self.eSpell.Range then
+                    if getEnemyCount(500, myHero.pos) == 0 and getEnemyCount(500, hero.pos) >= 1 and self.Menu.Auto.Eally:Value() and isSpellReady(_E) then
+                        Control.CastSpell(HK_E, hero)
+                    end
+                end
+            end
+            if self.Menu.Auto.Eself:Value() and isSpellReady(_E) and getEnemyCount(500, myHero.pos) >= 1 then
+                Control.CastSpell(HK_E, myHero)
+            end
+        end
+end
+
+function Ivern:Draw()
+    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+            Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(255, 225, 255, 10))
+    end
+end
+------------------------------
 function onLoadEvent()
     if table.contains(Heroes, myHero.charName) then
 		_G[myHero.charName]()
