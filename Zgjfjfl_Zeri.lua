@@ -77,14 +77,6 @@ local function castSpellHigh(spellData, hotkey, target)
         Control.CastSpell(hotkey, pred.CastPosition)	
     end
 end
-local function castSpellExtended(spellData, hotkey, target, extendAmount)
-    local pred = GGPrediction:SpellPrediction(spellData)
-    pred:GetPrediction(target, myHero)
-    if pred:CanHit(GGPrediction.HITCHANCE_NORMAL) then
-        local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), extendAmount) 
-        Control.CastSpell(hotkey, castPos)	
-    end
-end
 
 class "Zeri"
         
@@ -108,7 +100,7 @@ function Zeri:__init()
                             function ()
                                 return _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] and self.Menu.QSpell.QLCEnabled:Value()  and isSpellReady(_Q)
                             end,
-                            function () 
+                            function ()
                                 local levelDmgTbl  = {8 , 11 , 14 , 17 , 20}
                                 local levelPctTbl  = {1.0 , 1.05 , 1.1 , 1.15 , 1.2}
                                 local levelDmg = levelDmgTbl[myHero:GetSpellData(_Q).level]
@@ -128,6 +120,7 @@ function Zeri:LoadMenu()
         self.Menu.BlockAA:MenuElement({id = "enabled", name = "Enabled", value = true, key = string.byte("T"), toggle = true})
 
     self.Menu:MenuElement({type = MENU, id = "QSpell", name = "Q"})
+        self.Menu.QSpell:MenuElement({id = "AutoQ", name = "Auto Q", value = true, key = string.byte("M"), toggle = true})
         self.Menu.QSpell:MenuElement({ id = "QEnabled", name = "Combo Enabled", value = true})
         self.Menu.QSpell:MenuElement({ id = "QHEnabled", name = "Harass Enabled", value = true})
         self.Menu.QSpell:MenuElement({ id = "QLCEnabled", name = "Lane Clear Enabled", value = true})
@@ -145,6 +138,8 @@ function Zeri:LoadMenu()
 
     self.Menu:MenuElement({type = MENU, id = "Drawing", name = "Drawing"})
         self.Menu.Drawing:MenuElement({id = "DrawBlockAA", name = "Draw Block AA", value = true})
+        self.Menu.Drawing:MenuElement({id = "DrawAutoQ", name = "Draw Auto Q", value = true})
+
 end
 
 
@@ -176,11 +171,11 @@ function Zeri:onTickEvent()
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-
+    self:AutoQ()
 end
 
 function Zeri:castQ(target)
-    local qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 2600, Delay = 0.1, Radius = 40,  Collision = false}
+    local qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 2600, Delay = 0.1, Radius = 40,  Collision = true, CollisionTypes = { GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL }}
     castSpell(qData,HK_Q, target)
 end
 
@@ -263,16 +258,33 @@ function Zeri:Harass()
     end
    
 end
+function Zeri:AutoQ()
+    local target = orbwalker:GetTarget()
+    if not target then
+        target = _G.SDK.TargetSelector:GetTarget(self.qRange, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+    end
+    if target then
+        local distance = myHero.pos:DistanceTo(target.pos)         
+        if self.Menu.QSpell.AutoQ:Value() and myHero.pos:DistanceTo(target.pos) < self.qRange and isSpellReady(_Q) and not orbwalker:IsAutoAttacking()  then
+            self:castQ(target)
+        end
+    end
+end
 
 function Zeri:Draw()
     if self.Menu.Drawing.DrawBlockAA:Value() then
-    else 
-        return
+        if self.Menu.BlockAA.enabled:Value() then
+            Draw.Text("Basic Attack:OFF", 15, myHero.pos2D.x -30, myHero.pos2D.y, Draw.Color(255, 255, 000, 000))
+        else
+            Draw.Text("Basic Attack:ON", 15, myHero.pos2D.x -30, myHero.pos2D.y, Draw.Color(255, 000, 255, 000))
+        end
     end
-    if self.Menu.BlockAA.enabled:Value() then
-        Draw.Text("Block AA:ON", 15, myHero.pos2D.x -30, myHero.pos2D.y, Draw.Color(255, 000, 255, 000))
-    else
-        Draw.Text("Block AA:OFF", 15, myHero.pos2D.x -30, myHero.pos2D.y, Draw.Color(255, 255, 000, 000))
+    if self.Menu.Drawing.DrawAutoQ:Value() then
+        if self.Menu.QSpell.AutoQ:Value() then
+            Draw.Text("AutoQ:ON", 15, myHero.pos2D.x -30, myHero.pos2D.y + 15, Draw.Color(255, 000, 255, 000))
+        else
+            Draw.Text("AutoQ:OFF", 15, myHero.pos2D.x -30, myHero.pos2D.y + 15, Draw.Color(255, 255, 000, 000))
+        end
     end
 end
 
