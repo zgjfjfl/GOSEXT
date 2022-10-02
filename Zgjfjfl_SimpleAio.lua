@@ -1,5 +1,7 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra"}
+
+if not table.contains(Heroes, myHero.charName) then return end
 
 require "GGPrediction"
 require "2DGeometry"
@@ -171,6 +173,42 @@ local function isInvulnerable(unit)
 	return false
 end
 
+local vectorCast = {}
+local mouseReturnPos = mousePos
+local mouseCurrentPos = mousePos
+local nextVectorCast = 0
+function CastVectorSpell(key, pos1, pos2)
+	if nextVectorCast > Game.Timer() then return end
+	nextVectorCast = Game.Timer() + 1.5
+	orbwalker:SetMovement(false)
+	orbwalker:SetAttack(false)
+	vectorCast[#vectorCast + 1] = function () 
+		mouseReturnPos = mousePos
+		mouseCurrentPos = pos1
+		Control.SetCursorPos(pos1)
+	end
+	vectorCast[#vectorCast + 1] = function () 
+		Control.KeyDown(key)
+	end
+	vectorCast[#vectorCast + 1] = function () 
+		local deltaMousePos =  mousePos-mouseCurrentPos
+		mouseReturnPos = mouseReturnPos + deltaMousePos
+		Control.SetCursorPos(pos2)
+		mouseCurrentPos = pos2
+	end
+	vectorCast[#vectorCast + 1] = function ()
+		Control.KeyUp(key)
+	end
+	vectorCast[#vectorCast + 1] = function ()	
+		local deltaMousePos =  mousePos -mouseCurrentPos
+		mouseReturnPos = mouseReturnPos + deltaMousePos
+		Control.SetCursorPos(mouseReturnPos)
+	end
+	vectorCast[#vectorCast + 1] = function () 
+		orbwalker:SetMovement(true)
+		orbwalker:SetAttack(true)
+	end		
+end
 ------------------------------------
 
 class "Ornn"
@@ -1473,13 +1511,13 @@ function Udyr:Combo()
             if self.Menu.Combo.R:Value() and isSpellReady(_R) and (not isSpellReady(_E) or hasAwakenedE or hasAwakenedR) and R1.duration < 1.5 and myHero.pos:DistanceTo(target.pos) < 450 then
                 Control.CastSpell(HK_R)
             end
-            if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_R) or not hasAwakenedR) and not hasAwakenedQ and myHero.pos:DistanceTo(target.pos) < 300 then
+            if self.Menu.Combo.E:Value() and isSpellReady(_Q) and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_R) or not hasAwakenedR) and not hasAwakenedQ and myHero.pos:DistanceTo(target.pos) < 300 then
                 Control.CastSpell(HK_Q)
             end
         end
 
         if self.Menu.Style.MainQ:Value() then
-            if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and (not isSpellReady(_E) or hasAwakenedE or (hasAwakenedQ and not haspassiveAA)) and myHero.pos:DistanceTo(target.pos) < 300 then
+            if self.Menu.Combo.E:Value() and isSpellReady(_Q) and (not isSpellReady(_E) or hasAwakenedE or (hasAwakenedQ and not haspassiveAA)) and myHero.pos:DistanceTo(target.pos) < 300 then
                 Control.CastSpell(HK_Q)
             end
             if self.Menu.Combo.R:Value() and isSpellReady(_R) and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_Q) or not hasAwakenedQ) and not hasAwakenedR and myHero.pos:DistanceTo(target.pos) < 450 then
@@ -2001,6 +2039,308 @@ function Ivern:AutoE()
 end
 
 function Ivern:Draw()
+    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+            Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(255, 225, 255, 10))
+    end
+end
+------------------------------
+class "Bard"
+        
+function Bard:__init()	     
+    print("Zgjfjfl-Bard Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 850, Speed = 1500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+end
+
+function Bard:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgBard", name = "Zgjfjfl Bard"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Q2", name = "[Q] Extended with minion", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Q3", name = "[Q] Extended to wall", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+end
+
+function Bard:onTickEvent()
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+end
+
+function Bard:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+
+        local pred = GGPrediction:SpellPrediction(self.qSpell)
+        pred:GetPrediction(target, myHero)
+        if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+            local extendPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -300)
+            local lineQ = LineSegment(pred.CastPosition, extendPos)
+            if MapPosition:intersectsWall(lineQ) and self.Menu.Combo.Q3:Value() and isSpellReady(_Q) then
+                Control.CastSpell(HK_Q, target)
+            end
+        end
+
+        local pred2 = target:GetPrediction(self.qSpell.Speed, self.qSpell.Delay)
+        if pred2 == nil then return end 
+        local targetPos = Vector(myHero.pos):Extended(pred2, self.qSpell.Range+300) 
+        if isSpellReady(_Q) and self.Menu.Combo.Q2:Value() and getDistance(myHero.pos, pred2) < self.qSpell.Range+300 then 
+        for i = 1, Game.MinionCount() do
+        local minion = Game.Minion(i) 
+            if minion and minion.isEnemy and not minion.dead and getDistance(myHero.pos, minion.pos) <= self.qSpell.Range then 
+            local minionPos = Vector(myHero.pos):Extended(Vector(minion.pos), self.qSpell.Range+300)
+                if getDistance(targetPos, minionPos) <= 30 then 
+                    Control.CastSpell(HK_Q, minion) 
+                end 
+            end 
+        end
+        end
+    end
+end	
+
+function Bard:Draw()
+    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+            Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(255, 225, 255, 10))
+    end
+end
+
+------------------------------
+class "Taliyah"
+        
+function Taliyah:__init()	     
+    print("Zgjfjfl-Taliyah Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1000, Speed = myHero:GetSpellData(_Q).speed, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 225, Range = 900, Speed = math.huge, Collision = false}
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 200, Range = 950, Speed = 1700, Collision = false}
+end
+
+function Taliyah:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgTaliyah", name = "Zgjfjfl Taliyah"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Wpush", name = "[W] push range", value = 400, min = 100, max = 600, step = 50})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Erange", name = "[E] cast range", value = 950, min = 100, max = 950, step = 50})
+
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+	
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+end
+
+local NextTick = Game.Timer()
+function Taliyah:onTickEvent()
+    local currentTime = Game.Timer()
+    if NextTick > currentTime then return end	
+    if #vectorCast > 0 then
+        vectorCast[1]()
+        table.remove(vectorCast, 1)
+        return
+    end
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+end
+
+function Taliyah:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range);
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+
+        if myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.Erange:Value() and self.Menu.Combo.E:Value() and isSpellReady(_E) then
+             Control.CastSpell(HK_E, target)
+        end
+
+        local pred = GGPrediction:SpellPrediction(self.wSpell)
+        pred:GetPrediction(target, myHero)
+        if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+            local endPos1 = pred.CastPosition + (myHero.pos - pred.CastPosition):Normalized() * 225
+            local endPos2 = pred.CastPosition + (pred.CastPosition - myHero.pos):Normalized() * 225
+            local d = myHero.pos:DistanceTo(pred.CastPosition)
+            if self.Menu.Combo.W:Value() and isSpellReady(_W) then
+                if d < self.wSpell.Range and d > self.Menu.Combo.Wpush:Value() then
+                    CastVectorSpell(HK_W, target.pos, endPos1)
+                elseif d <= self.Menu.Combo.Wpush:Value() then
+                    CastVectorSpell(HK_W, target.pos, endPos2)
+                end
+            end
+        end
+    end
+end
+
+function Taliyah:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range);
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+    end
+end
+
+function Taliyah:Draw()
+    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+            Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+            Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(255, 225, 255, 10))
+    end
+end
+
+------------------------------
+class "Lissandra"
+        
+function Lissandra:__init()	     
+    print("Zgjfjfl-Lissandra Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 725, Speed = 2200, Collision = false}
+    self.wSpell = { Range = 450 }
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 125, Range = 1050, Speed = 1200, Collision = false}
+    self.rSpell = { Range = 550 }
+    self.lastETick = GetTickCount()
+end
+
+function Lissandra:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgLissandra", name = "Zgjfjfl Lissandra"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Q2", name = "[Q] Extended", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E1", name = "[E1]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Harass:MenuElement({id = "Q2", name = "[Q] Extended", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Auto", name = "Auto setting"})
+        self.Menu.Auto:MenuElement({id = "Q", name = "Auto Harass With Extended Q", toggle = true, value = true})
+        self.Menu.Auto:MenuElement({id = "Qmana", name = "Q Mana Manager(%)", value = 50, min = 0, max = 100, step = 5})
+	
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+end
+
+function Lissandra:onTickEvent()
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+    self:AutoQ()
+end
+
+function Lissandra:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+        if self.Menu.Combo.Q2:Value() then
+            self:CastQ2(target)
+        end
+
+        local E2ready = doesMyChampionHaveBuff("LissandraE")
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.lastETick + 300 < GetTickCount() and not E2ready and self.Menu.Combo.E1:Value() and isSpellReady(_E) then
+            castSpellHigh(self.eSpell, HK_E, target)
+            self.lastQTick = GetTickCount()
+        end
+    end
+    if getEnemyCount(self.wSpell.Range, myHero.pos) >= 1 and self.Menu.Combo.W:Value() and isSpellReady(_W) then
+         Control.CastSpell(HK_W)
+    end
+end
+
+function Lissandra:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+        if self.Menu.Harass.Q2:Value() then
+            self:CastQ2(target)
+        end
+    end
+end
+
+function Lissandra:AutoQ()
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    if target then
+        if self.Menu.Auto.Q:Value() and myHero.mana/myHero.maxMana >= self.Menu.Auto.Qmana:Value()/100 then
+            self:CastQ2(target)
+        end
+    end
+end
+
+function Lissandra:CastQ2(target) 
+        local pred = target:GetPrediction(self.qSpell.Speed, self.qSpell.Delay)
+        if pred == nil then return end 
+        local targetPos = Vector(myHero.pos):Extended(pred, 825) 
+        if isSpellReady(_Q) and getDistance(myHero.pos, pred) < 825 then 
+            for i = 1, Game.MinionCount() do
+                local minion = Game.Minion(i) 
+        		if minion and minion.isEnemy and not minion.dead and getDistance(myHero.pos, minion.pos) <= 725 then 
+        			local minionPos = Vector(myHero.pos):Extended(Vector(minion.pos), 825)
+        			if getDistance(targetPos, minionPos) <= 45 then 
+        				Control.CastSpell(HK_Q, minion) 
+        			end 
+        		end 
+            end 
+        end 
+end
+
+function Lissandra:Draw()
     if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(255, 225, 255, 10))
     end
