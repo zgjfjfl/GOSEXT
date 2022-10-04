@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Zac"}
 
 if not table.contains(Heroes, myHero.charName) then return end
 
@@ -2062,9 +2062,9 @@ function Bard:LoadMenu()
     self.Menu = MenuElement({type = MENU, id = "zgBard", name = "Zgjfjfl Bard"})
             
     self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Q2", name = "[Q] Extended with minion", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Q3", name = "[Q] Extended to wall", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q] Single", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Q2", name = "[Q] Stun with minion or enemyteam", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Q3", name = "[Q] Stun with wall", toggle = true, value = true})
 
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
@@ -2097,18 +2097,37 @@ function Bard:Combo()
         end
 
         local pred2 = target:GetPrediction(self.qSpell.Speed, self.qSpell.Delay)
-        if pred2 == nil then return end 
+        if pred2 == nil then return end
+        local d = getDistance(myHero.pos, pred2)
         local targetPos = Vector(myHero.pos):Extended(pred2, self.qSpell.Range+300) 
-        if isSpellReady(_Q) and self.Menu.Combo.Q2:Value() and getDistance(myHero.pos, pred2) < self.qSpell.Range+300 then 
-        for i = 1, Game.MinionCount() do
-        local minion = Game.Minion(i) 
-            if minion and minion.isEnemy and not minion.dead and getDistance(myHero.pos, minion.pos) <= self.qSpell.Range then 
-            local minionPos = Vector(myHero.pos):Extended(Vector(minion.pos), self.qSpell.Range+300)
-                if getDistance(targetPos, minionPos) <= 30 then 
-                    Control.CastSpell(HK_Q, minion) 
+        if isSpellReady(_Q) and self.Menu.Combo.Q2:Value() then 
+            for i = 1, Game.MinionCount() do
+            local minion = Game.Minion(i) 
+                if minion and minion.isEnemy and not minion.dead then
+                local minionPos = Vector(myHero.pos):Extended(Vector(minion.pos), self.qSpell.Range+300)
+                    if getDistance(targetPos, minionPos) <= 30 then
+                    local d2 = getDistance(myHero.pos, minion.pos)
+                        if d2 <= self.qSpell.Range and d <= self.qSpell.Range+300 and d > d2 then 
+                            Control.CastSpell(HK_Q, minion)
+                        elseif d2 <= self.qSpell.Range+300 and d <= self.qSpell.Range and d < d2 then
+                            Control.CastSpell(HK_Q, pred2)
+                        end
+                    end
                 end 
-            end 
-        end
+            end
+            for i, Enemy in pairs(getEnemyHeroes()) do
+                if Enemy and Enemy ~= target then 
+                    local EnemyPos = Vector(myHero.pos):Extended(Vector(Enemy.pos), self.qSpell.Range+300)
+                    if getDistance(targetPos, EnemyPos) <= 30 then
+                    local d3 = getDistance(myHero.pos, Enemy.pos)
+                        if d3 <= self.qSpell.Range and d <= self.qSpell.Range+300 and d > d3 then 
+                            Control.CastSpell(HK_Q, Enemy)
+                        elseif d3 <= self.qSpell.Range+300 and d <= self.qSpell.Range and d < d3 then
+                            Control.CastSpell(HK_Q, pred2)
+                        end
+                    end
+                end
+            end
         end
     end
 end	
@@ -2324,20 +2343,29 @@ function Lissandra:AutoQ()
 end
 
 function Lissandra:CastQ2(target) 
-        local pred = target:GetPrediction(self.qSpell.Speed, self.qSpell.Delay)
-        if pred == nil then return end 
-        local targetPos = Vector(myHero.pos):Extended(pred, 825) 
-        if isSpellReady(_Q) and getDistance(myHero.pos, pred) < 825 then 
-            for i = 1, Game.MinionCount() do
-                local minion = Game.Minion(i) 
-        		if minion and minion.isEnemy and not minion.dead and getDistance(myHero.pos, minion.pos) <= 725 then 
-        			local minionPos = Vector(myHero.pos):Extended(Vector(minion.pos), 825)
-        			if getDistance(targetPos, minionPos) <= 45 then 
-        				Control.CastSpell(HK_Q, minion) 
-        			end 
-        		end 
+    local pred = target:GetPrediction(self.qSpell.Speed, self.qSpell.Delay)
+    if pred == nil then return end
+    local targetPos = Vector(myHero.pos):Extended(pred, 825)
+    local d = getDistance(myHero.pos, pred)
+    if isSpellReady(_Q) and d < 825 then
+        for i = 1, Game.MinionCount() do
+        local minion = Game.Minion(i)
+            if minion and minion.isEnemy and not minion.dead and getDistance(myHero.pos, minion.pos) <= 725 then
+            local minionPos = Vector(myHero.pos):Extended(Vector(minion.pos), 825)
+                if d > getDistance(myHero.pos, minion.pos) and getDistance(targetPos, minionPos) <= 45 then
+                    Control.CastSpell(HK_Q, minion)
+                end
+            end
+        end
+        for i, Enemy in pairs(getEnemyHeroes()) do
+            if Enemy and Enemy ~= target and getDistance(myHero.pos, Enemy.pos) <= 725 then
+            local EnemyPos = Vector(myHero.pos):Extended(Vector(Enemy.pos), 825)
+                if d > getDistance(myHero.pos, Enemy.pos) and getDistance(targetPos, EnemyPos) <= 45 then 
+                    Control.CastSpell(HK_Q, Enemy)
+                end 
             end 
         end 
+    end 
 end
 
 function Lissandra:Draw()
