@@ -2056,6 +2056,7 @@ function Bard:__init()
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)
     self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 850, Speed = 1500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.wSpell = { Range = 800 }
 end
 
 function Bard:LoadMenu() 
@@ -2066,6 +2067,10 @@ function Bard:LoadMenu()
         self.Menu.Combo:MenuElement({id = "Q2", name = "[Q] Stun with minion or enemyteam", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "Q3", name = "[Q] Stun with wall", toggle = true, value = true})
 
+    self.Menu:MenuElement({type = MENU, id = "Auto", name = "Auto W"})
+        self.Menu.Auto:MenuElement({id = "W", name = "[W] Auto", toggle = true, value = true})
+        self.Menu.Auto:MenuElement({id = "Whp", name = "[W] auto on ally or self X hp%", value = 30, min = 0, max = 100, step = 5})
+
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
 end
@@ -2074,6 +2079,7 @@ function Bard:onTickEvent()
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
+    self:AutoW()
 end
 
 function Bard:Combo()
@@ -2130,7 +2136,18 @@ function Bard:Combo()
             end
         end
     end
-end	
+end
+
+function Bard:AutoW()
+    for i = 1, Game.HeroCount() do
+        local hero = Game.Hero(i)
+        if hero and not hero.dead and hero.isAlly then
+            if getDistance(myHero.pos, hero.pos) <= self.wSpell.Range and self.Menu.Auto.W:Value() and hero.health/hero.maxHealth <= self.Menu.Auto.Whp:Value()/100 and isSpellReady(_W) then
+                Control.CastSpell(HK_W, hero)
+            end
+        end
+    end
+end
 
 function Bard:Draw()
     if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
@@ -2268,6 +2285,8 @@ function Lissandra:LoadMenu()
         self.Menu.Combo:MenuElement({id = "Q2", name = "[Q] Extended", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "E1", name = "[E1]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R] self", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Rself", name = "[R] use onself X enemies inrange", value = 3, min = 0, max = 5, step = 1})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -2276,6 +2295,8 @@ function Lissandra:LoadMenu()
     self.Menu:MenuElement({type = MENU, id = "Auto", name = "Auto setting"})
         self.Menu.Auto:MenuElement({id = "Q", name = "Auto Harass With Extended Q", toggle = true, value = true})
         self.Menu.Auto:MenuElement({id = "Qmana", name = "Q Mana Manager(%)", value = 50, min = 0, max = 100, step = 5})
+        self.Menu.Auto:MenuElement({id = "R", name = "Auto R self", toggle = true, value = true})
+        self.Menu.Auto:MenuElement({id = "Rhp", name = "AutoR self X hp(%)&enemy inrange", value = 30, min = 0, max = 100, step = 5})
 	
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
@@ -2283,6 +2304,14 @@ function Lissandra:LoadMenu()
 end
 
 function Lissandra:onTickEvent()
+    if doesMyChampionHaveBuff("LissandraRSelf") then
+        orbwalker:SetMovement(false)
+        orbwalker:SetAttack(false)
+    else
+        orbwalker:SetMovement(true)
+        orbwalker:SetAttack(true)
+    end
+
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
@@ -2290,6 +2319,7 @@ function Lissandra:onTickEvent()
         self:Harass()
     end
     self:AutoQ()
+    self:AutoR()
 end
 
 function Lissandra:Combo()
@@ -2313,6 +2343,9 @@ function Lissandra:Combo()
     end
     if getEnemyCount(self.wSpell.Range, myHero.pos) >= 1 and self.Menu.Combo.W:Value() and isSpellReady(_W) then
          Control.CastSpell(HK_W)
+    end
+    if getEnemyCount(self.rSpell.Range, myHero.pos) >= self.Menu.Combo.Rself:Value() and self.Menu.Combo.R:Value() and isSpellReady(_R) then
+         Control.CastSpell(HK_R, myHero)
     end
 end
 
@@ -2339,6 +2372,12 @@ function Lissandra:AutoQ()
         if self.Menu.Auto.Q:Value() and myHero.mana/myHero.maxMana >= self.Menu.Auto.Qmana:Value()/100 then
             self:CastQ2(target)
         end
+    end
+end
+
+function Lissandra:AutoR()
+    if getEnemyCount(self.rSpell.Range, myHero.pos) >= 1 and self.Menu.Auto.R:Value() and isSpellReady(_R) and myHero.health/myHero.maxHealth <= self.Menu.Auto.Rhp:Value()/100 then
+         Control.CastSpell(HK_R, myHero)
     end
 end
 
