@@ -2543,7 +2543,7 @@ function KSante:LoadMenu()
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
     self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q] lasthit minion out aarange", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 end
 
 function KSante:onTickEvent()
@@ -2569,6 +2569,9 @@ function KSante:onTickEvent()
     end
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:LaneClear()
     end
     if self.Menu.Combo.RM:Value() then
         self:RSemiManual()
@@ -2635,6 +2638,20 @@ function KSante:RSemiManual()
     end
 end
 
+function KSante:LaneClear()
+    local target = HealthPrediction:GetJungleTarget()
+    if not target then
+        target = HealthPrediction:GetLaneClearTarget()
+    end
+    if target then
+        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) then
+            bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
+            if bestCount > 0 then 
+                Control.CastSpell(HK_Q, bestPosition)
+            end
+        end
+    end
+end
 ------------------------------
 function onLoadEvent()
     if table.contains(Heroes, myHero.charName) then
