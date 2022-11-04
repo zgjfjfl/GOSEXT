@@ -40,8 +40,8 @@ end
 
 local function getEnemyHeroes()
     local EnemyHeroes = {}
-    for i = 1, Game.HeroCount() do
-        local Hero = Game.Hero(i)
+    for i = 1, GameHeroCount() do
+        local Hero = GameHero(i)
         if Hero.isEnemy and not Hero.dead then
             table.insert(EnemyHeroes, Hero)
         end
@@ -51,8 +51,8 @@ end
 
 local function getEnemyMinionsWithinDistanceOfLocation(location, distance)
     local EnemyMinions = {}
-    for i = 1, Game.MinionCount() do
-        local minion = Game.Minion(i)
+    for i = 1, GameMinionCount() do
+        local minion = GameMinion(i)
         if minion and minion.isEnemy and not minion.dead and minion.pos:DistanceTo(location) < distance then
             table.insert(EnemyMinions, minion)
         end
@@ -117,8 +117,8 @@ end
 
 local function getEnemyHeroesWithinDistanceOfUnit(location, distance)
     local EnemyHeroes = {}
-    for i = 1, Game.HeroCount() do
-        local Hero = Game.Hero(i)
+    for i = 1, GameHeroCount() do
+        local Hero = GameHero(i)
         if Hero.isEnemy and not Hero.dead and Hero.pos:DistanceTo(location) < distance then
             table.insert(EnemyHeroes, Hero)
         end
@@ -2585,20 +2585,28 @@ function KSante:Combo()
     local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range + self.eSpell.Range)
     if target then
         if self.Menu.Combo.E:Value() and isSpellReady(_E) then
-            local d = myHero.pos:DistanceTo(target.pos)
-            if d < (self.qSpell.Range + self.eSpell.Range) and d > self.qSpell.Range and isSpellReady(_Q) then
-                Control.CastSpell(HK_E, target)
-            elseif d < self.qSpell.Range then
-                Control.CastSpell(HK_E, target)
+            for i = 1, GameHeroCount() do
+                local hero = GameHero(i)
+                if hero and not hero.dead and hero.isAlly and not hero.isMe then
+                    if myHero.pos:DistanceTo(hero.pos) <= 550 then
+                        if getEnemyCount(self.qSpell.Range, hero.pos) >= 1 then
+                            Control.CastSpell(HK_E, hero)
+                        end
+                    end
+                else
+                    if myHero.pos:DistanceTo(target.pos) > self.qSpell.Range and isSpellReady(_Q) then
+                        Control.CastSpell(HK_E, target)
+                    else
+                        Control.CastSpell(HK_E, target)
+                    end
+                end
             end
         end
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
              castSpellHigh(self.qSpell, HK_Q, target)
         end
-        local Q1 = doesMyChampionHaveBuff("KSanteQ")
-        local Q3 = doesMyChampionHaveBuff("KSanteQ3")
         if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and self.Menu.Combo.W:Value() then
-            if not isSpellReady(_Q) and (not Q1 or not Q3) then
+            if not isSpellReady(_Q) then
                  self:castW(target)
             end
         end
