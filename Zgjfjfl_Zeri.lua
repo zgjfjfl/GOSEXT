@@ -112,7 +112,6 @@ function Zeri:__init()
     
 end
 
-
 function Zeri:LoadMenu() 
     self.Menu = MenuElement({type = MENU, id = "zgZeri", name = "Zgjfjfl Zeri"})
     
@@ -153,11 +152,6 @@ function Zeri:onTickEvent()
         orbwalker:SetAttack(true)
     end
 
-    self.hasRbuff = doesMyChampionHaveBuff("ZeriR")
-    if self.hasRbuff then
-        qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 3400, Delay = 0.1, Radius = 40,  Collision = false}
-    end
-
     if myHero.range == 575 then
         self.qRange = 900
     else
@@ -176,6 +170,12 @@ end
 
 function Zeri:castQ(target)
     local qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 2600, Delay = 0.1, Radius = 40,  Collision = true, CollisionTypes = { GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL }}
+    if doesMyChampionHaveBuff("ZeriR") then
+        qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 3400, Delay = 0.1, Radius = 40,  Collision = false}
+    end
+    if doesMyChampionHaveBuff("zeriespecialrounds") then
+        qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 2600, Delay = 0.1, Radius = 40,  Collision = false}
+    end
     castSpell(qData,HK_Q, target)
 end
 
