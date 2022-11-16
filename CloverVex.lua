@@ -456,7 +456,7 @@ if target == nil then return end
 
 	if IsValid(target) then
 
-		if myHero.pos:DistanceTo(target.pos) <= 1200 and self.Menu.Harass.UseQ:Value() and Ready(_Q) and not Ready(_E) then
+		if myHero.pos:DistanceTo(target.pos) <= 1200 and self.Menu.Harass.UseQ:Value() and Ready(_Q) then
 		local QPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.15, Radius = 80, Range = 1200, Speed = 1900, Collision = false})
 		QPrediction:GetPrediction(target, myHero)
 			if QPrediction:CanHit(self.Menu.Misc.Pred.PredQ:Value() + 1) then
