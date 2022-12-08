@@ -153,8 +153,8 @@ function Zeri:onTickEvent()
         orbwalker:SetAttack(true)
     end
 
-    if myHero.range == 575 then
-        self.qRange = 825
+    if myHero.range == 550 then
+        self.qRange = 800
     else
         self.qRange = 750
     end
