@@ -105,6 +105,16 @@ local function doesMyChampionHaveBuff(buffName)
     return false
 end
 
+local function haveBuff(unit, buffName)
+    for i = 0, unit.buffCount do
+        local buff = unit:GetBuff(i)
+        if buff.name == buffName and buff.count > 0 then 
+            return true
+        end
+    end
+    return false
+end
+
 function getBuffData(unit, buffname)
   for i = 0, unit.buffCount do
     local buff = unit:GetBuff(i)
@@ -951,6 +961,8 @@ function Rakan:LoadMenu()
         self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E2", name = "[E2] ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R] when enemies>=2 within Wrange", toggle = true, value = true})
 		
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -995,12 +1007,26 @@ function Rakan:Combo()
              castSpellHigh(self.qSpell, HK_Q, target)
         end
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and isSpellReady(_W) then
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero:GetSpellData(_E).name == "RakanE" then
             for i = 1, GameHeroCount() do
                 local hero = GameHero(i)
                 if hero and not hero.dead and hero.isAlly and not hero.isMe then
                     if myHero.pos:DistanceTo(hero.pos) <= self.eSpell.Range then
-                        if getEnemyCount(self.wSpell.Range, myHero.pos) == 0 and getEnemyCount(self.wSpell.Range, hero.pos) >= 1 then
+                        if isSpellReady(_W) and getEnemyCount(self.wSpell.Range, myHero.pos) == 0 and getEnemyCount(self.wSpell.Range, hero.pos) >= 1 then
+                            Control.CastSpell(HK_E, hero)
+                        elseif getEnemyCount(self.wSpell.Range, myHero.pos) >= 1 and not isSpellReady(_W) then
+                            Control.CastSpell(HK_E, hero)
+                        end
+                    end
+                end
+            end
+        end
+        if self.Menu.Combo.E2:Value() and isSpellReady(_E) and myHero:GetSpellData(_E).name == "RakanERecast" and not isSpellReady(_W) then
+            for i = 1, GameHeroCount() do
+                local hero = GameHero(i)
+                if hero and not hero.dead and hero.isAlly and not hero.isMe then
+                    if myHero.pos:DistanceTo(hero.pos) <= self.eSpell.Range then
+                        if not haveBuff(hero, "RakanEShield") then
                             Control.CastSpell(HK_E, hero)
                         end
                     end
@@ -1010,6 +1036,10 @@ function Rakan:Combo()
 
         if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
              castSpellHigh(self.wSpell, HK_W, target)
+        end
+
+        if self.Menu.Combo.R:Value() and isSpellReady(_R) and getEnemyCount(self.wSpell.Range, myHero.pos) >= 2 then
+             Control.CastSpell(HK_R)
         end
     end
 end	
@@ -1032,7 +1062,7 @@ function Rakan:Flee()
             Control.CastSpell(HK_W, pos)
     end
 
-    if self.Menu.Flee.E:Value() and isSpellReady(_E) then
+    if self.Menu.Flee.E:Value() and isSpellReady(_E) and not isSpellReady(_W) then
         for i = 1, GameHeroCount() do
             local hero = GameHero(i)
             if hero and not hero.dead and hero.isAlly and not hero.isMe then
@@ -2092,7 +2122,7 @@ function Bard:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = _G.SDK.TargetSelector:GetTarget(1500)
     if target then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
              castSpellHigh(self.qSpell, HK_Q, target)
@@ -2359,7 +2389,7 @@ function Lissandra:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = _G.SDK.TargetSelector:GetTarget(1000)
     if target then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) then
              castSpellHigh(self.qSpell, HK_Q, target)
