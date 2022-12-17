@@ -7,6 +7,9 @@ require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
 
+
+local GameTurretCount     = Game.TurretCount
+local GameTurret          = Game.Turret
 local GameHeroCount     = Game.HeroCount
 local GameHero          = Game.Hero
 local GameMinionCount     = Game.MinionCount
@@ -1068,7 +1071,7 @@ function Rakan:Flee()
             if hero and not hero.dead and hero.isAlly and not hero.isMe then
             local distance1 = hero.pos:DistanceTo(myHero.pos)
             local distance2 = mousePos:DistanceTo(hero.pos)
-                 if  distance2< mousePos:DistanceTo(myHero.pos) and distance1 <= self.eSpell.Range then
+                 if  distance2 < mousePos:DistanceTo(myHero.pos) and distance1 <= self.eSpell.Range then
                     Control.CastSpell(HK_E, hero)
                  end
             end
@@ -2545,15 +2548,17 @@ function Sejuani:Draw()
 end
 ------------------------------
 class "KSante"
+
+local data = {casting = false, start = Game.Timer()}
         
 function KSante:__init()	     
     print("Zgjfjfl-KSante Loaded") 
     self:LoadMenu()
-
+    Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)
     self.q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = myHero:GetSpellData(_Q).delay, Radius = 75, Range = 450, Speed = math.huge, Collision = false}
     self.q3Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = myHero:GetSpellData(_Q).delay, Radius = 70, Range = 800, Speed = 1600, Collision = false}
-    self.wSpell = { Range = 400 }
+    self.wSpell = { Range = 450 }
     self.e1Spell = { Range = 250 }
     self.e2Spell = { Range = 400 }
     self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 160, Range = 350, Speed = 2000, Collision = false}
@@ -2565,15 +2570,33 @@ function KSante:LoadMenu()
             
     self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
         self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W1", name = "[W] Normal W", toggle = true, value = false})
+        self.Menu.Combo:MenuElement({id = "WTime1", name = "Normal W Channel time", value = 0.7, min = 0.1, max= 1, step = 0.1})
+        self.Menu.Combo:MenuElement({id = "W2", name = "[W] AllOut W", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "WTime2", name = "AllOut W Channel time", value = 0.7, min = 0.1, max= 1, step = 0.1})
         self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RM", name = "[R] Semi-Manual Key", key = string.byte("T")})
+        self.Menu.Combo:MenuElement({id = "EA", name = "use E close to enemy AApassive", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "ET", name = "use E close to enemy useQ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "EM", name = "use E allyminion close to enemy", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "EH", name = "use E allyhero close to enemy", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "RT", name = "[R] enemy close to allyturret (not near wall)", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "RM", name = "[R] Manual R when enemy near wall ", key = string.byte("T")})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    self.Menu:MenuElement({type = MENU, id = "Clear1", name = "Lane Clear"})
+        self.Menu.Clear1:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear1:MenuElement({id = "QCount", name = "hit >=x minions", value = 2, min = 1, max = 6})
+
+    self.Menu:MenuElement({type = MENU, id = "Clear2", name = "Jungle Clear"})
+        self.Menu.Clear2:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
+        self.Menu.LastHit:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = true})
 end
 
 function KSante:onTickEvent()
@@ -2582,7 +2605,7 @@ function KSante:onTickEvent()
     else
         self.qSpell = self.q1Spell
     end
-    if Control.IsKeyDown(HK_W) then
+    if haveBuff(myHero, "KSanteW") or haveBuff(myHero, "KSanteW_AllOut") then
         orbwalker:SetMovement(false)
         orbwalker:SetAttack(false)
     else
@@ -2594,6 +2617,7 @@ function KSante:onTickEvent()
     else
         self.eSpell = self.e1Spell
     end
+
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
@@ -2602,6 +2626,11 @@ function KSante:onTickEvent()
     end
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
+        self:JungleClear()
+        self:LastHit()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
+        self:LastHit()
     end
     if self.Menu.Combo.RM:Value() then
         self:RSemiManual()
@@ -2614,32 +2643,66 @@ function KSante:Combo()
 
     local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range + self.eSpell.Range)
     if target then
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) then
-            for i = 1, GameHeroCount() do
-                local hero = GameHero(i)
-                if hero and not hero.dead and hero.isAlly and not hero.isMe then
-                    if myHero.pos:DistanceTo(hero.pos) <= 550 then
-                        if getEnemyCount(self.qSpell.Range, hero.pos) >= 1 then
-                            Control.CastSpell(HK_E, hero)
+      if not haveBuff(target, "KSantePMark") or (haveBuff(target, "KSantePMark") and myHero:GetSpellData(_Q).name == "KSanteQ3") then
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and isSpellReady(_Q) then
+            if self.Menu.Combo.EH:Value() then
+                for i = 1, GameHeroCount() do
+                    local hero = GameHero(i)
+                    if hero and not hero.dead and hero.isAlly and not hero.isMe then
+                        if myHero.pos:DistanceTo(hero.pos) <= 550 then
+                            if getEnemyCount(self.qSpell.Range, myHero.pos) == 0 and getEnemyCount(self.qSpell.Range, hero.pos) >= 1 then
+                                Control.CastSpell(HK_E, hero)
+                            end
                         end
                     end
-                else
-                    if myHero.pos:DistanceTo(target.pos) > self.qSpell.Range and isSpellReady(_Q) then
-                        Control.CastSpell(HK_E, target)
-                    else
-                        Control.CastSpell(HK_E, target)
+                end
+            end
+            if self.Menu.Combo.ET:Value() then
+                if myHero.pos:DistanceTo(target.pos) > self.qSpell.Range and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range + self.eSpell.Range then
+                    Control.CastSpell(HK_E, target)
+                end
+            end
+            if self.Menu.Combo.EM:Value() then
+                for i = 1, GameMinionCount() do
+                    local minion = GameMinion(i) 
+                    if minion and minion.isAlly and not minion.dead then
+                        if getEnemyCount(self.qSpell.Range, myHero.pos) == 0 and getEnemyCount(self.qSpell.Range, minion.pos) >= 1 then
+                            Control.CastSpell(HK_E, minion)
+                        end
                     end
                 end
             end
         end
+
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
              castSpellHigh(self.qSpell, HK_Q, target)
         end
-        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and self.Menu.Combo.W:Value() then
-            if not isSpellReady(_Q) then
-                 self:castW(target)
+
+        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and not isSpellReady(_Q) then
+            if doesMyChampionHaveBuff("KSanteRTransform") and self.Menu.Combo.W2:Value() then
+                 self:CastW(target,self.Menu.Combo.WTime2:Value())
+            elseif not doesMyChampionHaveBuff("KSanteRTransform") and self.Menu.Combo.W1:Value() then
+                 self:CastW(target,self.Menu.Combo.WTime1:Value())
             end
         end
+
+        if self.Menu.Combo.RT:Value() and isSpellReady(_R) and myHero:GetSpellData(_R).name == "KSanteR" then
+            for i = 1, GameTurretCount() do
+                local turret = GameTurret(i)
+                local Pos = target.pos:Extended(myHero.pos, -400)
+                if turret.isAlly and not turret.dead and turret.pos:DistanceTo(Pos) < 800 and myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and turret.pos:DistanceTo(Pos) < turret.pos:DistanceTo(target.pos) then
+                    Control.CastSpell(HK_R, target)
+                end
+            end
+        end
+      elseif haveBuff(target, "KSantePMark") then
+          local AARange = myHero.range + myHero.boundingRadius + target.boundingRadius + 25
+          if myHero.pos:DistanceTo(target.pos) > AARange and myHero.pos:DistanceTo(target.pos) <= AARange + self.eSpell.Range then
+              if self.Menu.Combo.EA:Value() and isSpellReady(_E) then
+                  Control.CastSpell(HK_E, target)
+              end
+          end
+      end
     end
 end
 
@@ -2655,14 +2718,14 @@ function KSante:Harass()
     end
 end
 
-function KSante:castW(target)
-    if isSpellReady(_W) and self.lastWTick + 300 < GetTickCount() then
+function KSante:CastW(target, time)
+    if isSpellReady(_W) and self.lastWTick + 1000 < GetTickCount() then
         Control.KeyDown(HK_W)
         self.lastWTick = GetTickCount() 
         if Control.IsKeyDown(HK_W) then
             Control.SetCursorPos(target)
-            DelayAction(function() Control.KeyUp(HK_W) end, 1)
-            DelayAction(function() Control.SetCursorPos(mousePos) end, 1)
+            DelayAction(function() Control.KeyUp(HK_W) end, time)
+            DelayAction(function() Control.SetCursorPos(mousePos) end, time)
         end
     end
 end
@@ -2670,24 +2733,76 @@ end
 function KSante:RSemiManual()
     local target = _G.SDK.TargetSelector:GetTarget(self.rSpell.Range)
     if target then
-        if myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and isSpellReady(_R) then
+        local Pos = target.pos:Extended(myHero.pos, -350)
+        if MapPosition:intersectsWall(target.pos, Pos) and myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and isSpellReady(_R) and myHero:GetSpellData(_R).name == "KSanteR" then
              Control.CastSpell(HK_R, target)
         end
     end
 end
 
 function KSante:LaneClear()
-    local target = HealthPrediction:GetJungleTarget()
-    if not target then
-        target = HealthPrediction:GetLaneClearTarget()
-    end
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = HealthPrediction:GetLaneClearTarget()
     if target then
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) then
+        if self.Menu.Clear1.Q:Value() and isSpellReady(_Q) then
+            bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
+            if bestCount >= self.Menu.Clear1.QCount:Value() then 
+                Control.CastSpell(HK_Q, bestPosition)
+            end
+        end
+    end
+end
+
+function KSante:JungleClear()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = HealthPrediction:GetJungleTarget()
+    if target then
+        if self.Menu.Clear2.Q:Value() and isSpellReady(_Q) then
             bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
             if bestCount > 0 then 
                 Control.CastSpell(HK_Q, bestPosition)
             end
         end
+    end
+end
+
+function KSante:LastHit()
+    local minionInRange = _G.SDK.ObjectManager:GetEnemyMinions(self.qSpell.Range)
+    if next(minionInRange) == nil then return  end
+	
+    for i = 1, #minionInRange do
+        local minion = minionInRange[i]
+        local AArange = myHero.range + myHero.boundingRadius
+        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(minion.pos) < self.qSpell.Range and  myHero.pos:DistanceTo(minion.pos) > AArange then
+            if self:getqDmg(minion) >= minion.health and not minion.dead then
+                Control.CastSpell(HK_Q, minion)
+            end
+        end
+    end
+end
+
+function KSante:getqDmg(unit)
+    local qlvl = myHero:GetSpellData(_Q).level
+    local qbaseDmg  = 25 * qlvl + 25
+    local qadDmg = myHero.totalDamage * 0.4
+    local qextDmg = myHero.bonusArmor * 0.3 + myHero.bonusMagicResist * 0.3
+    local qDmg = qbaseDmg + qadDmg + qextDmg
+return _G.SDK.Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
+end
+
+
+function KSante:Draw()
+    if doesMyChampionHaveBuff("KSanteQ3") then
+        self.qSpell = self.q3Spell
+    else
+        self.qSpell = self.q1Spell
+    end
+    if self.Menu.Draw.Q:Value() then
+            Draw.Circle(myHero.pos, self.qSpell.Range, 0.5, Draw.Color(255, 225, 255, 10))
     end
 end
 ------------------------------
