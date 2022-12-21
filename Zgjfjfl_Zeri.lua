@@ -126,7 +126,7 @@ function Zeri:LoadMenu()
         self.Menu.QSpell:MenuElement({ id = "QHEnabled", name = "Harass Enabled", value = true})
         self.Menu.QSpell:MenuElement({ id = "QLCEnabled", name = "Lane Clear Enabled", value = true})
         self.Menu.QSpell:MenuElement({ id = "QLHEnabled", name = "LastHit Enabled", value = true})
-        self.Menu.QSpell:MenuElement({ id = "QTEnabled", name = "Turret Enabled", value = true})
+        self.Menu.QSpell:MenuElement({ id = "QObj", name = "Buildings & Wards Enabled", value = true})
 
     self.Menu:MenuElement({type = MENU, id = "WSpell", name = "W"})
         self.Menu.WSpell:MenuElement({ id = "WEnabled", name = "Combo Enabled", value = true})
@@ -163,14 +163,14 @@ function Zeri:onTickEvent()
     if orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
+
+    if orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:QObject()
+    end
 	
     if orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Lasthit()
         self:Harass()
-    end
-
-    if self.Menu.QSpell.QTEnabled:Value() then
-        self:QTurret()
     end
 
 end
@@ -224,7 +224,7 @@ function Zeri:Combo()
     local target = orbwalker:GetTarget()
     
     if not target then
-        target = TargetSelector:GetTarget(2700, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+        target = TargetSelector:GetTarget(2700)
     end
     if target then
         local distance = getDistance(myHero.pos, target.pos)
@@ -252,7 +252,7 @@ end
 function Zeri:Harass()
     local target = orbwalker:GetTarget()
     if not target then
-        target = TargetSelector:GetTarget(1000, _G.SDK.DAMAGE_TYPE_PHYSICAL);
+        target = TargetSelector:GetTarget(1000)
     end
     if target then
         local distance = getDistance(myHero.pos, target.pos) 
@@ -264,17 +264,27 @@ function Zeri:Harass()
     end
 end
 
-function Zeri:QTurret()
-if isSpellReady(_Q) and orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
-    for i = 1, GameTurretCount() do
-    local turret = GameTurret(i)
-        if turret.isEnemy and not turret.dead and not turret.isImmortal then
-            if getDistance(turret.pos) <= self.qRange then 
-                Control.CastSpell(HK_Q, turret.pos)
+function Zeri:QObject()
+    if isSpellReady(_Q) and self.Menu.QSpell.QObj:Value() then
+        local turrets = _G.SDK.ObjectManager:GetEnemyTurrets(self.qRange)
+        for i, turret in ipairs(turrets) do
+            if turret.isTargetable then
+                Control.CastSpell(HK_Q, turret)
             end
         end
+        local barracks = _G.SDK.ObjectManager:GetEnemyBuildings(self.qRange)
+        for i, barrack in ipairs(barracks) do
+            Control.CastSpell(HK_Q, barrack)
+        end
+        local nexus = _G.SDK.ObjectManager:GetEnemyBuildings(self.qRange)
+        for i, base in ipairs(nexus) do
+            Control.CastSpell(HK_Q, base)
+        end
+        local wards = _G.SDK.ObjectManager:GetOtherEnemyMinions(self.qRange)
+        for i, ward in ipairs(wards) do
+            Control.CastSpell(HK_Q, ward)
+        end
     end
-end
 end
 
 function Zeri:Lasthit()
@@ -288,7 +298,7 @@ function Zeri:Lasthit()
                 local level = myHero:GetSpellData(_Q).level	
                 local Qdamage = ({15, 18, 21, 24, 27})[level] + ({1.04, 1.08, 1.12, 1.16, 1.2})[level] * myHero.totalDamage
                 if Qdamage >= minion.health and not minion.dead then
-                    Control.CastSpell(HK_Q, minion.pos)
+                    Control.CastSpell(HK_Q, minion)
                 end
             end
         end
