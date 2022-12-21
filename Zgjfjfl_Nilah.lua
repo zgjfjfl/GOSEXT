@@ -92,6 +92,16 @@ local function castSpellHigh(spellData, hotkey, target)
     end
 end
 
+function getBuffData(unit, buffname)
+  for i = 0, unit.buffCount do
+    local buff = unit:GetBuff(i)
+    if buff.name == buffname and buff.count > 0 then 
+      return buff
+    end
+  end
+  return {type = 0, name = "", startTime = 0, expireTime = 0, duration = 0, stacks = 0, count = 0}
+end
+
 class "Nilah"
         
 function Nilah:__init()	     
@@ -127,12 +137,12 @@ function Nilah:LoadMenu()
     self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
         self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
         self.Menu.Clear:MenuElement({id = "QR", name = "[Q] lasthit no aarange minion", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "QT", name = "[Q] Turret", toggle = true, value = false})
+        self.Menu.Clear:MenuElement({id = "QT", name = "[Q] Turret, Barrack, Nexus", toggle = true, value = true})
         self.Menu.Clear:MenuElement({id = "Mana", name = "Min Mana to Clear", value = 30, min = 0, max = 100})
 			
     self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
-        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = false})
-        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
+        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
     self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
         self.Menu.Flee:MenuElement({id = "E", name = "[E] to mouse near target", toggle = true, value = true})
@@ -220,15 +230,16 @@ function Nilah:AutoW()
 end
 
 function Nilah:LaneClear()
+if _G.SDK.Attack:IsActive() then return end
 if isSpellReady(_Q) and myHero.mana/myHero.maxMana >= self.Menu.Clear.Mana:Value() / 100 then
+    if self.Menu.Clear.Q:Value() then
     local target = HealthPrediction:GetJungleTarget()
-    if not target then
-        target = HealthPrediction:GetLaneClearTarget()
-    end
-    if target then
-        if self.Menu.Clear.Q:Value() then
+        if not target then
+            target = HealthPrediction:GetLaneClearTarget()
+        end
+        if target then
             bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
-            if bestCount > 0 then 
+            if bestCount > 0 and getBuffData(myHero, "NilahQAttack").duration < 0.5 then 
                 Control.CastSpell(HK_Q, bestPosition)
             end
         end
@@ -241,21 +252,27 @@ if isSpellReady(_Q) and myHero.mana/myHero.maxMana >= self.Menu.Clear.Mana:Value
         local minion = minionInRange[i]
             local AARange = myHero.range + myHero.boundingRadius
             if getDistance(myHero.pos, minion.pos) <= self.qSpell.Range and getDistance(myHero.pos, minion.pos) > AARange then
-                if self:getqDmg(minion) >= minion.health then
-                    Control.CastSpell(HK_Q, minion.pos)
+                if self:getqDmg(minion) >= _G.SDK.HealthPrediction:GetPrediction(minion, self.qSpell.Delay) then
+                    Control.CastSpell(HK_Q, minion)
                 end
             end
         end
     end
 
     if self.Menu.Clear.QT:Value() then
-        for i = 1, GameTurretCount() do
-        local turret = GameTurret(i)
-            if turret.isEnemy and not turret.dead and not turret.isImmortal then
-                if getDistance(myHero.pos, turret.pos) <= self.qSpell.Range then 
-                    Control.CastSpell(HK_Q, turret.pos)
-                end
+        local turrets = _G.SDK.ObjectManager:GetEnemyTurrets(self.qSpell.Range)
+        for i, turret in ipairs(turrets) do
+            if turret.isTargetable then
+                Control.CastSpell(HK_Q, turret)
             end
+        end
+        local barracks = _G.SDK.ObjectManager:GetEnemyBuildings(self.qSpell.Range)
+        for i, barrack in ipairs(barracks) do
+            Control.CastSpell(HK_Q, barrack)
+        end
+        local nexus = _G.SDK.ObjectManager:GetEnemyBuildings(self.qSpell.Range)
+        for i, base in ipairs(nexus) do
+            Control.CastSpell(HK_Q, base)
         end
     end
 end
