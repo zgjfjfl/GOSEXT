@@ -178,6 +178,18 @@ local function getMinionCount(range, unit)
 	return count
 end
 
+local function getAllyCount(range, unit)
+	local count = 0
+	for i, hero in ipairs(getAllyHeroes()) do
+	local Range = range * range
+		if unit ~= hero and getDistanceSqr(unit, hero.pos) < Range and isValid(hero) then
+		count = count + 1
+		end
+	end
+	return count
+end
+
+
 local function isImmobile(unit)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
@@ -2071,19 +2083,25 @@ end
 
 function Ivern:AutoE()
     if _G.SDK.Attack:IsActive() then return end
-        for i = 1, GameHeroCount() do
-        local hero = GameHero(i)
-            if hero and not hero.dead and hero.isAlly and not hero.isMe then
-                if myHero.pos:DistanceTo(hero.pos) <= self.eSpell.Range then
-                    if getEnemyCount(500, myHero.pos) == 0 and getEnemyCount(500, hero.pos) >= 1 and self.Menu.Auto.Eally:Value() and isSpellReady(_E) then
-                        Control.CastSpell(HK_E, hero)
-                    end
-                end
-            end
-            if self.Menu.Auto.Eself:Value() and isSpellReady(_E) and getEnemyCount(500, myHero.pos) >= 1 then
+    if isSpellReady(_E) then
+        if self.Menu.Auto.Eself:Value() then 
+            if getEnemyCount(500, myHero.pos) >= 1 and getAllyCount(500, myHero.pos) == 0 then
                 Control.CastSpell(HK_E, myHero)
             end
         end
+
+        if self.Menu.Auto.Eally:Value() then
+            local allies = _G.SDK.ObjectManager:GetAllyHeroes(self.eSpell.Range)
+            for i = 1, #allies do
+                local ally = allies[i]
+                if not ally.isMe then
+                    if getEnemyCount(500, ally.pos) >= 1 then
+                        Control.CastSpell(HK_E, ally)
+                    end
+                end
+            end
+        end
+    end
 end
 
 function Ivern:Draw()
