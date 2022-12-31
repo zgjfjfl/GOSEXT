@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner"}
 
 if not table.contains(Heroes, myHero.charName) then return end
 
@@ -14,7 +14,7 @@ local GameHeroCount     = Game.HeroCount
 local GameHero          = Game.Hero
 local GameMinionCount     = Game.MinionCount
 local GameMinion          = Game.Minion
-local TableInsert          =table.insert
+local TableInsert          = table.insert
 
 local orbwalker         = _G.SDK.Orbwalker
 local HealthPrediction         = _G.SDK.HealthPrediction
@@ -2815,7 +2815,6 @@ function KSante:getqDmg(unit)
 return _G.SDK.Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
 
-
 function KSante:Draw()
     if doesMyChampionHaveBuff("KSanteQ3") then
         self.qSpell = self.q3Spell
@@ -2827,11 +2826,93 @@ function KSante:Draw()
     end
 end
 ------------------------------
+class "Skarner"
+        
+function Skarner:__init()	     
+    print("Zgjfjfl-Skarner Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.qSpell = { Range = 350 }
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1500, Speed = 1000, Collision = false}
+end
+
+function Skarner:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgSkarner", name = "Zgjfjfl Skarner"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+end
+
+function Skarner:onTickEvent()
+    if haveBuff(myHero, "skarnerimpalebuff")  then
+        orbwalker:SetAttack(false)
+    else
+        orbwalker:SetAttack(true)
+    end
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:LaneClear()
+    end
+end
+
+function Skarner:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) then
+             Control.CastSpell(HK_Q)
+        end
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) then
+             castSpellHigh(self.eSpell, HK_E, target)
+        end
+    end
+    -- for i, enemy in pairs(getEnemyHeroes()) do
+        -- if enemy and isValid(enemy) and getBuffData(enemy, "skarnerpassivebuff").duration > 0.5 then
+            -- _G.SDK.Orbwalker.ForceTarget = enemy
+        -- else
+            -- _G.SDK.Orbwalker.ForceTarget = nil
+        -- end
+    -- end
+end
+
+function Skarner:LaneClear()
+    if _G.SDK.Attack:IsActive() then return end
+    local target = HealthPrediction:GetJungleTarget()
+    if not target then
+        target = HealthPrediction:GetLaneClearTarget()
+    end
+    if target then
+        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+            Control.CastSpell(HK_Q)
+        end
+    end
+end
+
+function Skarner:Draw()
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+    end
+end
+
+------------------------------
 function onLoadEvent()
     if table.contains(Heroes, myHero.charName) then
 		_G[myHero.charName]()
     end
 end
-
 
 Callback.Add('Load', onLoadEvent)
