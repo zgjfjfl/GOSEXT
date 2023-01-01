@@ -2847,6 +2847,7 @@ function Skarner:LoadMenu()
 
     self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
         self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
@@ -2882,7 +2883,7 @@ function Skarner:Combo()
     end
     -- for i, enemy in pairs(getEnemyHeroes()) do
         -- if enemy and isValid(enemy) and getBuffData(enemy, "skarnerpassivebuff").duration > 0.5 then
-            -- _G.SDK.Orbwalker.ForceTarget = enemy
+            -- _G.SDK._G.SDK.Ta.ForceTarget = enemy
         -- else
             -- _G.SDK.Orbwalker.ForceTarget = nil
         -- end
@@ -2898,6 +2899,13 @@ function Skarner:LaneClear()
     if target then
         if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
             Control.CastSpell(HK_Q)
+        end
+
+        if self.Menu.Clear.E:Value() and isSpellReady(_E) then
+            bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
+            if bestCount > 0 then 
+                Control.CastSpell(HK_E, bestPosition)
+            end
         end
     end
 end
