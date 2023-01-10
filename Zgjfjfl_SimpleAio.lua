@@ -1,5 +1,5 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai"}
 
 if not table.contains(Heroes, myHero.charName) then return end
 
@@ -2854,7 +2854,7 @@ function Skarner:LoadMenu()
 end
 
 function Skarner:onTickEvent()
-    if haveBuff(myHero, "skarnerimpalebuff")  then
+    if haveBuff(myHero, "skarnerimpalebuff") then
         orbwalker:SetAttack(false)
     else
         orbwalker:SetAttack(true)
@@ -2883,7 +2883,7 @@ function Skarner:Combo()
     end
     -- for i, enemy in pairs(getEnemyHeroes()) do
         -- if enemy and isValid(enemy) and getBuffData(enemy, "skarnerpassivebuff").duration > 0.5 then
-            -- _G.SDK._G.SDK.Ta.ForceTarget = enemy
+            -- _G.SDK.Orbwalker.ForceTarget = enemy
         -- else
             -- _G.SDK.Orbwalker.ForceTarget = nil
         -- end
@@ -2916,6 +2916,133 @@ function Skarner:Draw()
     end
 end
 
+------------------------------
+class "Maokai"
+        
+function Maokai:__init()	     
+    print("Zgjfjfl-Maokai Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.38, Radius = 70, Range = 600, Speed = 1600, Collision = false}
+    self.wSpell = { Range = 525 }
+    self.eSpell = { Range = 1100 }
+    self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 600, Range = 3000, Speed = myHero:GetSpellData(_R).speed, Collision = false}
+     Qtoward = nil
+end
+
+function Maokai:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgMaokai", name = "Zgjfjfl Maokai"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "InsecQ", name = "InsecQ to ally", value = false, key = string.byte("T"), toggle = true})
+        self.Menu.Combo:MenuElement({id = "InsecRange", name = "allies in x range use insecQ", value = 1500, min = 500, max = 3000, step = 100 })
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E] only on target", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Rcount", name = "R hit x enemies", value = 2, min = 1, max = 5 })
+        self.Menu.Combo:MenuElement({id = "Rrange", name = "R max range", value = 3000, min = 500, max = 3000, step = 100 })
+
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Harass:MenuElement({id = "E", name = "[E] only on target", toggle = true, value = false})
+
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "InsecQ", name = "InsecQ", toggle = true, value = true})
+end
+
+function Maokai:onTickEvent()
+    if self.Menu.Combo.InsecQ:Value() then
+        local allies = _G.SDK.ObjectManager:GetAllyHeroes(self.Menu.Combo.InsecRange:Value())
+        for i, ally in ipairs(allies) do
+            if not ally.isMe then
+                Qtoward = ally.pos
+            end
+        end
+    end
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+end
+
+function Maokai:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    if target then
+        local Pos =  target.pos + (target.pos - Qtoward):Normalized() * 250
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and not isSpellReady(_W) and ((not self.Menu.Combo.InsecQ:Value()) or (self.Menu.Combo.InsecQ:Value() and Qtoward == nil or MapPosition:inWall(Pos))) then
+            castSpellHigh(self.qSpell, HK_Q, target)
+        end
+
+        if self.Menu.Combo.InsecQ:Value() and Qtoward ~= nil then
+            if myHero.pos:DistanceTo(Pos) < 100 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and not isSpellReady(_W) then
+                castSpellHigh(self.qSpell, HK_Q, target)
+            end
+        end
+
+        if myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range and self.Menu.Combo.W:Value() and isSpellReady(_W) then
+             Control.CastSpell(HK_W, target)
+        end
+        if myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) then
+             Control.CastSpell(HK_E, target)
+        end
+    end
+    if isSpellReady(_R) and self.Menu.Combo.R:Value() then
+        local target = _G.SDK.TargetSelector:GetTarget(self.Menu.Combo.Rrange:Value())
+        if target and getEnemyCount(self.rSpell.Radius, target.pos) >= self.Menu.Combo.Rcount:Value() then
+            castSpellHigh(self.rSpell, HK_R, target)
+        end
+    end
+end
+
+function Maokai:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    if target then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) then
+             castSpellHigh(self.qSpell, HK_Q, target)
+        end
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) then
+             Control.CastSpell(HK_E, target)
+        end
+    end
+end
+
+function Maokai:Draw()
+    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+            Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+            Draw.Circle(myHero.pos, self.wSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+            Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+            Draw.Circle(myHero.pos, self.Menu.Combo.Rrange:Value(), 1, Draw.Color(255, 225, 255, 10))
+    end
+
+    if self.Menu.Draw.InsecQ:Value() then
+        if self.Menu.Combo.InsecQ:Value() then
+            Draw.Text("InsecQ:ON", 15, myHero.pos2D.x -30, myHero.pos2D.y, Draw.Color(255, 000, 255, 000))
+        else
+            Draw.Text("InsecQ:OFF", 15, myHero.pos2D.x -30, myHero.pos2D.y, Draw.Color(255, 255, 000, 000))
+        end
+    end
+end
 ------------------------------
 function onLoadEvent()
     if table.contains(Heroes, myHero.charName) then
