@@ -2943,7 +2943,7 @@ function Maokai:LoadMenu()
         self.Menu.Combo:MenuElement({id = "E", name = "[E] only on target", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "Rcount", name = "R hit x enemies", value = 2, min = 1, max = 5 })
-        self.Menu.Combo:MenuElement({id = "Rrange", name = "R max range", value = 3000, min = 500, max = 3000, step = 100 })
+        self.Menu.Combo:MenuElement({id = "Rrange", name = "R max range", value = 2000, min = 500, max = 3000, step = 100 })
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -2970,6 +2970,7 @@ function Maokai:onTickEvent()
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
+
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
@@ -2979,30 +2980,37 @@ function Maokai:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = _G.SDK.TargetSelector:GetTarget(self.Menu.Combo.Rrange:Value())
     if target then
-        local Pos =  target.pos + (target.pos - Qtoward):Normalized() * 250
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and not isSpellReady(_W) and ((not self.Menu.Combo.InsecQ:Value()) or (self.Menu.Combo.InsecQ:Value() and Qtoward == nil or MapPosition:inWall(Pos))) then
-            castSpellHigh(self.qSpell, HK_Q, target)
-        end
-
-        if self.Menu.Combo.InsecQ:Value() and Qtoward ~= nil then
-            if myHero.pos:DistanceTo(Pos) < 100 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and not isSpellReady(_W) then
+        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and not isSpellReady(_W) then
+            if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and ((not self.Menu.Combo.InsecQ:Value()) or (self.Menu.Combo.InsecQ:Value() and Qtoward == nil)) then
                 castSpellHigh(self.qSpell, HK_Q, target)
+            end
+
+            if self.Menu.Combo.InsecQ:Value() and Qtoward ~= nil then
+                local Pos =  target.pos + (target.pos - Qtoward):Normalized() * 250
+                if MapPosition:inWall(Pos) then
+                    castSpellHigh(self.qSpell, HK_Q, target)
+                else
+                    if myHero.pos:DistanceTo(Pos) < 100 then
+                        castSpellHigh(self.qSpell, HK_Q, target)
+                    end
+                end
             end
         end
 
         if myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range and self.Menu.Combo.W:Value() and isSpellReady(_W) then
              Control.CastSpell(HK_W, target)
         end
+
         if myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) then
              Control.CastSpell(HK_E, target)
         end
-    end
-    if isSpellReady(_R) and self.Menu.Combo.R:Value() then
-        local target = _G.SDK.TargetSelector:GetTarget(self.Menu.Combo.Rrange:Value())
-        if target and getEnemyCount(self.rSpell.Radius, target.pos) >= self.Menu.Combo.Rcount:Value() then
-            castSpellHigh(self.rSpell, HK_R, target)
+
+        if isSpellReady(_R) and self.Menu.Combo.R:Value() then
+            if getEnemyCount(self.rSpell.Radius, target.pos) >= self.Menu.Combo.Rcount:Value() then
+                castSpellHigh(self.rSpell, HK_R, target)
+            end
         end
     end
 end
@@ -3015,7 +3023,7 @@ function Maokai:Harass()
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) then
              castSpellHigh(self.qSpell, HK_Q, target)
         end
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) then
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) then
              Control.CastSpell(HK_E, target)
         end
     end
