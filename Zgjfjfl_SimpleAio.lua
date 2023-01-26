@@ -7,6 +7,50 @@ require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
 
+scriptVersion = 23.1
+------------------------------
+do
+    
+	local Version = scriptVersion
+	local gitHub = "https://raw.githubusercontent.com/zgjfjfl/GoSEXT/main/"
+    local Files = {
+
+        Lua = {
+            Path = SCRIPT_PATH,
+            Name = "Zgjfjfl_SimpleAio.lua",
+        },
+        Version = {
+            Path = SCRIPT_PATH,
+            Name = "Zgjfjfl_SimpleAio.version",
+        }
+
+    }
+    
+    local function AutoUpdate()
+        local function DownloadFile(path, fileName)
+            DownloadFileAsync(gitHub .. fileName, path .. fileName, function() end)
+            while not FileExist(path .. fileName) do end
+        end
+        
+        local function ReadFile(path, fileName)
+            local file = io.open(path .. fileName, "r")
+            local result = file:read()
+            file:close()
+            return result
+        end
+        
+        DownloadFile(Files.Version.Path, Files.Version.Name)
+        local textPos = myHero.pos:To2D()
+        local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
+        if NewVersion > Version then
+            DownloadFile(Files.Lua.Path, Files.Lua.Name)
+            print("New Zgjfjfl_SimpleAio Version - Please reload with F6")
+        end
+    end
+	
+   AutoUpdate()
+end
+------------------------------
 
 local GameTurretCount     = Game.TurretCount
 local GameTurret          = Game.Turret
@@ -256,9 +300,9 @@ function Ornn:__init()
 	
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)
-    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 65, Range = 750, Speed = 1800, Collision = false}
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 65, Range = 800, Speed = 1800, Collision = false}
     self.wSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 175, Range = 500, Speed = math.huge, Collision = false}
-    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 180, Range = 800, Speed = 1600, Collision = false}
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 180, Range = 750, Speed = 1600, Collision = false}
 
   end
 
@@ -270,7 +314,7 @@ function Ornn:LoadMenu()
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "EQ", name = "[E] to Q", toggle = true, value = true})
 	self.Menu.Combo:MenuElement({id = "EWall", name = "[E] to Wall", toggle = true, value = true})
-	self.Menu.Combo:MenuElement({id = "ED", name = "[E] X distance enemy from wall", min = 0, max = 300, value = 300})
+	self.Menu.Combo:MenuElement({id = "ED", name = "[E] X distance enemy from wall", min = 0, max = 300, value = 300, step = 10})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -281,6 +325,7 @@ function Ornn:LoadMenu()
 
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
         self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 
 end
@@ -305,21 +350,23 @@ function Ornn:Combo()
 
     local target = _G.SDK.TargetSelector:GetTarget(1000)
     if target then
-	
-	local qcastpos = myHero.pos + (target.pos - myHero.pos):Normalized() * self.qSpell.Range
+
         local ecastpos = myHero.pos + (target.pos - myHero.pos):Normalized() * self.eSpell.Range
         local objpos = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())
         local lineE = LineSegment(target.pos, objpos)
 
-        if not MapPosition:intersectsWall(lineE) then
+        if not MapPosition:intersectsWall(lineE) or not isSpellReady(_E) then
             if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
                 castSpellHigh(self.qSpell, HK_Q, target)
-	       if isSpellReady(_E) and self.Menu.Combo.EQ:Value() then
-                    DelayAction(function()
-                        Control.CastSpell(HK_E, qcastpos)
-                    end, 1.4
-                    )
-	       end
+            end
+        end
+
+        for i = 1, Game.ParticleCount() do
+        local particle = Game.Particle(i)
+            if particle and particle.name:find("Object") then
+                if not MapPosition:intersectsWall(lineE) and self.Menu.Combo.EQ:Value() and isSpellReady(_E) and getEnemyCount(300, particle.pos) >= 1 then
+                    Control.CastSpell(HK_E, particle)
+                end
             end
         end
 
@@ -327,7 +374,7 @@ function Ornn:Combo()
             castSpellHigh(self.wSpell, HK_W, target)
         end
 
-        if MapPosition:inWall(ecastpos) and MapPosition:intersectsWall(lineE) and self.Menu.Combo.EWall:Value() and isSpellReady(_E) then
+        if MapPosition:intersectsWall(myHero.pos, ecastpos) and MapPosition:intersectsWall(lineE) and self.Menu.Combo.EWall:Value() and isSpellReady(_E) then
             Control.CastSpell(HK_E, ecastpos)
         end
     end
@@ -367,6 +414,9 @@ end
 function Ornn:Draw()
    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
+    end
+    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+            Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
     if self.Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
