@@ -364,7 +364,7 @@ function Ornn:Combo()
         for i = 1, Game.ParticleCount() do
         local particle = Game.Particle(i)
             if particle and particle.name:find("Object") then
-                if not MapPosition:intersectsWall(lineE) and self.Menu.Combo.EQ:Value() and isSpellReady(_E) and getEnemyCount(300, particle.pos) >= 1 then
+                if not MapPosition:intersectsWall(lineE) and self.Menu.Combo.EQ:Value() and isSpellReady(_E) and getEnemyCount(300, particle.pos) >= 1 and myHero.pos:DistanceTo(particle.pos) <= self.eSpell.Range then
                     Control.CastSpell(HK_E, particle)
                 end
             end
