@@ -7,7 +7,7 @@ require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
 
-scriptVersion = 23.1
+scriptVersion = 23.2
 ------------------------------
 do
     
