@@ -7,7 +7,7 @@ require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
 
-scriptVersion = 23.4
+scriptVersion = 23.5
 ------------------------------
 do
     
@@ -2787,9 +2787,9 @@ function KSante:LoadMenu()
 end
 
 function KSante:onTickEvent()
-    local myHerobounsHealth = math.min(math.floor(myHero.maxHealth - (610+114*(myHero.levelData.lvl-1))), 1800)
+    local myHerobounsHealth = math.min(math.floor(myHero.maxHealth - (610 + 108 * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1800)
     --print(myHerobounsHealth)
-    local time = string.format("%.2f", 1/9000*myHerobounsHealth)
+    local time = string.format("%.2f", 1/9000 * myHerobounsHealth)
     --print(time)
     self.q1Spell.Delay = 0.45 - time
     self.q3Spell.Delay = 0.45 - time
