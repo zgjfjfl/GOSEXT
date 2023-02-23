@@ -7,7 +7,7 @@ require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
 
-scriptVersion = 23.3
+scriptVersion = 23.4
 ------------------------------
 do
     
@@ -2740,12 +2740,12 @@ end
 class "KSante"
         
 function KSante:__init()	     
-    print("Zgjfjfl-KSante Loaded") 
+    print("Zgjfjfl-KSante Loaded")
     self:LoadMenu()
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)
-    self.q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = myHero:GetSpellData(_Q).delay, Radius = 75, Range = 450, Speed = math.huge, Collision = false}
-    self.q3Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = myHero:GetSpellData(_Q).delay, Radius = 70, Range = 800, Speed = 1600, Collision = false}
+    self.q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.45, Radius = 75, Range = 450, Speed = math.huge, Collision = false}
+    self.q3Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.45, Radius = 70, Range = 800, Speed = 1600, Collision = false}
     self.wSpell = { Range = 450 }
     self.e1Spell = { Range = 250 }
     self.e2Spell = { Range = 400 }
@@ -2787,11 +2787,18 @@ function KSante:LoadMenu()
 end
 
 function KSante:onTickEvent()
+    local myHerobounsHealth = math.min(math.floor(myHero.maxHealth - (610+114*(myHero.levelData.lvl-1))), 1800)
+    --print(myHerobounsHealth)
+    local time = string.format("%.2f", 1/9000*myHerobounsHealth)
+    --print(time)
+    self.q1Spell.Delay = 0.45 - time
+    self.q3Spell.Delay = 0.45 - time
     if doesMyChampionHaveBuff("KSanteQ3") then
         self.qSpell = self.q3Spell
     else
         self.qSpell = self.q1Spell
     end
+    --print(self.qSpell.Delay)
     if haveBuff(myHero, "KSanteW") or haveBuff(myHero, "KSanteW_AllOut") then
         orbwalker:SetMovement(false)
         orbwalker:SetAttack(false)
