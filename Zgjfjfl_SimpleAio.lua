@@ -7,7 +7,7 @@ require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
 
-scriptVersion = 23.5
+scriptVersion = 23.6
 ------------------------------
 do
     
@@ -442,9 +442,10 @@ function JarvanIV:__init()
 	
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)
-    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 90, Range = 785, Speed = math.huge, Collision = false}
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 70, Range = 770, Speed = math.huge, Collision = false}
     self.wSpell = { Range = 600 }
     self.eSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 200, Range = 860, Speed = math.huge, Collision = false}
+    self.rSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 350, Range = 650, Speed = math.huge, Collision = false}
   end
 
 function JarvanIV:LoadMenu() 
@@ -452,8 +453,13 @@ function JarvanIV:LoadMenu()
             
     self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
         self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "EQ", name = "[EQ]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "WHp", name = "use W when self HP %", value =  40, min=5, max = 100, step = 5})
+        self.Menu.Combo:MenuElement({id = "WCount", name = "or use W when can hit >= X enemies", value=2, min = 1, max = 5})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "RHp", name = "use R when target HP %", value =  40, min=5, max = 100, step = 5})
+        self.Menu.Combo:MenuElement({id = "RCount", name = "or use R when can hit >= X enemies", value=2, min = 1, max = 5})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -461,8 +467,14 @@ function JarvanIV:LoadMenu()
     self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
         self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
+    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        self.Menu.KS:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+
     self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-        self.Menu.Flee:MenuElement({id = "EQ", name = "[EQ]", toggle = true, value = true})
+        self.Menu.Flee:MenuElement({id = "EQ", name = "[EQ] to mouse", toggle = true, value = true})
+        self.Menu.Flee:MenuElement({id = "W", name = "[W] slow enemy", toggle = true, value = true})
 
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
@@ -470,6 +482,10 @@ function JarvanIV:LoadMenu()
 end
 
 function JarvanIV:onTickEvent()
+
+    if haveBuff(myHero, "JarvanIVCataclysm") and getEnemyCount(self.rSpell.Radius, myHero.pos) == 0 then
+        Control.CastSpell(HK_R)
+    end
 
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
@@ -483,7 +499,7 @@ function JarvanIV:onTickEvent()
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
         self:Flee()
     end
-   
+   self:KillSteal()
 end
 
 function JarvanIV:Combo()
@@ -497,11 +513,13 @@ function JarvanIV:Combo()
         pred:GetPrediction(target, myHero)
         if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
             local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -100)
-            if self.Menu.Combo.E:Value() and isSpellReady(_E) then
-                Control.CastSpell(HK_E, castPos)
-                if isSpellReady(_Q) and self.Menu.Combo.Q:Value() then
-                    DelayAction(function() Control.CastSpell(HK_Q, castPos) end, 0.1)
-                end
+            if self.Menu.Combo.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
+                self:CastE(castPos)
+                orbwalker:SetMovement(false)
+                orbwalker:SetAttack(false)
+                DelayAction(function() Control.CastSpell(HK_Q, castPos) end, 0.1)
+                orbwalker:SetMovement(true)
+                orbwalker:SetAttack(true)
             end
         end
 		        
@@ -510,11 +528,16 @@ function JarvanIV:Combo()
             lastQ = GetTickCount()
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and ((myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and myHero.health/myHero.maxHealth <= self.Menu.Combo.WHp:Value()/100) or getEnemyCount(self.wSpell.Range, myHero.pos) >= self.Menu.Combo.WCount:Value()) then
             Control.CastSpell(HK_W)
             lastW = GetTickCount()
         end
-		
+
+        if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() and not haveBuff(myHero, "JarvanIVCataclysm") and myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and (target.health/target.maxHealth <= self.Menu.Combo.RHp:Value()/100 or getEnemyCount(self.rSpell.Radius, target.pos) >= self.Menu.Combo.RCount:Value()) then
+            Control.CastSpell(HK_R, target)
+            lastR = GetTickCount()
+        end
+
     end
 end	
 
@@ -532,6 +555,7 @@ function JarvanIV:LaneClear()
             end
         end
     end
+
 end
 
 function JarvanIV:Harass()
@@ -549,11 +573,84 @@ function JarvanIV:Harass()
     end
 end
 
+function JarvanIV:KillSteal()
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    if target then
+        if isSpellReady(_Q) and lastQ + 500 < GetTickCount() and self.Menu.KS.Q:Value() then
+            if self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+                castSpellHigh(self.qSpell, HK_Q, target)
+                lastQ = GetTickCount()
+            end	
+        end
+
+        if isSpellReady(_E) and lastE + 250 < GetTickCount() and self.Menu.KS.E:Value() then
+            if self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
+                castSpellHigh(self.eSpell, HK_E, target)
+                lastE = GetTickCount()
+            end	
+        end
+
+        if isSpellReady(_R) and lastR + 250 < GetTickCount() and self.Menu.KS.R:Value() and not haveBuff(myHero, "JarvanIVCataclysm") then
+            if self:getrDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range then
+                Control.CastSpell(HK_R, target)
+                lastR = GetTickCount()
+            end	
+        end
+
+    end
+end
+
+function JarvanIV:CastE(unit)
+    if lastE + 250 < GetTickCount() then
+        Control.CastSpell(HK_E, unit)
+        lastE = GetTickCount()
+    end
+end
+
+function JarvanIV:getqDmg(target)
+    local qlvl = myHero:GetSpellData(_Q).level
+    local qbaseDmg  = 40 * qlvl + 50
+    local qadDmg = myHero.bonusDamage * 1.4
+    local qDmg = qbaseDmg + qadDmg
+    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
+end
+
+function JarvanIV:geteDmg(target)
+    local elvl = myHero:GetSpellData(_E).level
+    local ebaseDmg  = 40 * elvl + 40
+    local eapDmg = myHero.ap * 0.8
+    local eDmg = ebaseDmg + eapDmg
+    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
+end
+
+function JarvanIV:getrDmg(target)
+    local rlvl = myHero:GetSpellData(_R).level
+    local rbaseDmg  = 125 * rlvl + 75
+    local radDmg = myHero.bonusDamage * 1.8
+    local rDmg = rbaseDmg + radDmg
+    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, rDmg) 
+end
+
+
 function JarvanIV:Flee()
-    if self.Menu.Flee.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) then
+    if self.Menu.Flee.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
         local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.eSpell.Range
-            Control.CastSpell(HK_E, pos)
-            DelayAction(function() Control.CastSpell(HK_Q, pos) end, 0.1)
+        self:CastE(pos)
+        orbwalker:SetMovement(false)
+        DelayAction(function() Control.CastSpell(HK_Q, pos) end, 0.1)
+        orbwalker:SetMovement(true)
+    end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.wSpell.Range)
+    if target then
+        if isSpellReady(_W) and lastW + 250 < GetTickCount() and self.Menu.Flee.W:Value() then
+            if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+                Control.CastSpell(HK_W)
+                lastW = GetTickCount()
+            end	
+        end
     end
 end
 
@@ -777,7 +874,6 @@ function Shyvana:LoadMenu()
     self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
         self.Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Flee:MenuElement({id = "R", name = "[R] to mouse", toggle = true, value = true})
-
 	
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
