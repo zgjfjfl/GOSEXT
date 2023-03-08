@@ -1,13 +1,16 @@
 
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai", "Gragas"}
 
-if not table.contains(Heroes, myHero.charName) then return end
+if not table.contains(Heroes, myHero.charName) then 
+    print('SimpleAio not supported ' .. myHero.charName)
+    return 
+end
 
 require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
 
-scriptVersion = 23.6
+scriptVersion = 23.7
 ------------------------------
 do
     
@@ -3337,6 +3340,247 @@ function Maokai:Draw()
         end
     end
 end
+
+------------------------------
+class "Gragas"
+        
+function Gragas:__init()	     
+    print("Zgjfjfl-Gragas Loaded") 
+    self:LoadMenu()
+	
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTickEvent() end)
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 250, Range = 850, Speed = 1000, Collision = false}
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 90, Range = 800, Speed = 900, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.rSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 400, Range = 1000, Speed = math.huge, Collision = false}
+end
+
+function Gragas:LoadMenu() 
+    self.Menu = MenuElement({type = MENU, id = "zgGragas", name = "Zgjfjfl Gragas"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Insec", name = "InsecR Setting"})
+        self.Menu.Insec:MenuElement({id = "R1", name = "Semi-Manual InsecR Target to Self", key = string.byte("T")})
+        self.Menu.Insec:MenuElement({id = "R2", name = "Auto InsecR on Immobile Target", value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Jungle Clear"})
+        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        self.Menu.KS:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+end
+
+function Gragas:onTickEvent()
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_JUNGLECLEAR] then
+        self:JungleClear()
+    end
+
+    if isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQToggle" then
+        self:CastQ2()
+    end
+
+    if self.Menu.Insec.R1:Value() then
+        self:InsecR()
+    end
+
+    if self.Menu.Insec.R2:Value() then
+        self:AutoR()
+    end
+
+    self:KillSteal()
+end
+
+function Gragas:Combo()
+
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    if target then
+        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and not isSpellReady(_E) then
+            if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+                castSpellHigh(self.qSpell, HK_Q, target)
+                lastQ = GetTickCount()
+            end
+        end
+
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+            Control.CastSpell(HK_W)
+            lastW = GetTickCount()
+        end
+
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
+            castSpellHigh(self.eSpell, HK_E, target)
+            lastE = GetTickCount()
+        end
+
+    end
+end
+
+function Gragas:Harass()
+
+    if _G.SDK.Attack:IsActive() then return end
+    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    if target then
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() then
+            castSpellHigh(self.qSpell, HK_Q, target)
+            lastQ = GetTickCount()
+        end
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
+            castSpellHigh(self.eSpell, HK_E, target)
+            lastE = GetTickCount()
+        end
+    end
+end
+
+function Gragas:InsecR()
+    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    if target then
+        local pred = GGPrediction:SpellPrediction(self.rSpell)
+        pred:GetPrediction(target, myHero)
+        if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+            local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -150)
+            if not MapPosition:intersectsWall(myHero.pos, target.pos) and isSpellReady(_R) and lastR + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range - 150 then
+                Control.CastSpell(HK_R, castPos)
+                lastR = GetTickCount()
+            end
+        end
+    end
+end
+
+function Gragas:AutoR()
+    local heroes = _G.SDK.ObjectManager:GetEnemyHeroes(self.rSpell.Range - 150)
+    for i, hero in ipairs(heroes) do
+        if not MapPosition:intersectsWall(myHero.pos, hero.pos) and isSpellReady(_R) and lastR + 350 < GetTickCount() and isImmobile(hero) then
+            Control.CastSpell(HK_R, Vector(hero.pos):Extended(Vector(myHero.pos), -150))
+            lastR = GetTickCount()
+        end
+    end
+end
+
+function Gragas:JungleClear()
+    if _G.SDK.Attack:IsActive() then return end
+    local target = HealthPrediction:GetJungleTarget()
+    if target then
+        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+            Control.CastSpell(HK_Q, target)
+            lastQ = GetTickCount()
+        end
+        if isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQToggle" and getBuffData(myHero, "GragasQ").duration < 2 then
+            Control.CastSpell(HK_Q)
+        end
+        if self.Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+            Control.CastSpell(HK_W)
+            lastW = GetTickCount()
+        end
+        if self.Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+            Control.CastSpell(HK_E, target)
+            lastE = GetTickCount()
+        end
+    end
+end
+
+function Gragas:CastQ2()
+
+    for i = 1, Game.ParticleCount() do
+    local particle = Game.Particle(i)
+        if particle and particle.name:find("Gragas_Base_Q_Ally") and getEnemyCount(300, particle.pos) >= 1 then
+            Control.CastSpell(HK_Q)
+        end
+    end
+end
+
+function Gragas:KillSteal()
+    if _G.SDK.Attack:IsActive() then return end
+
+    local target = _G.SDK.TargetSelector:GetTarget(self.rSpell.Range)
+    if target then
+
+        if isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and self.Menu.KS.Q:Value() then
+            if self:getQDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+                castSpellHigh(self.qSpell, HK_Q, target)
+                lastQ = GetTickCount()
+            end	
+        end
+
+        if isSpellReady(_E) and lastE + 250 < GetTickCount() and self.Menu.KS.E:Value() then
+            if self:getEDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+                castSpellHigh(self.eSpell, HK_E, target)
+                lastE = GetTickCount()
+            end	
+        end
+
+        if isSpellReady(_R) and lastR + 350 < GetTickCount() and self.Menu.KS.R:Value() then
+            if self:getRDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range then
+                castSpellHigh(self.rSpell, HK_R, target)
+                lastR = GetTickCount()
+            end	
+        end
+    end
+end
+
+function Gragas:getQDmg(target)	
+    local qlvl = myHero:GetSpellData(_Q).level
+    local qbaseDmg  = 40 * qlvl + 40
+    local qapDmg = myHero.ap * 0.8
+    local qDmg = qbaseDmg + qapDmg
+    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, qDmg)
+end
+
+function Gragas:getEDmg(target)	
+    local elvl = myHero:GetSpellData(_E).level
+    local ebaseDmg  = 35 * elvl + 45
+    local eapDmg = myHero.ap * 0.6
+    local eDmg = ebaseDmg + eapDmg
+    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg)
+end
+
+function Gragas:getRDmg(target)	
+    local rlvl = myHero:GetSpellData(_R).level
+    local rbaseDmg  = 100 * rlvl + 100
+    local rapDmg = myHero.ap * 0.8
+    local rDmg = rbaseDmg + rapDmg
+    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, rDmg)
+end
+
+
+function Gragas:Draw()
+    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+        Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+        Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+    end
+    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+        Draw.Circle(myHero.pos, self.rSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+    end
+end
+
 ------------------------------
 function onLoadEvent()
     if table.contains(Heroes, myHero.charName) then
