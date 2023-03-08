@@ -10,7 +10,7 @@ require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
 
-scriptVersion = 23.7
+scriptVersion = 23.8
 ------------------------------
 do
     
@@ -2290,6 +2290,10 @@ function Ivern:LoadMenu()
     self.Menu:MenuElement({type = MENU, id = "Auto", name = "Auto E"})
         self.Menu.Auto:MenuElement({id = "Eally", name = "[E] auto on ally,when enemies inRadius", toggle = true, value = true})
         self.Menu.Auto:MenuElement({id = "Eself", name = "[E] auto on self,when enemies inRadius", toggle = true, value = true})
+
+    self.Menu:MenuElement({type = MENU, id = "Daisy", name = "Daisy Setting"})
+        self.Menu.Daisy:MenuElement({id = "R1", name = "Control 'Daisy' attack target", key = string.byte("T")})
+        self.Menu.Daisy:MenuElement({id = "R2", name = "Control 'Daisy' follow self", key = string.byte("Z")})
 	
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
@@ -2300,6 +2304,11 @@ function Ivern:onTickEvent()
     if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
+
+    if myHero:GetSpellData(_R).name == "IvernRRecast" then
+        self:DaisyControl()
+    end
+
     self:AutoE()
 end
 
@@ -2309,7 +2318,7 @@ function Ivern:Combo()
 
     local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
     if target then
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and myHero:GetSpellData(_Q).name == "IvernQ" and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and myHero:GetSpellData(_Q).name == "IvernQ" and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
@@ -2317,6 +2326,19 @@ function Ivern:Combo()
              Control.CastSpell(HK_R, target)
             lastR = GetTickCount()
         end
+    end
+end
+
+function Ivern:DaisyControl()
+
+    local target = _G.SDK.TargetSelector:GetTarget(2000)
+    if target then
+        if self.Menu.Daisy.R1:Value() then
+            Control.CastSpell(HK_R, target)
+        end
+    end
+    if self.Menu.Daisy.R2:Value() then
+         Control.CastSpell(HK_R, myHero)
     end
 end
 
