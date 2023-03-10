@@ -6,7 +6,7 @@ if not table.contains(Heroes, myHero.charName) then
     return 
 end
 
-scriptVersion = 23.91
+scriptVersion = 23.92
 ------------------------------
 do
     
@@ -2326,7 +2326,7 @@ function Ivern:onTickEvent()
         self:DaisyControl()
     end
 
-    if myHero:GetSpellData(_Q).name == "IvernQ" and isSpellReady(_Q) then
+    if (myHero:GetSpellData(_Q).name == "IvernQ" and isSpellReady(_Q)) or (haveBuff(myHero, "ivernqallyjump")) then
         orbwalker:SetAttack(false)
     else
         orbwalker:SetAttack(true)
