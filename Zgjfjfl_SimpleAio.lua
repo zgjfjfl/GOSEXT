@@ -3557,7 +3557,7 @@ function Gragas:CastQ2()
 
     for i = 1, Game.ParticleCount() do
     local particle = Game.Particle(i)
-        if particle and particle.name:find("Gragas_Base_Q_Ally") and getEnemyCount(300, particle.pos) >= 1 then
+        if particle and particle.name:find("_Q_Ally") and getEnemyCount(300, particle.pos) >= 1 then
             Control.CastSpell(HK_Q)
         end
     end
