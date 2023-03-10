@@ -6,7 +6,7 @@ if not table.contains(Heroes, myHero.charName) then
     return 
 end
 
-scriptVersion = 23.9
+scriptVersion = 23.10
 ------------------------------
 do
     
