@@ -13,8 +13,6 @@ local GameTurret          = Game.Turret
 local GameMinionCount     = Game.MinionCount
 local GameMinion          = Game.Minion
 
-local orbwalker         = _G.SDK.Orbwalker
-local TargetSelector = _G.SDK.TargetSelector
 
 local function isSpellReady(spell)
     return  myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 and Game.CanUseSpell(spell) == 0
@@ -67,17 +65,7 @@ local function castSpell(spellData, hotkey, target)
     local pred = GGPrediction:SpellPrediction(spellData)
     pred:GetPrediction(target, myHero)
     if pred:CanHit(GGPrediction.HITCHANCE_NORMAL) then
-        if myHero.pos:DistanceTo(pred.CastPosition) <= spellData.Range + 15 then
-            Control.CastSpell(hotkey, pred.CastPosition)	
-        end
-    end
-end
-
-local function castSpellHigh(spellData, hotkey, target)
-    local pred = GGPrediction:SpellPrediction(spellData)
-    pred:GetPrediction(target, myHero)
-    if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
-        Control.CastSpell(hotkey, pred.CastPosition)	
+        Control.CastSpell(hotkey, pred.CastPosition)
     end
 end
 
@@ -89,11 +77,9 @@ function Zeri:__init()
    
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)
-    self.qRange = 750
-    self.aaRange = myHero.range
-    
+    self.qRange = 765
     _G.SDK.Spell:SpellClear(_Q, 
-                            {Range=750, Speed = 2600, Delay = 0.1, Radius = 40 },
+                            {Range=750, Speed = 2600, Delay = 0, Radius = 40 },
                             function ()
                                 return isSpellReady(_Q)
                             end,
@@ -104,7 +90,7 @@ function Zeri:__init()
                                 return orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] and self.Menu.QSpell.QLCEnabled:Value()  and isSpellReady(_Q)
                             end,
                             function ()
-                                local levelDmgTbl  = {15 , 18 , 21 , 24 , 27}
+                                local levelDmgTbl  = {15 , 17 , 19 , 21 , 23}
                                 local levelPctTbl  = {1.04 , 1.08 , 1.12 , 1.16 , 1.2}
                                 local levelDmg = levelDmgTbl[myHero:GetSpellData(_Q).level]
                                 local levelPct = levelPctTbl[myHero:GetSpellData(_Q).level]
@@ -145,7 +131,8 @@ function Zeri:LoadMenu()
 end
 
 function Zeri:onTickEvent()
-    self.hasPassive = doesMyChampionHaveBuff("zeriqpassiveready")
+
+    self.hasPassive = doesMyChampionHaveBuff("ZeriQPassiveReady")
     if self.hasPassive and self.Menu.BlockAA.enabled:Value() then
         orbwalker:SetAttack(true)
     elseif not self.hasPassive and self.Menu.BlockAA.enabled:Value() then
@@ -155,9 +142,9 @@ function Zeri:onTickEvent()
     end
 
     if myHero.range == 550 then
-        self.qRange = 800
+        self.qRange = 815
     else
-        self.qRange = 750
+        self.qRange = 765
     end
 
     if orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
@@ -176,19 +163,19 @@ function Zeri:onTickEvent()
 end
 
 function Zeri:castQ(target)
-    local qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 2600, Delay = 0.1, Radius = 40,  Collision = true, CollisionTypes = { GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL }}
+    local qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 2600, Delay = 0, Radius = 40, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
     if doesMyChampionHaveBuff("ZeriR") then
-        qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 3400, Delay = 0.1, Radius = 40,  Collision = false}
+        qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 3400, Delay = 0, Radius = 40, Collision = false}
     end
-    if doesMyChampionHaveBuff("zeriespecialrounds") then
-        qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 2600, Delay = 0.1, Radius = 40,  Collision = false}
+    if doesMyChampionHaveBuff("ZeriESpecialRounds") and not doesMyChampionHaveBuff("ZeriR") then
+        qData = {Type = GGPrediction.SPELLTYPE_LINE, Range=self.qRange, Speed = 2600, Delay = 0, Radius = 40, Collision = false}
     end
-    castSpell(qData,HK_Q, target)
+    castSpell(qData, HK_Q, target)
 end
 
 function Zeri:assessWOptions(target)
-    local wData = {Type = GGPrediction.SPELLTYPE_LINE, Range= 1200, Speed = 2500, Delay = 0.6, Radius = 40,  Collision = false}
-    local w2Data = {Type = GGPrediction.SPELLTYPE_LINE, Range= 2700, Speed = 2500, Delay = 0.6, Radius = 100,  Collision = false}
+    local wData = {Type = GGPrediction.SPELLTYPE_LINE, Range= 1200, Speed = 2500, Delay = 0.55, Radius = 40, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
+    local w2Data = {Type = GGPrediction.SPELLTYPE_LINE, Range= 2700, Speed = 2500, Delay = 0.55, Radius = 100, Collision = false}
     local direction = (target.pos - myHero.pos):Normalized()
     for distance = 50, 1100, 50 do
         local testPosition = myHero.pos + direction * distance
@@ -200,9 +187,9 @@ function Zeri:assessWOptions(target)
                     return false
                 end 
             end
-            if getDistance(target.pos, testPosition) < 50 then
+            if getDistance(target.pos, testPosition) < 50 and getDistance(target.pos, myHero.pos) > self.qRange then
                 if not self.Menu.WSpell.WTerrain:Value() then
-                    castSpellHigh(wData,HK_W, target)
+                    castSpell(wData,HK_W, target)
                     return true
                 else
                     return false
@@ -212,7 +199,7 @@ function Zeri:assessWOptions(target)
                 if getDistance(target.pos, testPosition) > 1500 then
                     return false
                 end
-                castSpellHigh(w2Data,HK_W, target)
+                castSpell(w2Data,HK_W, target)
                 return true
             end
         end
@@ -222,18 +209,16 @@ end
 
 function Zeri:Combo()
     local target = orbwalker:GetTarget()
-    
     if not target then
-        target = TargetSelector:GetTarget(2700)
+        target = _G.SDK.TargetSelector:GetTarget(2700)
     end
     if target then
         local distance = getDistance(myHero.pos, target.pos)
-        if self.hasPassive and distance <= self.aaRange then return end --lets use charged auto instead
         
         if isSpellReady(_W) and self.Menu.WSpell.WEnabled:Value() then
             self:assessWOptions(target)
         end
-        if self.Menu.QSpell.QEnabled:Value() and distance < self.qRange and isSpellReady(_Q) and not orbwalker:IsAutoAttacking() then
+        if self.Menu.QSpell.QEnabled:Value() and distance <= self.qRange and isSpellReady(_Q) and not orbwalker:IsAutoAttacking() then
             self:castQ(target)
         end
 
@@ -251,14 +236,14 @@ end
 
 function Zeri:Harass()
     local target = orbwalker:GetTarget()
+    
     if not target then
-        target = TargetSelector:GetTarget(1000)
+        target = _G.SDK.TargetSelector:GetTarget(self.qRange)
     end
     if target then
-        local distance = getDistance(myHero.pos, target.pos) 
-        if self.hasPassive and distance <= self.aaRange then return end --lets use charged auto instead
+        local distance = getDistance(myHero.pos, target.pos)
         
-        if self.Menu.QSpell.QHEnabled:Value() and distance < self.qRange and isSpellReady(_Q) and not orbwalker:IsAutoAttacking() then
+        if self.Menu.QSpell.QHEnabled:Value() and distance <= self.qRange and isSpellReady(_Q) and not orbwalker:IsAutoAttacking() then
             self:castQ(target)
         end
     end
@@ -272,13 +257,17 @@ function Zeri:QObject()
                 Control.CastSpell(HK_Q, turret)
             end
         end
-        local barracks = _G.SDK.ObjectManager:GetEnemyBuildings(self.qRange)
+        local barracks = _G.SDK.ObjectManager:GetEnemyBuildings(self.qRange+270)
         for i, barrack in ipairs(barracks) do
-            Control.CastSpell(HK_Q, barrack)
+            if barrack.type == Obj_AI_Barracks then
+                Control.CastSpell(HK_Q, barrack)
+            end
         end
-        local nexus = _G.SDK.ObjectManager:GetEnemyBuildings(self.qRange)
+        local nexus = _G.SDK.ObjectManager:GetEnemyBuildings(self.qRange+380)
         for i, base in ipairs(nexus) do
-            Control.CastSpell(HK_Q, base)
+            if base.type == Obj_AI_Nexus then
+                Control.CastSpell(HK_Q, base)
+            end
         end
         local wards = _G.SDK.ObjectManager:GetOtherEnemyMinions(self.qRange)
         for i, ward in ipairs(wards) do
@@ -296,7 +285,7 @@ function Zeri:Lasthit()
         if isSpellReady(_Q) then
             if getDistance(minion.pos) <= self.qRange then
                 local level = myHero:GetSpellData(_Q).level	
-                local Qdamage = ({15, 18, 21, 24, 27})[level] + ({1.04, 1.08, 1.12, 1.16, 1.2})[level] * myHero.totalDamage
+                local Qdamage = ({15, 17, 19, 21, 23})[level] + ({1.04, 1.08, 1.12, 1.16, 1.2})[level] * myHero.totalDamage
                 if Qdamage >= minion.health and not minion.dead then
                     Control.CastSpell(HK_Q, minion)
                 end
@@ -307,7 +296,7 @@ end
 
 function Zeri:Draw()
     if self.Menu.Drawing.Qrange:Value() then
-            Draw.Circle(myHero.pos, self.qRange, 0.5, Draw.Color(192, 255, 255, 255))
+        Draw.Circle(myHero.pos, self.qRange, 0.5, Draw.Color(192, 255, 255, 255))
     end
     if self.Menu.Drawing.DrawBlockAA:Value() then
         if self.Menu.BlockAA.enabled:Value() then
@@ -319,6 +308,9 @@ function Zeri:Draw()
 end
 
 function onLoadEvent()
+
+    orbwalker = _G.SDK.Orbwalker
+    TargetSelector = _G.SDK.TargetSelector
     if table.contains(Heroes, myHero.charName) then
 		_G[myHero.charName]()
     end

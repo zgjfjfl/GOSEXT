@@ -6,7 +6,11 @@ if not table.contains(Heroes, myHero.charName) then
     return 
 end
 
-scriptVersion = 23.92
+require "GGPrediction"
+require "2DGeometry"
+require "MapPositionGOS"
+
+scriptVersion = 23.93
 ------------------------------
 do
     
@@ -65,10 +69,6 @@ local lastE = 0
 local lastR = 0
 
 Callback.Add("Load", function()
-
-    require "GGPrediction"
-    require "2DGeometry"
-    require "MapPositionGOS"
 
     orbwalker = _G.SDK.Orbwalker
 
@@ -1468,7 +1468,7 @@ function Belveth:geteDmg(target)
     local elvl = myHero:GetSpellData(_E).level
     local ebaseDmg  = 2 * elvl + 6
     local eadDmg = myHero.totalDamage * 0.06
-    local exttimes = math.floor(((myHero.attackSpeed / 0.85 - 1) / 0.333) + 0.5)
+    local exttimes = math.floor(((myHero.attackSpeed - 1) / 0.333) + 0.5)
     local eDmg = (ebaseDmg + eadDmg) * (1 + missingHP * 3) * (6 + exttimes)
 return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg) 
 end
