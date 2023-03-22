@@ -10,51 +10,6 @@ require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
 
-scriptVersion = 23.93
-------------------------------
-do
-    
-	local Version = scriptVersion
-	local gitHub = "https://raw.githubusercontent.com/zgjfjfl/GoSEXT/main/"
-    local Files = {
-
-        Lua = {
-            Path = SCRIPT_PATH,
-            Name = "Zgjfjfl_SimpleAio.lua",
-        },
-        Version = {
-            Path = SCRIPT_PATH,
-            Name = "Zgjfjfl_SimpleAio.version",
-        }
-
-    }
-    
-    local function AutoUpdate()
-        local function DownloadFile(path, fileName)
-            DownloadFileAsync(gitHub .. fileName, path .. fileName, function() end)
-            while not FileExist(path .. fileName) do end
-        end
-        
-        local function ReadFile(path, fileName)
-            local file = io.open(path .. fileName, "r")
-            local result = file:read()
-            file:close()
-            return result
-        end
-        
-        DownloadFile(Files.Version.Path, Files.Version.Name)
-        local textPos = myHero.pos:To2D()
-        local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
-        if NewVersion > Version then
-            DownloadFile(Files.Lua.Path, Files.Lua.Name)
-            print("New Zgjfjfl_SimpleAio Version - Please reload with F6")
-        end
-    end
-	
-   AutoUpdate()
-end
-------------------------------
-
 local GameTurretCount     = Game.TurretCount
 local GameTurret          = Game.Turret
 local GameHeroCount     = Game.HeroCount
@@ -79,7 +34,6 @@ Callback.Add("Load", function()
     end
 
 end)
-
 
 local function isSpellReady(spell)
     return myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 and myHero:GetSpellData(spell).mana <= myHero.mana and Game.CanUseSpell(spell) == 0
