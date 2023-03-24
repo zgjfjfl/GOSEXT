@@ -1,4 +1,3 @@
-
 local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai", "Gragas", "Milio"}
 
 if not table.contains(Heroes, myHero.charName) then 
@@ -3614,7 +3613,9 @@ function Milio:__init()
 	
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)    
-    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1500, Speed = 1200, Collision = true, MaxCollision = 1, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1000, Speed = 1200, Collision = true, MaxCollision = 1, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.qnocolSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1000, Speed = 1200, Collision = false}
+	self.qnocolSpellextended = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 45, Range = 1500, Speed = 1200, Collision = false}
     self.wSpell = { Range = 650 }
     self.eSpell = { Range = 650 }
     self.rSpell = { Range = 700 }  
@@ -3627,15 +3628,15 @@ function Milio:LoadMenu()
         self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "QBD", name = "[Q] ball collision minion bounces distance", value = 400, min = 100, max = 500, step = 50})
         self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = false})
-        self.Menu.Combo:MenuElement({id = "RHP", name = "UseR when ally or self  <= Xhp%", value = 20, min = 0, max = 100, step = 5})
+        self.Menu.Combo:MenuElement({id = "RHP", name = "UseR when ally or self <= X hp%", value = 20, min = 0, max = 100, step = 5})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Harass:MenuElement({id = "Mana", name = "Min Mana to Harass", value = 20, min = 0, max = 100})
+        self.Menu.Harass:MenuElement({id = "Mana", name = "Min Mana to Harass", value = 30, min = 0, max = 100})
 
     self.Menu:MenuElement({type = MENU, id = "AutoW", name = "AutoW"})
         self.Menu.AutoW:MenuElement({id = "W", name = "[W]Auto heal", toggle = true, value = true})
-        self.Menu.AutoW:MenuElement({id = "WHP", name = "When ally or self X hp%", value = 50, min = 0, max = 100, step = 5})
+        self.Menu.AutoW:MenuElement({id = "WHP", name = "When ally or self <= X hp%", value = 50, min = 0, max = 100, step = 5})
 
     self.Menu:MenuElement({type = MENU, id = "AutoE", name = "AutoE"})
         self.Menu.AutoE:MenuElement({id = "E", name = "[E]Auto shield", toggle = true, value = true})
@@ -3644,6 +3645,7 @@ function Milio:LoadMenu()
 
     self.Menu:MenuElement({type = MENU, id = "AutoR", name = "AutoR"})
         self.Menu.AutoR:MenuElement({id = "R", name = "[R]Auto clears ally CC", toggle = true, value = true})
+		self.Menu.AutoR:MenuElement({id = "rcount", name = "r min cced count", value = 3, min = 1, max = 5, step = 1})
             self.Menu.AutoR:MenuElement({type = MENU, id = "CC", name = "CC Types"})			
             self.Menu.AutoR.CC:MenuElement({ id = "Stun", name = "Use on Stun", value = true})
             self.Menu.AutoR.CC:MenuElement({ id = "Taunt", name = "Use on Taunt", value = true})
@@ -3721,17 +3723,29 @@ end
 
 function Milio:CastQ(target)
     if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and _G.SDK.Orbwalker:CanMove() then
-        local Pred = GGPrediction:SpellPrediction(self.qSpell)
-        Pred:GetPrediction(target, myHero)
-        local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, Pred.CastPosition, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, self.qSpell.CollisionTypes, target.networkID)
-        if collisionCount >= self.qSpell.MaxCollision and myHero.pos:DistanceTo(target.pos) > 1000 and myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.QBD:Value()+1000 then
-            for i, minion in ipairs(collisionObjects) do
-                if isValid(minion) and minion.pos:DistanceTo(target.pos) < self.Menu.Combo.QBD:Value() and minion.pos:DistanceTo(myHero.pos) < 1000 then
-                    Control.CastSpell(HK_Q, minion)
-                    lastQ = GetTickCount()
+        local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, self.qSpell.CollisionTypes, target.networkID)
+        if collisionCount >= 1 and myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.QBD:Value() + 1000 then
+            local minion = collisionObjects[1]
+            if isValid(minion) and minion.pos:DistanceTo(target.pos) < 400 and minion.pos:DistanceTo(myHero.pos) < 1000 then
+                if myHero.pos:DistanceTo(target.pos) < 1000 then
+                    local Pred = GGPrediction:SpellPrediction(self.qnocolSpell)
+                    Pred:GetPrediction(target, myHero)
+                    if Pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+                        Control.CastSpell(HK_Q, Pred.CastPosition)
+                        lastQ = GetTickCount()
+                    end
+                else
+                    local Pred = GGPrediction:SpellPrediction(self.qnocolSpellextended)
+                    Pred:GetPrediction(target, myHero)
+                    if Pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+                        Control.CastSpell(HK_Q, minion)
+                        lastQ = GetTickCount()
+                    end
                 end
             end
-        elseif collisionCount <= self.qSpell.MaxCollision and myHero.pos:DistanceTo(target.pos) < 1000 then
+        elseif collisionCount <= 1 and myHero.pos:DistanceTo(target.pos) < 1000 then
+            local Pred = GGPrediction:SpellPrediction(self.qSpell)
+            Pred:GetPrediction(target, myHero)
             if Pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
                 Control.CastSpell(HK_Q, Pred.CastPosition)
                 lastQ = GetTickCount()
@@ -3790,12 +3804,12 @@ end
 
 function Milio:AutoR()
     if isSpellReady(_R) and lastR + 250 < GetTickCount() then
-    local heroes = _G.SDK.ObjectManager:GetAllyHeroes(self.rSpell.Range)
+        local heroes = _G.SDK.ObjectManager:GetAllyHeroes(self.rSpell.Range)
         for i, hero in ipairs(heroes) do
             if not hero.isMe and self:RCleans(hero) then
                 Control.CastSpell(HK_R)
                 lastR = GetTickCount()
-            end
+            end  
         end
     end
 end
@@ -3815,7 +3829,7 @@ function Milio:RCleans(unit)
 	
     for i = 0, unit.buffCount do
         local buff = unit:GetBuff(i)
-        if buff and buff.count > 0 then
+        if buff and buff.count > 0 and buff.duration > 0.5 then
             if CleanBuffs[buff.type] then
                 return true
             end
