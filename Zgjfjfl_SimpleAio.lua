@@ -3645,7 +3645,6 @@ function Milio:LoadMenu()
 
     self.Menu:MenuElement({type = MENU, id = "AutoR", name = "AutoR"})
         self.Menu.AutoR:MenuElement({id = "R", name = "[R]Auto clears ally CC", toggle = true, value = true})
-		self.Menu.AutoR:MenuElement({id = "rcount", name = "r min cced count", value = 3, min = 1, max = 5, step = 1})
             self.Menu.AutoR:MenuElement({type = MENU, id = "CC", name = "CC Types"})			
             self.Menu.AutoR.CC:MenuElement({ id = "Stun", name = "Use on Stun", value = true})
             self.Menu.AutoR.CC:MenuElement({ id = "Taunt", name = "Use on Taunt", value = true})
