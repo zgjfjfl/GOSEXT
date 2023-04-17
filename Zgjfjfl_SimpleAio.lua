@@ -1,4 +1,4 @@
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai", "Gragas", "Milio"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai", "Gragas", "Milio", "AurelionSol"}
 
 if not table.contains(Heroes, myHero.charName) then 
     print('SimpleAio not supported ' .. myHero.charName)
@@ -797,11 +797,10 @@ function Poppy:Combo()
         if self.Menu.Combo.RF:Value() and isSpellReady(_R) and lastR + 350 < GetTickCount()and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and target.health/target.maxHealth <= self.Menu.Combo.RFHP:Value()/100 then
             Control.KeyDown(HK_R)
             lastR = GetTickCount()
-            if Control.IsKeyDown(HK_R) then
-                Control.SetCursorPos(target)
-                DelayAction(function() Control.KeyUp(HK_R) end, 0.1)
-                DelayAction(function() Control.SetCursorPos(mousePos) end, 0.1)
-            end
+            DelayAction(function()
+                Control.KeyUp(HK_R)
+                Control.CastSpell(HK_R, target)
+            end, 0.1)
         end
     end
 end	
@@ -861,11 +860,10 @@ function Poppy:RSemiManual()
         if isSpellReady(_R) and lastR + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.r2Spell.Range then
             Control.KeyDown(HK_R)
             lastR = GetTickCount()
-            if Control.IsKeyDown(HK_R) then
-                Control.SetCursorPos(target)
-                DelayAction(function() Control.KeyUp(HK_R) end, 1)
-                DelayAction(function() Control.SetCursorPos(mousePos) end, 1)
-            end
+            DelayAction(function()
+                Control.CastSpell(HK_R, target)
+                Control.KeyUp(HK_R)
+            end, 1)
         end
     end
 end
@@ -1730,16 +1728,23 @@ class "Singed"
 function Singed:__init()	     
     print("Zgjfjfl-Singed Loaded") 
     self:LoadMenu()
-	
+    Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)
+    self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 265, Range = 1000, Speed = 700, Collision =false}
 end
 
 function Singed:LoadMenu() 
     self.Menu = MenuElement({type = MENU, id = "zgSinged", name = "Zgjfjfl Singed"})
             
     self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R] ", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR when X enemies inWrange ", value = 2, min = 1, max = 5, step = 1})
+
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
 
 end
 
@@ -1755,33 +1760,56 @@ function Singed:onTick()
         orbwalker:SetAttack(true)
     end
 
+    enemies = _G.SDK.ObjectManager:GetEnemyHeroes(1000)
+    minions = _G.SDK.ObjectManager:GetEnemyMinions(1000)
+    if #enemies == 0 and #minions == 0  and haveBuff(myHero, "PoisonTrail") and lastQ +250 < GetTickCount() then
+        Control.CastSpell(HK_Q)
+        lastQ = GetTickCount()
+    end
 end
 
 function Singed:Combo()
 
     local target = _G.SDK.TargetSelector:GetTarget(1000)
     if target and isValid(target) then
-        
-        local wcastpos = myHero.pos:Extended(target.pos, -400)
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < 300 then
-            if not MapPosition:inWall(wcastpos) then
-                self:CastW(wcastpos)
+        if self.Menu.Combo.Q:Value() and myHero.pos:DistanceTo(target.pos) <= 500 then
+            if isSpellReady(_Q) and lastQ +250 < GetTickCount() and myHero:GetSpellData(_Q).toggleState == 1 then
+                Control.CastSpell(HK_Q)
+                lastQ = GetTickCount()
             end
-            DelayAction(function() Control.SetCursorPos(target) end, 0.25)
-            DelayAction(function() Control.SetCursorPos(mousePos) end, 0.5)
-            Control.CastSpell(HK_E)
+        end
+        if self.Menu.Combo.W:Value() and myHero.pos:DistanceTo(target.pos) < 1000 then
+            self:CastW(target)
+        end
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE +350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= 300 then
+            Control.CastSpell(HK_E, target)
             lastE = GetTickCount()
         end
-        if self.Menu.Combo.W:Value() and not isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) < 1000 then
-            self:CastW(target)
+    end
+    if #enemies >= self.Menu.Combo.Rcount:Value() then
+        if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR +250 < GetTickCount() then
+            Control.CastSpell(HK_R)
+            lastR = GetTickCount()
         end
     end
 end
 
 function Singed:CastW(target)
     if isSpellReady(_W) and lastW +350 < GetTickCount() then
-        Control.CastSpell(HK_W, target)
-        lastW = GetTickCount()
+        local pred = GGPrediction:SpellPrediction(self.wSpell)
+        pred:GetPrediction(target, myHero)
+        if self.wSpell.Range - 80 > myHero.pos:DistanceTo(pred.CastPosition) then
+            if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+                Control.CastSpell(HK_W, pred.CastPosition)
+                lastW = GetTickCount()
+            end
+        end
+    end
+end
+
+function Singed:Draw()
+    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+            Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 end
 ------------------------------
@@ -2510,7 +2538,7 @@ function Bard:__init()
 	
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)
-    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 850, Speed = 1500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 850, Speed = 1500, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
     self.wSpell = { Range = 800 }
 end
 
@@ -3183,11 +3211,10 @@ function KSante:CastW(target, time)
     if isSpellReady(_W) and lastW + 1000 < GetTickCount() then
         Control.KeyDown(HK_W)
         lastW = GetTickCount() 
-        if Control.IsKeyDown(HK_W) then
-            Control.SetCursorPos(target)
-            DelayAction(function() Control.KeyUp(HK_W) end, time)
-            DelayAction(function() Control.SetCursorPos(mousePos) end, time)
-        end
+            DelayAction(function()
+                Control.KeyUp(HK_W)
+                Control.CastSpell(HK_W, target)
+            end, time)
     end
 end
 
@@ -3279,7 +3306,7 @@ function Skarner:__init()
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)
     self.qSpell = { Range = 350 }
-    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1500, Speed = 1000, Collision = false}
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 950, Speed = 1200, Collision = false}
 end
 
 function Skarner:LoadMenu() 
@@ -3526,7 +3553,7 @@ function Gragas:__init()
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)
     self.qSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 250, Range = 850, Speed = 1000, Collision = false}
-    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 90, Range = 800, Speed = 900, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 50, Range = 800, Speed = 900, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
     self.rSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 400, Range = 1000, Speed = math.huge, Collision = false}
 end
 
@@ -3687,7 +3714,7 @@ function Gragas:CastQ2()
 
     for i = 1, Game.ParticleCount() do
     local particle = Game.Particle(i)
-        if particle and particle.name:find("_Q_Ally") and getEnemyCount(300, particle.pos) >= 1 then
+        if particle and particle.name:find("Gragas") and particle.name:find("_Q_Ally") and getEnemyCount(300, particle.pos) >= 1 then
             Control.CastSpell(HK_Q)
         end
     end
@@ -3769,7 +3796,7 @@ function Milio:__init()
 	
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)    
-    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1000, Speed = 1200, Collision = true, MaxCollision = 1, CollisionTypes = {GGPrediction.COLLISION_MINION; GGPrediction.COLLISION_ENEMYHERO}}
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1000, Speed = 1200, Collision = true, MaxCollision = 1, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.qnocolSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1000, Speed = 1200, Collision = false}
 	self.qnocolSpellextended = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 45, Range = 1500, Speed = 1200, Collision = false}
 	self.qantidashSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius =35, Range = 1000, Speed = 1200, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
@@ -3914,7 +3941,8 @@ end
 
 function Milio:CastQ(target)
     if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and _G.SDK.Orbwalker:CanMove() then
-        local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, self.qSpell.CollisionTypes, target.networkID)
+        -- local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, self.qSpell.CollisionTypes, target.networkID)
+local collisionCount = target:GetCollision(self.qSpell.Radius,self.qSpell.Speed,self.qSpell.Dela)
         if collisionCount >= 1 and myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.QBD:Value() + 1000 then
             local minion = collisionObjects[1]
             if isValid(minion) and minion.pos:DistanceTo(target.pos) < 400 and minion.pos:DistanceTo(myHero.pos) < 1000 then
@@ -4065,4 +4093,203 @@ function Milio:Draw()
         Draw.Circle(myHero.pos, self.rSpell.Range, 1, Draw.Color(255, 255, 0, 0))
     end
 end
+
+----------------------------------------
+
+class "AurelionSol"
+        
+function AurelionSol:__init()	     
+    print("Zgjfjfl_AurelionSol Loaded")
+    self:LoadMenu()
+
+    Callback.Add("Draw", function() self:Draw() end)
+    Callback.Add("Tick", function() self:onTick() end)    
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 75, Range = 750, Speed = 1500, Collision = false}
+    self.wSpell = { Range = 1200 } 
+    self.eSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 275, Range = 750, Speed = 1300, Collision = false}
+    self.rSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 275, Range = 1250, Speed = 500, Collision = false}
+end
+
+function AurelionSol:LoadMenu()
+    self.Menu = MenuElement({type = MENU, id = "zgAurelionSol", name = "Zgjfjfl AurelionSol"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR when hit X enemies", value = 2, min = 1, max = 5})
+        self.Menu.Combo:MenuElement({id = "Rsm", name = "R Semi-Manual Key", key = string.byte("S")})
+
+    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+
+end
+
+function AurelionSol:onTick()
+
+    passivecount = getBuffData(myHero, "AurelionSolPassive").stacks
+    self.qSpell.Range = 740 + 10 * myHero.levelData.lvl
+    self.eSpell.Range = 740 + 10 * myHero.levelData.lvl
+    self.wSpell.Range = 1200 + 7.5 * passivecount
+    self.eSpell.Radius = math.sqrt(275^2+16.93^2 * passivecount)
+    self.rSpell.Radius = math.sqrt(275^2+16.93^2 * passivecount)
+    if myHero:GetSpellData(_R).name == "AurelionSolR2" then
+        self.rSpell.Radius = math.sqrt(388.91^2+21.85^2 * passivecount)
+    end
+
+    Etarget = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    Rtarget = _G.SDK.TargetSelector:GetTarget(self.rSpell.Range)
+
+    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+
+    if self.Menu.Combo.Rsm:Value() then
+        self:SemiManualR()
+    end
+
+    if haveBuff(myHero, "AurelionSolQ") or haveBuff(myHero, "AurelionSolW") or (myHero.activeSpell and myHero.activeSpell.name == "AurelionSolW" and myHero.activeSpell.isChanneling) then
+        orbwalker:SetMovement(false)
+        orbwalker:SetAttack(false)
+    else
+        orbwalker:SetMovement(true)
+        orbwalker:SetAttack(true)
+    end
+
+    if Control.IsKeyDown(HK_Q) then
+        DelayAction(function()
+            if myHero.activeSpell.isCharging == false then
+                Control.KeyUp(HK_Q)
+            end
+        end, 0.35)
+    end
+end
+
+function AurelionSol:Combo()
+    if isValid(Rtarget) then
+        if self.Menu.Combo.R:Value() and getDistance(Rtarget.pos) <= self.rSpell.Range then
+            if getEnemyCount(self.rSpell.Radius, Rtarget.pos) >= self.Menu.Combo.Rcount:Value() then 
+                self:CastR(Rtarget, true)
+            end
+        end
+    end
+    if isValid(Etarget) then
+        if self.Menu.Combo.Q:Value() and not isSpellReady(_E) then
+            self:CastQ(Etarget)
+        end
+        if self.Menu.Combo.E:Value() and getDistance(Etarget.pos) <= self.eSpell.Range and myHero.activeSpell.isCharging == false then
+            if getEnemyCount(self.eSpell.Radius, Etarget.pos) >= 2 then 
+                self:CastE(Etarget, true)
+            else
+                self:CastE(Etarget, false)
+            end
+        end
+    end
+end
+
+function AurelionSol:SemiManualR()
+    if isValid(Rtarget) then
+        if self.Menu.Combo.R:Value() and getDistance(Rtarget.pos) <= self.rSpell.Range then
+            self:CastR(Rtarget, false)
+        end
+    end
+end
+
+function AurelionSol:CastE(target, AOE)
+    if isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        local Pred = GGPrediction:SpellPrediction(self.eSpell)
+        Pred:GetPrediction(target, myHero)
+        if AOE then
+            local EAOE = Pred:GetAOEPrediction(myHero)
+            local hitchance = 2
+            local minenemies = 2
+            local bestaoe = nil
+            local bestcount = 0
+            local bestdistance = 1000
+            for i = 1, #EAOE do
+                local aoe = EAOE[i]
+                if aoe.HitChance >= hitchance and aoe.Count >= minenemies then
+                    if aoe.Count > bestcount or (aoe.Count == bestcount and aoe.Distance < bestdistance) then
+                        bestdistance = aoe.Distance
+                        bestcount = aoe.Count
+                        bestaoe = aoe
+                    end
+                end
+            end
+            if bestaoe then
+                Control.CastSpell(HK_E, bestaoe.CastPosition)
+                lastE = GetTickCount()
+            end
+        else
+            if Pred:CanHit(3) then
+                Control.CastSpell(HK_E, Pred.CastPosition)
+                lastE = GetTickCount()
+            end
+        end
+    end
+end
+
+function AurelionSol:CastR(target, AOE)
+    if isSpellReady(_R) and lastR + 250 < GetTickCount() then
+        local Pred = GGPrediction:SpellPrediction(self.rSpell)
+        Pred:GetPrediction(target, myHero)
+        if AOE then
+            local RAOE = Pred:GetAOEPrediction(myHero)
+            local hitchance = 2
+            local minenemies = 2
+            local bestaoe = nil
+            local bestcount = 0
+            local bestdistance = 1000
+            for i = 1, #RAOE do
+                local aoe = RAOE[i]
+                if aoe.HitChance >= hitchance and aoe.Count >= minenemies then
+                    if aoe.Count > bestcount or (aoe.Count == bestcount and aoe.Distance < bestdistance) then
+                        bestdistance = aoe.Distance
+                        bestcount = aoe.Count
+                        bestaoe = aoe
+                    end
+                end
+            end
+            if bestaoe then
+                Control.CastSpell(HK_R, bestaoe.CastPosition)
+                lastR = GetTickCount()
+            end
+        else
+            if Pred:CanHit(3) then
+                Control.CastSpell(HK_R, Pred.CastPosition)
+                lastR = GetTickCount()
+            end
+        end
+    end
+end
+
+function AurelionSol:CastQ(target)
+    if isSpellReady(_Q) then
+        Control.KeyDown(HK_Q)
+        Control.SetCursorPos(target)
+        DelayAction(function()
+            Control.KeyUp(HK_Q)
+        end, 9999)
+    end
+end
+
+
+function AurelionSol:Draw()
+    if self.Menu.Draw.Q:Value() and isSpellReady(_Q)then
+        Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 255, 255, 255))
+    end
+    if self.Menu.Draw.W:Value() and isSpellReady(_W)then
+        Draw.Circle(myHero.pos, self.wSpell.Range, 1, Draw.Color(255, 0, 0, 255))
+    end
+    if self.Menu.Draw.E:Value() and isSpellReady(_E)then
+        Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 0, 0, 0))
+    end
+    if self.Menu.Draw.R:Value() and isSpellReady(_R)then
+        Draw.Circle(myHero.pos, self.rSpell.Range, 1, Draw.Color(255, 255, 0, 0))
+    end
+end
+
 
