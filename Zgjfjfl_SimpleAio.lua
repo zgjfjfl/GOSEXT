@@ -3941,8 +3941,7 @@ end
 
 function Milio:CastQ(target)
     if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and _G.SDK.Orbwalker:CanMove() then
-        -- local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, self.qSpell.CollisionTypes, target.networkID)
-local collisionCount = target:GetCollision(self.qSpell.Radius,self.qSpell.Speed,self.qSpell.Dela)
+        local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, self.qSpell.CollisionTypes, target.networkID)
         if collisionCount >= 1 and myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.QBD:Value() + 1000 then
             local minion = collisionObjects[1]
             if isValid(minion) and minion.pos:DistanceTo(target.pos) < 400 and minion.pos:DistanceTo(myHero.pos) < 1000 then
