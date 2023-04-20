@@ -4368,11 +4368,11 @@ end
 function AurelionSol:CastRAoE(target)
     if isSpellReady(_R) and lastR + 250 < GetTickCount() then
         local enemies = GetEnemiesAtPos(self.rSpell.Range + self.rSpell.Radius, self.rSpell.Radius*2, target.pos,target)
-        if #enemies >= self.Menu.Combo.Rcount:Value() then
+        if #enemies >= self.Menu.Combo.Rcount:Value() and self.Menu.Combo.Rcount:Value() ~= 1 then
             local AoEPos = CalculateBestCirclePosition(enemies, self.rSpell.Radius, true, self.rSpell.Range, self.rSpell.Speed, self.rSpell.Delay)
             Control.CastSpell(HK_R, AoEPos)
             lastR = GetTickCount()
-        elseif #enemies == self.Menu.Combo.Rcount:Value() == 1 then
+        elseif #enemies == self.Menu.Combo.Rcount:Value() and self.Menu.Combo.Rcount:Value() == 1 then
             castSpellHigh(self.rSpell, HK_R, target)
             lastR = GetTickCount()
         end
