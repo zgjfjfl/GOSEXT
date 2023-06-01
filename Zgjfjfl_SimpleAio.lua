@@ -9,24 +9,32 @@ require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
 
-local GameTurretCount     = Game.TurretCount
-local GameTurret          = Game.Turret
-local GameHeroCount     = Game.HeroCount
-local GameHero          = Game.Hero
-local GameMinionCount     = Game.MinionCount
-local GameMinion          = Game.Minion
-local TableInsert          = table.insert
+local GameParticleCount = Game.ParticleCount
+local GameParticle = Game.Particle
+local GameTurretCount = Game.TurretCount
+local GameTurret = Game.Turret
+local GameHeroCount = Game.HeroCount
+local GameHero = Game.Hero
+local GameMinionCount = Game.MinionCount
+local GameMinion = Game.Minion
+local TableInsert = table.insert
+local TableRemove = table.remove
 
 local lastQ = 0
 local lastW = 0
 local lastE = 0
 local lastR = 0
 
+local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Damage, Spell
+
 Callback.Add("Load", function()
 
-    orbwalker = _G.SDK.Orbwalker
-
+    Orbwalker = _G.SDK.Orbwalker
+    TargetSelector = _G.SDK.TargetSelector
+    ObjectManager = _G.SDK.ObjectManager
     HealthPrediction = _G.SDK.HealthPrediction
+    Damage = _G.SDK.Damage
+    Spell = _G.SDK.Spell
 
     if table.contains(Heroes, myHero.charName) then
         _G[myHero.charName]()
@@ -231,8 +239,8 @@ local nextVectorCast = 0
 local function CastVectorSpell(key, pos1, pos2)
 	if nextVectorCast > Game.Timer() then return end
 	nextVectorCast = Game.Timer() + 1.5
-	orbwalker:SetMovement(false)
-	orbwalker:SetAttack(false)
+	Orbwalker:SetMovement(false)
+	Orbwalker:SetAttack(false)
 	vectorCast[#vectorCast + 1] = function () 
 		mouseReturnPos = mousePos
 		mouseCurrentPos = pos1
@@ -256,8 +264,8 @@ local function CastVectorSpell(key, pos1, pos2)
 		Control.SetCursorPos(mouseReturnPos)
 	end
 	vectorCast[#vectorCast + 1] = function () 
-		orbwalker:SetMovement(true)
-		orbwalker:SetAttack(true)
+		Orbwalker:SetMovement(true)
+		Orbwalker:SetAttack(true)
 	end		
 end
 
@@ -396,7 +404,7 @@ local function CalculateBestCirclePosition(targets, radius, edgeDetect, spellRan
 end
 
 function GetEnemiesAtPos(checkrange, range, pos, target)
-    local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(checkrange)
+    local enemies = ObjectManager:GetEnemyHeroes(checkrange)
     local results = {}
     for i = 1, #enemies do 
         local enemy = enemies[i]
@@ -412,8 +420,6 @@ end
 ------------------------------------
 
 class "Ornn"
-
-local time = Game.Timer()
         
 function Ornn:__init()	     
     print("Zgjfjfl-Ornn Loaded") 
@@ -421,11 +427,14 @@ function Ornn:__init()
 	
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)
+    Callback.Add("WndMsg", function(msg, wParam) self:OnWndMsg(msg, wParam) end)
+    Spell:OnSpellCast(function(spell) self:onQCast(spell) end)
     self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 65, Range = 800, Speed = 1800, Collision = false}
     self.wSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 175, Range = 500, Speed = math.huge, Collision = false}
     self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 180, Range = 750, Speed = 1600, Collision = false}
     self.r1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 170, Range = 2500, Speed = 1200, Collision = false}
-
+    self.qPos = {}
+    self.qTimer = nil
   end
 
 function Ornn:LoadMenu() 
@@ -436,9 +445,9 @@ function Ornn:LoadMenu()
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "EQ", name = "[E] to Q", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "EWall", name = "[E] to Wall", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "ED", name = "[E] X distance enemy from wall", min = 0, max = 300, value = 300, step = 10})
+        self.Menu.Combo:MenuElement({id = "ED", name = "[E] X distance enemy from wall or Q", min = 0, max = 300, value = 250, step = 10})
         self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR1 when X enemies inrange ", min = 1, max = 5, value = 2, step = 1})
+        self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR1 when hit X enemies inrange", min = 1, max = 5, value = 2, step = 1})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -456,31 +465,67 @@ function Ornn:LoadMenu()
 end
 
 function Ornn:onTick()
-
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end
-    if myHero.activeSpell.name == "OrnnQ" then
-        time = myHero.activeSpell.endTime 
+
+    if self.qTimer and Game.Timer() >= self.qTimer then
+        self.qTimer = nil
+        self:GetQpos()
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    self:UpdateQpos()
+
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
     end
    
+end
+
+function Ornn:OnWndMsg(msg, wParam)
+    if wParam == HK_Q then
+        self.qTimer = Game.Timer() + 0.9
+    end
+end
+
+function Ornn:onQCast(spell)
+    --print(spell)
+    if spell == _Q then
+        self.qTimer = Game.Timer() + 0.9
+    end
+end
+
+function Ornn:GetQpos()
+    --print("GetQpos called")
+    for i = GameParticleCount(), 1, -1 do
+        local particle = GameParticle(i)
+        if particle and particle.name:find("Ornn") and particle.name:find("Q_Indicator") then
+            TableInsert(self.qPos, {pos = particle.pos, Timer = Game.Timer()})
+            --print(particle.pos)
+            break
+        end
+    end
+end
+
+function Ornn:UpdateQpos()
+    for k, qPos in pairs(self.qPos) do
+        if Game.Timer() - qPos.Timer > 5 then
+            TableRemove(self.qPos, k)
+        end
+    end
 end
 
 function Ornn:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) and target.pos2D.onScreen then
 
         local objpos1 = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())
@@ -499,14 +544,12 @@ function Ornn:Combo()
         end
 
         if self.Menu.Combo.EQ:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
-            for i = 1, Game.ParticleCount() do
-            local particle = Game.Particle(i)
-                if Game.Timer() >= time + 1.125 then
-                    if particle and particle.name:find("Object") then
-                        if not MapPosition:intersectsWall(myHero.pos, particle.pos) and getEnemyCount(300, particle.pos) >= 1 and myHero.pos:DistanceTo(particle.pos) <= self.eSpell.Range then
-                            Control.CastSpell(HK_E, particle)
-                            lastE = GetTickCount()
-                        end
+
+            for _, qPos in pairs(self.qPos) do
+                if Game.Timer() >= qPos.Timer + 0.5 then
+                    if not MapPosition:intersectsWall(myHero.pos, qPos.pos) and getEnemyCount(self.Menu.Combo.ED:Value(), qPos.pos) >= 1 and myHero.pos:DistanceTo(qPos.pos) <= self.eSpell.Range then
+                        Control.CastSpell(HK_E, qPos.pos)
+                        lastE = GetTickCount()
                     end
                 end
             end
@@ -527,9 +570,9 @@ function Ornn:Combo()
         end
     end
     if self.Menu.Combo.R:Value() and isSpellReady(_R) and myHero:GetSpellData(_R).name == "OrnnR" and lastR + 600 < GetTickCount() then
-        local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.r1Spell.Range)
-        if #enemies >= self.Menu.Combo.Rcount:Value() then
-            for i, enemy in ipairs(enemies) do
+        local enemies = ObjectManager:GetEnemyHeroes(self.r1Spell.Range)
+        for i, enemy in ipairs(enemies) do
+            if getEnemyCount(170, enemy.pos) >= self.Menu.Combo.Rcount:Value() then
                 castSpellHigh(self.r1Spell, HK_R, enemy)
                 lastR = GetTickCount()
             end
@@ -537,9 +580,9 @@ function Ornn:Combo()
     end
 
     if isSpellReady(_R) and myHero:GetSpellData(_R).name == "OrnnRCharge" then
-        for i = 1, Game.ParticleCount() do
-        local particle = Game.Particle(i)
-            if particle and particle.name:find("Ornn") and particle.name:find("_R_Wave_Mis") and myHero.pos:DistanceTo(particle.pos) < 700 then
+        for i = GameParticleCount(), 1, -1 do
+        local particle = GameParticle(i)
+            if particle and particle.name:find("Ornn") and particle.name:find("R_Wave_Mis") and myHero.pos:DistanceTo(particle.pos) < 700 then
                 Control.CastSpell(HK_R, particle)
             end
         end
@@ -566,7 +609,7 @@ function Ornn:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) and target.pos2D.onScreen then
             
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
@@ -652,16 +695,16 @@ function JarvanIV:onTick()
         Control.CastSpell(HK_R)
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
         self:Flee()
     end
    self:KillSteal()
@@ -671,7 +714,7 @@ function JarvanIV:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
 
         local pred = GGPrediction:SpellPrediction(self.eSpell)
@@ -680,11 +723,11 @@ function JarvanIV:Combo()
             local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -100)
             if self.Menu.Combo.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
                 self:CastE(castPos)
-                orbwalker:SetMovement(false)
-                orbwalker:SetAttack(false)
+                Orbwalker:SetMovement(false)
+                Orbwalker:SetAttack(false)
                 DelayAction(function() Control.CastSpell(HK_Q, castPos) end, 0.1)
-                orbwalker:SetMovement(true)
-                orbwalker:SetAttack(true)
+                Orbwalker:SetMovement(true)
+                Orbwalker:SetAttack(true)
             end
         end
 		        
@@ -727,7 +770,7 @@ function JarvanIV:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
             
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
@@ -741,7 +784,7 @@ end
 function JarvanIV:KillSteal()
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
         if isSpellReady(_Q) and lastQ + 500 < GetTickCount() and self.Menu.KS.Q:Value() then
             if self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
@@ -779,7 +822,7 @@ function JarvanIV:getqDmg(target)
     local qbaseDmg  = 40 * qlvl + 50
     local qadDmg = myHero.bonusDamage * 1.4
     local qDmg = qbaseDmg + qadDmg
-    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
+    return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
 
 function JarvanIV:geteDmg(target)
@@ -787,7 +830,7 @@ function JarvanIV:geteDmg(target)
     local ebaseDmg  = 40 * elvl + 40
     local eapDmg = myHero.ap * 0.8
     local eDmg = ebaseDmg + eapDmg
-    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
+    return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
 end
 
 function JarvanIV:getrDmg(target)
@@ -795,7 +838,7 @@ function JarvanIV:getrDmg(target)
     local rbaseDmg  = 125 * rlvl + 75
     local radDmg = myHero.bonusDamage * 1.8
     local rDmg = rbaseDmg + radDmg
-    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, rDmg) 
+    return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, rDmg) 
 end
 
 
@@ -803,12 +846,12 @@ function JarvanIV:Flee()
     if self.Menu.Flee.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
         local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.eSpell.Range
         self:CastE(pos)
-        orbwalker:SetMovement(false)
+        Orbwalker:SetMovement(false)
         DelayAction(function() Control.CastSpell(HK_Q, pos) end, 0.1)
-        orbwalker:SetMovement(true)
+        Orbwalker:SetMovement(true)
     end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.wSpell.Range)
+    local target = TargetSelector:GetTarget(self.wSpell.Range)
     if target and isValid(target) then
         if isSpellReady(_W) and lastW + 250 < GetTickCount() and self.Menu.Flee.W:Value() then
             if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
@@ -881,18 +924,18 @@ function Poppy:onTick()
         return
     end
     if haveBuff(myHero, "PoppyR") then
-        orbwalker:SetAttack(false)
+        Orbwalker:SetAttack(false)
     else
-        orbwalker:SetAttack(true)
+        Orbwalker:SetAttack(true)
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
     end
     if self.Menu.Antidash.W:Value() then
@@ -908,7 +951,7 @@ function Poppy:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
 	
         local endPos = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())
@@ -917,17 +960,16 @@ function Poppy:Combo()
             lastE = GetTickCount()
         end
 				        
-        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount()and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
 		
-        if self.Menu.Combo.RF:Value() and isSpellReady(_R) and lastR + 350 < GetTickCount()and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and target.health/target.maxHealth <= self.Menu.Combo.RFHP:Value()/100 then
+        if self.Menu.Combo.RF:Value() and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and target.health/target.maxHealth <= self.Menu.Combo.RFHP:Value()/100 then
             Control.KeyDown(HK_R)
-            lastR = GetTickCount()
             DelayAction(function()
+                castSpellHigh(self.rSpell, HK_R, target)
                 Control.KeyUp(HK_R)
-                Control.CastSpell(HK_R, target)
             end, 0.1)
         end
     end
@@ -953,7 +995,7 @@ function Poppy:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
             
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
@@ -965,7 +1007,7 @@ function Poppy:Harass()
 end
 
 function Poppy:AutoW()
-    local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(1000)
+    local enemies = ObjectManager:GetEnemyHeroes(1000)
     for i, enemy in ipairs(enemies) do
         if isValid(enemy) then
             local blockobj = self.Menu.Antidash.Wtarget[enemy.charName] and self.Menu.Antidash.Wtarget[enemy.charName]:Value()
@@ -983,13 +1025,12 @@ function Poppy:AutoW()
 end
 
 function Poppy:RSemiManual()
-    local target = _G.SDK.TargetSelector:GetTarget(self.r2Spell.Range)
+    local target = TargetSelector:GetTarget(self.r2Spell.Range)
     if target and isValid(target) then
-        if isSpellReady(_R) and lastR + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.r2Spell.Range then
+        if isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < self.r2Spell.Range then
             Control.KeyDown(HK_R)
-            lastR = GetTickCount()
             DelayAction(function()
-                Control.CastSpell(HK_R, target)
+                castSpellHigh(self.r2Spell, HK_R, target)
                 Control.KeyUp(HK_R)
             end, 1)
         end
@@ -1055,16 +1096,16 @@ function Shyvana:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
         self:Flee()
     end
 
@@ -1074,7 +1115,7 @@ function Shyvana:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < 400 and self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount()then
             Control.CastSpell(HK_W)
@@ -1135,7 +1176,7 @@ function Shyvana:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
 
         local DragonForm = doesMyChampionHaveBuff("ShyvanaTransform")
@@ -1217,16 +1258,16 @@ function Trundle:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
         self:Flee()
     end
 
@@ -1236,7 +1277,7 @@ function Trundle:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
             Control.CastSpell(HK_W, target)
@@ -1281,7 +1322,7 @@ function Trundle:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(500)
+    local target = TargetSelector:GetTarget(500)
     if target and isValid(target) then
 
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= 300 then
@@ -1296,7 +1337,7 @@ function Trundle:Flee()
         Control.CastSpell(HK_W, mousePos)
         lastW = GetTickCount()
     end
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
         if self.Menu.Flee.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
 	local castPos = Vector(myHero.pos) + Vector(Vector(target.pos) - Vector(myHero.pos)):Normalized() * (myHero.pos:DistanceTo(target.pos) - 100)
@@ -1360,13 +1401,13 @@ function Rakan:onTick()
         return
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
         self:Flee()
     end
 
@@ -1376,7 +1417,7 @@ function Rakan:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
@@ -1395,7 +1436,7 @@ function Rakan:Combo()
     end
 
     if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
-        local allies = _G.SDK.ObjectManager:GetAllyHeroes(1000)
+        local allies = ObjectManager:GetAllyHeroes(1000)
         for i, ally in ipairs(allies) do
             if not ally.isMe then
                 if myHero.pos:DistanceTo(ally.pos) <= 700 or (ally.charName == "Xayah" and myHero.pos:DistanceTo(ally.pos) <= 1000) then
@@ -1409,11 +1450,11 @@ function Rakan:Combo()
     end
 
     if self.Menu.Combo.E2:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
-        local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(2500)
+        local enemies = ObjectManager:GetEnemyHeroes(2500)
+        local allies = ObjectManager:GetAllyHeroes(1000)
         for i, enemy in ipairs(enemies) do
             if isValid(enemy) then
-                local allies = _G.SDK.ObjectManager:GetAllyHeroes(1000)
-                for i, ally in ipairs(allies) do
+                for j, ally in ipairs(allies) do
                     if self:attackedcheck(enemy, ally) and not haveBuff(ally, "RakanEShield") then
                         if myHero.pos:DistanceTo(ally.pos) <= 700 or (ally.charName == "Xayah" and myHero.pos:DistanceTo(ally.pos) <= 1000) then
                             Control.CastSpell(HK_E, ally)
@@ -1430,7 +1471,7 @@ function Rakan:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
 
         if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
@@ -1552,23 +1593,23 @@ function Belveth:onTick()
         if getEnemyCount(self.eSpell.Range, myHero.pos) == 0 and getMinionCount(self.eSpell.Range, myHero.pos) == 0 and Game.CanUseSpell(_E) == 0 then
             Control.CastSpell(HK_E)
         end
-        orbwalker:SetMovement(false)
-        orbwalker:SetAttack(false)
+        Orbwalker:SetMovement(false)
+        Orbwalker:SetAttack(false)
     else
-        orbwalker:SetMovement(true)
-        orbwalker:SetAttack(true)
+        Orbwalker:SetMovement(true)
+        Orbwalker:SetAttack(true)
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
         self:Flee()
     end
     self:KillSteal()
@@ -1579,7 +1620,7 @@ function Belveth:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
     local castingE = doesMyChampionHaveBuff("BelvethE")
         if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and not castingE then
@@ -1603,7 +1644,7 @@ function Belveth:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
 
         if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and self.Menu.Harass.W:Value() and isSpellReady(_W) and lastW + 600 < GetTickCount() then
@@ -1642,7 +1683,7 @@ end
 function Belveth:KillSteal()
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
 
         if isSpellReady(_E) and lastE + 250 < GetTickCount() and self.Menu.KS.E:Value() then
@@ -1661,7 +1702,7 @@ function Belveth:geteDmg(target)
     local eadDmg = myHero.totalDamage * 0.06
     local exttimes = math.floor(((myHero.attackSpeed - 1) / 0.333) + 0.5)
     local eDmg = (ebaseDmg + eadDmg) * (1 + missingHP * 3) * (6 + exttimes)
-return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg) 
+return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg) 
 end
 
 function Belveth:Draw()
@@ -1732,16 +1773,16 @@ function Nasus:onTick()
         lastR = GetTickCount()
    end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
         self:LastHit()
     end
     self:KillSteal()
@@ -1752,7 +1793,7 @@ function Nasus:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
              Control.CastSpell(HK_Q)
@@ -1776,7 +1817,7 @@ function Nasus:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
              Control.CastSpell(HK_Q)
@@ -1829,7 +1870,7 @@ end
 function Nasus:KillSteal()
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
 
         if isSpellReady(_E) and lastE + 350 < GetTickCount() and self.Menu.KS.E:Value() and self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
@@ -1849,7 +1890,7 @@ function Nasus:getqDmg(target)
     local qlvl = myHero:GetSpellData(_Q).level
     local qbaseDmg  = 20 * qlvl + 10
     local qDmg = qbaseDmg + getBuffData(myHero, "NasusQStacks").stacks + myHero.totalDamage
-return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
+return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
 
 function Nasus:geteDmg(target)
@@ -1857,7 +1898,7 @@ function Nasus:geteDmg(target)
     local ebaseDmg = 40 * elvl + 15
     local eapDmg = 0.6 * myHero.ap
     local eDmg = ebaseDmg + eapDmg
-return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
+return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
 end
 
 
@@ -1902,15 +1943,15 @@ function Singed:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
-        orbwalker:SetAttack(false)
+        Orbwalker:SetAttack(false)
     else
-        orbwalker:SetAttack(true)
+        Orbwalker:SetAttack(true)
     end
 
-    enemies = _G.SDK.ObjectManager:GetEnemyHeroes(1000)
-    minions = _G.SDK.ObjectManager:GetEnemyMinions(1000)
+    enemies = ObjectManager:GetEnemyHeroes(1000)
+    minions = ObjectManager:GetEnemyMinions(1000)
     if #enemies == 0 and #minions == 0  and haveBuff(myHero, "PoisonTrail") and lastQ +250 < GetTickCount() then
         Control.CastSpell(HK_Q)
         lastQ = GetTickCount()
@@ -1919,7 +1960,7 @@ end
 
 function Singed:Combo()
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if self.Menu.Combo.Q:Value() and myHero.pos:DistanceTo(target.pos) <= 500 then
             if isSpellReady(_Q) and lastQ +250 < GetTickCount() and myHero:GetSpellData(_Q).toggleState == 1 then
@@ -2000,10 +2041,10 @@ function Udyr:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_JUNGLECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_JUNGLECLEAR] then
         self:JungleClear()
     end
 
@@ -2013,7 +2054,7 @@ function Udyr:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(800)
+    local target = TargetSelector:GetTarget(800)
     if target and isValid(target) then
     local hasAwakenedQ = doesMyChampionHaveBuff("udyrqrecastready")
     local hasAwakenedW = doesMyChampionHaveBuff("udyrwrecastready")
@@ -2146,18 +2187,18 @@ function Galio:onTick()
         return
     end     
     if doesMyChampionHaveBuff("GalioW") then
-          orbwalker:SetAttack(false)
+          Orbwalker:SetAttack(false)
      else
-          orbwalker:SetAttack(true)
+          Orbwalker:SetAttack(true)
      end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
         self:Flee()
     end
     self:AutoW()
@@ -2169,7 +2210,7 @@ function Galio:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
@@ -2198,7 +2239,7 @@ function Galio:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
 
         if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
@@ -2214,7 +2255,7 @@ function Galio:AutoW()
         self:CastW(self.Menu.Auto.Wtime:Value())
     end
 
-    local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(1000)
+    local enemies = ObjectManager:GetEnemyHeroes(1000)
     for i, enemy in ipairs(enemies) do
         if isValid(enemy) then
             local obj = self.Menu.Auto.WB[enemy.charName] and self.Menu.Auto.WB[enemy.charName]:Value()
@@ -2246,7 +2287,7 @@ end
 function Galio:KillSteal()
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
 
         if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and self.Menu.KS.Q:Value() then
@@ -2263,7 +2304,7 @@ function Galio:getqDmg(target)
     local qbaseDmg  = 35 * qlvl + 35
     local qapDmg = myHero.ap * 0.75
     local qDmg = qbaseDmg + qapDmg
-return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, qDmg) 
+return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, qDmg) 
 end
 
 
@@ -2337,19 +2378,19 @@ function Yorick:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end    
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
         self:LastHit()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
         self:Flee()
     end
     self:KillSteal()
@@ -2360,7 +2401,7 @@ function Yorick:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1100)
+    local target = TargetSelector:GetTarget(1100)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) <= 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
              Control.CastSpell(HK_Q)
@@ -2389,7 +2430,7 @@ function Yorick:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
 
         if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() then
@@ -2440,7 +2481,7 @@ function Yorick:LastHit()
 end
 
 function Yorick:Flee()
-    local target = _G.SDK.TargetSelector:GetTarget(self.wSpell.Range)
+    local target = TargetSelector:GetTarget(self.wSpell.Range)
     if target and isValid(target) then
 
         if self.Menu.Flee.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
@@ -2455,7 +2496,7 @@ end
 function Yorick:KillSteal()
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
 
         if isSpellReady(_Q) and lastQ + 250 < GetTickCount() and self.Menu.KS.Q:Value() then
@@ -2480,7 +2521,7 @@ function Yorick:getqDmg(target)
     local qbaseDmg  = 25 * qlvl + 5
     local qadDmg = myHero.totalDamage * 0.4
     local qDmg = qbaseDmg + qadDmg + myHero.totalDamage
-return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
+return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
 
 function Yorick:geteDmg(target)
@@ -2488,7 +2529,7 @@ function Yorick:geteDmg(target)
     local ebaseDmg  = 35 * elvl + 35
     local eapDmg = myHero.ap * 0.7
     local eDmg = ebaseDmg + eapDmg
-return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
+return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
 end
 
 function Yorick:AutoW()
@@ -2500,7 +2541,7 @@ function Yorick:AutoW()
         end
     end
 			
-    local target = _G.SDK.TargetSelector:GetTarget(self.wSpell.Range)
+    local target = TargetSelector:GetTarget(self.wSpell.Range)
     if target and isValid(target) then
         if self.Menu.Auto.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and isImmobile(target) then
             if myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
@@ -2530,7 +2571,7 @@ function Ivern:__init()
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)
 
-    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1100, Speed = 1300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1150, Speed = 1300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
     self.eSpell = { Range = 750, Radius = 500 }
     self.rSpell = { Range = 800 }
 end
@@ -2539,11 +2580,11 @@ function Ivern:LoadMenu()
     self.Menu = MenuElement({type = MENU, id = "zgIvern", name = "Zgjfjfl Ivern"})
             
     self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q1]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "R", name = "[R1]", toggle = true, value = true})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Harass:MenuElement({id = "Q", name = "[Q1]", toggle = true, value = true})
 
     self.Menu:MenuElement({type = MENU, id = "AutoE", name = "AutoE"})
         self.Menu.AutoE:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
@@ -2573,11 +2614,11 @@ function Ivern:onTick()
         return
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
 
@@ -2590,14 +2631,14 @@ function Ivern:onTick()
     end
 
     if self.Menu.Misc.disableAA:Value() and getEnemyCount(self.qSpell.Range, myHero.pos) >= self.Menu.Misc.count:Value() then
-        orbwalker:SetAttack(false)
+        Orbwalker:SetAttack(false)
     else
-        orbwalker:SetAttack(true)
+        Orbwalker:SetAttack(true)
     end
 end
 
 function Ivern:CastQ(target)
-    if isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "IvernQ"and lastQ + 350 < GetTickCount() and _G.SDK.Orbwalker:CanMove() then
+    if isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "IvernQ"and lastQ + 350 < GetTickCount() and Orbwalker:CanMove() then
         local Pred = GGPrediction:SpellPrediction(self.qSpell)
         Pred:GetPrediction(target, myHero)
         if Pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
@@ -2609,7 +2650,7 @@ end
 
 function Ivern:Combo()
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() then
             self:CastQ(target)
@@ -2623,10 +2664,10 @@ end
 
 function Ivern:AutoE()
     if isSpellReady(_E) and lastE + 250 < GetTickCount() then
-        local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(2500)
+        local enemies = ObjectManager:GetEnemyHeroes(2500)
         for i, enemy in ipairs(enemies) do
             if isValid(enemy) then
-                local allies = _G.SDK.ObjectManager:GetAllyHeroes(self.eSpell.Range)
+                local allies = ObjectManager:GetAllyHeroes(self.eSpell.Range)
                 for i, ally in ipairs(allies) do
                     if #allies == 1 and ally.isMe and self.Menu.AutoE.Etarget[ally.charName]:Value() then
                         if ally.pos:DistanceTo(enemy.pos) < self.eSpell.Radius then 
@@ -2652,7 +2693,7 @@ end
 
 function Ivern:DaisyControl()
 
-    local target = _G.SDK.TargetSelector:GetTarget(2500)
+    local target = TargetSelector:GetTarget(2500)
     if target and isValid(target) then
         if self.Menu.Daisy.R1:Value() then
             Control.CastSpell(HK_R, target)
@@ -2664,7 +2705,7 @@ function Ivern:DaisyControl()
 end
 
 function Ivern:Harass()
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and myHero:GetSpellData(_Q).name == "IvernQ" and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
             castSpellHigh(self.qSpell, HK_Q, target)
@@ -2715,7 +2756,7 @@ function Bard:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end    
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
     self:AutoW()
@@ -2725,7 +2766,7 @@ function Bard:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1500)
+    local target = TargetSelector:GetTarget(1500)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
@@ -2735,7 +2776,7 @@ function Bard:Combo()
         local pred = GGPrediction:SpellPrediction(self.qSpell)
         pred:GetPrediction(target, myHero)
         if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
-            local extendPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -300)
+            local extendPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -250)
             local lineQ = LineSegment(pred.CastPosition, extendPos)
             if MapPosition:intersectsWall(lineQ) and self.Menu.Combo.Q3:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
                 Control.CastSpell(HK_Q, target)
@@ -2746,7 +2787,7 @@ function Bard:Combo()
         local pred2 = target:GetPrediction(self.qSpell.Speed, self.qSpell.Delay)
         if pred2 == nil then return end
         local d = getDistance(myHero.pos, pred2)
-        local targetPos = Vector(myHero.pos):Extended(pred2, self.qSpell.Range+300) 
+        local targetPos = Vector(myHero.pos):Extended(pred2, self.qSpell.Range+250) 
         if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and self.Menu.Combo.Q2:Value() then 
             for i = 1, GameMinionCount() do
             local minion = GameMinion(i) 
@@ -2754,7 +2795,7 @@ function Bard:Combo()
                 local minionPos = Vector(myHero.pos):Extended(Vector(minion.pos), self.qSpell.Range+300)
                     if getDistance(targetPos, minionPos) <= 30 then
                     local d2 = getDistance(myHero.pos, minion.pos)
-                        if d2 <= self.qSpell.Range and d <= self.qSpell.Range+300 and d > d2 then 
+                        if d2 <= self.qSpell.Range and d <= self.qSpell.Range+250 and d > d2 then 
                             Control.CastSpell(HK_Q, minion)
                             lastQ = GetTickCount()
                         elseif d2 <= self.qSpell.Range+300 and d <= self.qSpell.Range and d < d2 then
@@ -2769,7 +2810,7 @@ function Bard:Combo()
                     local EnemyPos = Vector(myHero.pos):Extended(Vector(Enemy.pos), self.qSpell.Range+300)
                     if getDistance(targetPos, EnemyPos) <= 30 then
                     local d3 = getDistance(myHero.pos, Enemy.pos)
-                        if d3 <= self.qSpell.Range and d <= self.qSpell.Range+300 and d > d3 then 
+                        if d3 <= self.qSpell.Range and d <= self.qSpell.Range+250 and d > d3 then 
                             Control.CastSpell(HK_Q, Enemy)
                             lastQ = GetTickCount()
                         elseif d3 <= self.qSpell.Range+300 and d <= self.qSpell.Range and d < d3 then
@@ -2784,8 +2825,8 @@ function Bard:Combo()
 end
 
 function Bard:AutoW()
-    for i = 1, Game.HeroCount() do
-        local hero = Game.Hero(i)
+    for i = 1, GameHeroCount() do
+        local hero = GameHero(i)
         if hero and not hero.dead and hero.isAlly then
             if getDistance(myHero.pos, hero.pos) <= self.wSpell.Range and self.Menu.Auto.W:Value() and hero.health/hero.maxHealth <= self.Menu.Auto.Whp:Value()/100 and isSpellReady(_W) and lastW + 350 < GetTickCount() then
                 Control.CastSpell(HK_W, hero)
@@ -2848,10 +2889,10 @@ function Taliyah:onTick()
         return
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
 end
@@ -2860,7 +2901,7 @@ function Taliyah:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
@@ -2893,7 +2934,7 @@ function Taliyah:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
@@ -2961,17 +3002,17 @@ function Lissandra:onTick()
         return
     end    
     if doesMyChampionHaveBuff("LissandraRSelf") then
-        orbwalker:SetMovement(false)
-        orbwalker:SetAttack(false)
+        Orbwalker:SetMovement(false)
+        Orbwalker:SetAttack(false)
     else
-        orbwalker:SetMovement(true)
-        orbwalker:SetAttack(true)
+        Orbwalker:SetMovement(true)
+        Orbwalker:SetAttack(true)
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
     self:AutoQ()
@@ -2982,7 +3023,7 @@ function Lissandra:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
             castSpellHigh(self.qSpell, HK_Q, target)
@@ -3012,7 +3053,7 @@ function Lissandra:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
             castSpellHigh(self.qSpell, HK_Q, target)
@@ -3027,7 +3068,7 @@ end
 function Lissandra:AutoQ()
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if self.Menu.Auto.Q:Value() and myHero.mana/myHero.maxMana >= self.Menu.Auto.Qmana:Value()/100 then
             self:CastQ2(target)
@@ -3048,8 +3089,8 @@ function Lissandra:CastQ2(target)
     local targetPos = Vector(myHero.pos):Extended(pred, 825)
     local d = getDistance(myHero.pos, pred)
     if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and d < 825 then
-        for i = 1, Game.MinionCount() do
-        local minion = Game.Minion(i)
+        for i = 1, GameMinionCount() do
+        local minion = GameMinion(i)
             if minion and minion.isEnemy and not minion.dead and getDistance(myHero.pos, minion.pos) <= 725 then
             local minionPos = Vector(myHero.pos):Extended(Vector(minion.pos), 825)
                 if d > getDistance(myHero.pos, minion.pos) and getDistance(targetPos, minionPos) <= 45 then
@@ -3115,10 +3156,10 @@ function Sejuani:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
     if self.Menu.Combo.RM:Value() then
@@ -3130,7 +3171,7 @@ function Sejuani:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
@@ -3151,7 +3192,7 @@ function Sejuani:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.wSpell.Range)
+    local target = TargetSelector:GetTarget(self.wSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and self.Menu.Harass.W:Value() and isSpellReady(_W) and lastW + 1000 < GetTickCount() then
              castSpellHigh(self.wSpell, HK_W, target)
@@ -3161,7 +3202,7 @@ function Sejuani:Harass()
 end
 
 function Sejuani:RSemiManual()
-    local target = _G.SDK.TargetSelector:GetTarget(self.rSpell.Range)
+    local target = TargetSelector:GetTarget(self.rSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and isSpellReady(_R) and lastR + 350 < GetTickCount() then
              castSpellHigh(self.rSpell, HK_R, target)
@@ -3233,9 +3274,9 @@ function KSante:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end    
-    local myHerobounsHealth = math.min(math.floor(myHero.maxHealth - (610 + 108 * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1800)
-    --print(myHerobounsHealth)
-    local time = string.format("%.2f", 1/9000 * myHerobounsHealth)
+    local myHerobonusHealth = math.min(math.floor(myHero.maxHealth - (610 + 108 * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1800)
+    --print(myHerobonusHealth)
+    local time = math.floor(1/9000 * myHerobounsHealth * 100 / 100)
     --print(time)
     self.q1Spell.Delay = 0.45 - time
     self.q3Spell.Delay = 0.45 - time
@@ -3246,11 +3287,11 @@ function KSante:onTick()
     end
     --print(self.qSpell.Delay)
     if haveBuff(myHero, "KSanteW") or haveBuff(myHero, "KSanteW_AllOut") then
-        orbwalker:SetMovement(false)
-        orbwalker:SetAttack(false)
+        Orbwalker:SetMovement(false)
+        Orbwalker:SetAttack(false)
     else
-        orbwalker:SetMovement(true)
-        orbwalker:SetAttack(true)
+        Orbwalker:SetMovement(true)
+        Orbwalker:SetAttack(true)
     end
     if doesMyChampionHaveBuff("KSanteRTransform") then
         self.eSpell = self.e2Spell
@@ -3258,18 +3299,18 @@ function KSante:onTick()
         self.eSpell = self.e1Spell
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
         self:JungleClear()
         self:LastHit()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
         self:LastHit()
     end
     if self.Menu.Combo.RM:Value() then
@@ -3281,12 +3322,12 @@ function KSante:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range + self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range + self.eSpell.Range)
     if target and isValid(target) then
       if not haveBuff(target, "KSantePMark") or (haveBuff(target, "KSantePMark") and myHero:GetSpellData(_Q).name == "KSanteQ3") then
         if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and isSpellReady(_Q) then
             if self.Menu.Combo.EH:Value() then
-                local allies = _G.SDK.ObjectManager:GetAllyHeroes(550)
+                local allies = ObjectManager:GetAllyHeroes(550)
                 for i, ally in ipairs(allies) do
                     if getEnemyCount(self.qSpell.Range, myHero.pos) == 0 and getEnemyCount(self.qSpell.Range, ally.pos) >= 1 then
                         Control.CastSpell(HK_E, ally)
@@ -3301,8 +3342,9 @@ function KSante:Combo()
                 end
             end
             if self.Menu.Combo.EM:Value() then
-                local minions = _G.SDK.ObjectManager:GetAllyMinions(550)
-                for i, minion in ipairs(minions) do
+                local minions = ObjectManager:GetAllyMinions(550)
+                for i = 1, #Minions do
+                    local minion = Minions[i]
                     if getEnemyCount(self.qSpell.Range, myHero.pos) == 0 and getEnemyCount(self.qSpell.Range, minion.pos) >= 1 then
                         Control.CastSpell(HK_E, minion)
                         lastE = GetTickCount()
@@ -3325,7 +3367,7 @@ function KSante:Combo()
         end
 
         if self.Menu.Combo.RT:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() and myHero:GetSpellData(_R).name == "KSanteR" then
-            local turrets = _G.SDK.ObjectManager:GetAllyTurrets(2000)
+            local turrets = ObjectManager:GetAllyTurrets(2000)
             for i, turret in ipairs(turrets) do
                 local Pos = target.pos:Extended(myHero.pos, -400)
                 if turret.pos:DistanceTo(Pos) < 800 and myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and turret.pos:DistanceTo(Pos) < turret.pos:DistanceTo(target.pos) then
@@ -3350,7 +3392,7 @@ function KSante:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
@@ -3364,14 +3406,14 @@ function KSante:CastW(target, time)
         Control.KeyDown(HK_W)
         lastW = GetTickCount() 
             DelayAction(function()
-                Control.KeyUp(HK_W)
                 Control.CastSpell(HK_W, target)
+                Control.KeyUp(HK_W)
             end, time)
     end
 end
 
 function KSante:RSemiManual()
-    local target = _G.SDK.TargetSelector:GetTarget(self.rSpell.Range)
+    local target = TargetSelector:GetTarget(self.rSpell.Range)
     if target and isValid(target) then
         local Pos = target.pos:Extended(myHero.pos, -350)
         if MapPosition:intersectsWall(target.pos, Pos) and myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and isSpellReady(_R) and lastR + 500 < GetTickCount() and myHero:GetSpellData(_R).name == "KSanteR" then
@@ -3414,7 +3456,7 @@ function KSante:JungleClear()
 end
 
 function KSante:LastHit()
-    local minionInRange = _G.SDK.ObjectManager:GetEnemyMinions(self.qSpell.Range)
+    local minionInRange = ObjectManager:GetEnemyMinions(self.qSpell.Range)
     if next(minionInRange) == nil then return end
 	
     for i = 1, #minionInRange do
@@ -3435,7 +3477,7 @@ function KSante:getqDmg(unit)
     local qadDmg = myHero.totalDamage * 0.4
     local qextDmg = myHero.bonusArmor * 0.3 + myHero.bonusMagicResist * 0.3
     local qDmg = qbaseDmg + qadDmg + qextDmg
-return _G.SDK.Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
+return Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
 
 function KSante:Draw()
@@ -3482,15 +3524,15 @@ function Skarner:onTick()
         return
     end    
     if haveBuff(myHero, "skarnerimpalebuff") then
-        orbwalker:SetAttack(false)
+        Orbwalker:SetAttack(false)
     else
-        orbwalker:SetAttack(true)
+        Orbwalker:SetAttack(true)
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
     end
 end
@@ -3499,7 +3541,7 @@ function Skarner:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
             Control.CastSpell(HK_Q)
@@ -3512,9 +3554,9 @@ function Skarner:Combo()
     end
     -- for i, enemy in pairs(getEnemyHeroes()) do
         -- if enemy and isValid(enemy) and getBuffData(enemy, "skarnerpassivebuff").duration > 0.5 then
-            -- _G.SDK.Orbwalker.ForceTarget = enemy
+            -- Orbwalker.ForceTarget = enemy
         -- else
-            -- _G.SDK.Orbwalker.ForceTarget = nil
+            -- Orbwalker.ForceTarget = nil
         -- end
     -- end
 end
@@ -3594,7 +3636,7 @@ function Maokai:onTick()
         return
     end    
     if self.Menu.Combo.InsecQ:Value() then
-        local allies = _G.SDK.ObjectManager:GetAllyHeroes(self.Menu.Combo.InsecRange:Value())
+        local allies = ObjectManager:GetAllyHeroes(self.Menu.Combo.InsecRange:Value())
         for i, ally in ipairs(allies) do
             if not ally.isMe then
                 Qtoward = ally.pos
@@ -3602,11 +3644,11 @@ function Maokai:onTick()
         end
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
 end
@@ -3615,7 +3657,7 @@ function Maokai:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.Menu.Combo.Rrange:Value())
+    local target = TargetSelector:GetTarget(self.Menu.Combo.Rrange:Value())
     if target and isValid(target) then
         if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and not isSpellReady(_W) then
             if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and ((not self.Menu.Combo.InsecQ:Value()) or (self.Menu.Combo.InsecQ:Value() and Qtoward == nil)) then
@@ -3659,7 +3701,7 @@ end
 function Maokai:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
@@ -3746,15 +3788,15 @@ function Gragas:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_JUNGLECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_JUNGLECLEAR] then
         self:JungleClear()
     end
 
@@ -3777,7 +3819,7 @@ function Gragas:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and not isSpellReady(_E) then
             if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
@@ -3802,7 +3844,7 @@ end
 function Gragas:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
-    local target = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() then
             castSpellHigh(self.qSpell, HK_Q, target)
@@ -3816,7 +3858,7 @@ function Gragas:Harass()
 end
 
 function Gragas:InsecR()
-    local target = _G.SDK.TargetSelector:GetTarget(1000)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         local pred = GGPrediction:SpellPrediction(self.rSpell)
         pred:GetPrediction(target, myHero)
@@ -3831,7 +3873,7 @@ function Gragas:InsecR()
 end
 
 function Gragas:AutoR()
-    local heroes = _G.SDK.ObjectManager:GetEnemyHeroes(self.rSpell.Range - 150)
+    local heroes = ObjectManager:GetEnemyHeroes(self.rSpell.Range - 150)
     for i, hero in ipairs(heroes) do
         if not MapPosition:intersectsWall(myHero.pos, hero.pos) and isSpellReady(_R) and lastR + 350 < GetTickCount() and isImmobile(hero) then
             Control.CastSpell(HK_R, Vector(hero.pos):Extended(Vector(myHero.pos), -150))
@@ -3864,8 +3906,8 @@ end
 
 function Gragas:CastQ2()
 
-    for i = 1, Game.ParticleCount() do
-    local particle = Game.Particle(i)
+    for i = GameParticleCount(), 1, -1 do
+    local particle = GameParticle(i)
         if particle and particle.name:find("Gragas") and particle.name:find("_Q_Ally") and getEnemyCount(300, particle.pos) >= 1 then
             Control.CastSpell(HK_Q)
         end
@@ -3875,7 +3917,7 @@ end
 function Gragas:KillSteal()
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.rSpell.Range)
+    local target = TargetSelector:GetTarget(self.rSpell.Range)
     if target and isValid(target) then
 
         if isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and self.Menu.KS.Q:Value() then
@@ -3906,7 +3948,7 @@ function Gragas:getQDmg(target)
     local qbaseDmg  = 40 * qlvl + 40
     local qapDmg = myHero.ap * 0.8
     local qDmg = qbaseDmg + qapDmg
-    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, qDmg)
+    return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, qDmg)
 end
 
 function Gragas:getEDmg(target)	
@@ -3914,7 +3956,7 @@ function Gragas:getEDmg(target)
     local ebaseDmg  = 35 * elvl + 45
     local eapDmg = myHero.ap * 0.6
     local eDmg = ebaseDmg + eapDmg
-    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg)
+    return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg)
 end
 
 function Gragas:getRDmg(target)	
@@ -3922,7 +3964,7 @@ function Gragas:getRDmg(target)
     local rbaseDmg  = 100 * rlvl + 100
     local rapDmg = myHero.ap * 0.8
     local rDmg = rbaseDmg + rapDmg
-    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, rDmg)
+    return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, rDmg)
 end
 
 
@@ -4037,10 +4079,10 @@ function Milio:onTick()
         return
     end
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
     if self.Menu.AutoW.W:Value() then
@@ -4059,7 +4101,7 @@ end
 
 function Milio:Combo()
 
-    local target = _G.SDK.TargetSelector:GetTarget(1500)
+    local target = TargetSelector:GetTarget(1500)
     if isValid(target) and target.pos2D.onScreen then
 
         if self.Menu.Combo.Q:Value() then
@@ -4068,7 +4110,7 @@ function Milio:Combo()
     end
 
     if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() then
-    local heroes = _G.SDK.ObjectManager:GetAllyHeroes(self.rSpell.Range)
+    local heroes = ObjectManager:GetAllyHeroes(self.rSpell.Range)
         for i, hero in ipairs(heroes) do
             if self.Menu.Combo.Rhealtarget[hero.charName] and self.Menu.Combo.Rhealtarget[hero.charName]:Value() then 
                 if hero.health/hero.maxHealth <= self.Menu.Combo.RHP:Value()/100 and getEnemyCount(1200, hero.pos) > 0 then
@@ -4082,7 +4124,7 @@ end
 
 function Milio:Harass()
 
-    local target = _G.SDK.TargetSelector:GetTarget(1500)
+    local target = TargetSelector:GetTarget(1500)
     if isValid(target) and target.pos2D.onScreen then
             
         if self.Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana >= self.Menu.Harass.Mana:Value() / 100 then
@@ -4092,7 +4134,7 @@ function Milio:Harass()
 end
 
 function Milio:CastQ(target)
-    if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and _G.SDK.Orbwalker:CanMove() then
+    if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and Orbwalker:CanMove() then
         local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, self.qSpell.CollisionTypes, target.networkID)
         if collisionCount >= 1 and myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.QBD:Value() + 1000 then
             local minion = collisionObjects[1]
@@ -4126,7 +4168,7 @@ end
 
 function Milio:AutoW()
     if isSpellReady(_W) and myHero:GetSpellData(_W).name == "MilioW" and lastW + 350 < GetTickCount() then
-    local heroes = _G.SDK.ObjectManager:GetAllyHeroes(self.wSpell.Range)
+    local heroes = ObjectManager:GetAllyHeroes(self.wSpell.Range)
         for i, hero in ipairs(heroes) do
             if self.Menu.AutoW.Wtarget[hero.charName] and self.Menu.AutoW.Wtarget[hero.charName]:Value() then
                 if hero.health/hero.maxHealth <= self.Menu.AutoW.WHP:Value()/100 and getEnemyCount(1200, hero.pos) > 0 then
@@ -4140,11 +4182,11 @@ end
 
 function Milio:AutoE()
     if isSpellReady(_E) and lastE + 250 < GetTickCount() then
-        local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(2500)
+        local enemies = ObjectManager:GetEnemyHeroes(2500)
+        local allies = ObjectManager:GetAllyHeroes(self.eSpell.Range)
         for i, enemy in ipairs(enemies) do
             if isValid(enemy) then
-                local allies = _G.SDK.ObjectManager:GetAllyHeroes(self.eSpell.Range)
-                for i, ally in ipairs(allies) do
+                for j, ally in ipairs(allies) do
                     if self.Menu.AutoE.Etarget[ally.charName] and self.Menu.AutoE.Etarget[ally.charName]:Value() then
                         local canuse = false
                         if enemy.isChanneling then 
@@ -4176,7 +4218,7 @@ end
 
 function Milio:AutoR()
     if isSpellReady(_R) and lastR + 250 < GetTickCount() then
-        local heroes = _G.SDK.ObjectManager:GetAllyHeroes(self.rSpell.Range)
+        local heroes = ObjectManager:GetAllyHeroes(self.rSpell.Range)
         for i, hero in ipairs(heroes) do
             if self.Menu.AutoR.Rclearstarget[hero.charName] and self.Menu.AutoR.Rclearstarget[hero.charName]:Value() and self:RCleans(hero) then
                 Control.CastSpell(HK_R)
@@ -4211,7 +4253,7 @@ function Milio:RCleans(unit)
 end
 
 function Milio:AutoQAntiDash()
-    local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.qSpell.Range)
+    local enemies = ObjectManager:GetEnemyHeroes(self.qSpell.Range)
     for i, enemy in ipairs(enemies) do
         if isValid(enemy) and self.Menu.AutoQ.AntiTarget[enemy.charName] and self.Menu.AutoQ.AntiTarget[enemy.charName]:Value()then
             if enemy.pathing.isDashing and enemy.pathing.hasMovePath and enemy.pathing.dashSpeed > 0 then
@@ -4291,10 +4333,10 @@ function AurelionSol:onTick()
         self.rSpell.Radius = math.sqrt(388.91^2+21.85^2 * passivecount)
     end
 
-    Etarget = _G.SDK.TargetSelector:GetTarget(self.eSpell.Range)
-    Rtarget = _G.SDK.TargetSelector:GetTarget(self.rSpell.Range)
+    Etarget = TargetSelector:GetTarget(self.eSpell.Range)
+    Rtarget = TargetSelector:GetTarget(self.rSpell.Range)
 
-    if _G.SDK.Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
 
@@ -4303,11 +4345,11 @@ function AurelionSol:onTick()
     end
 
     if haveBuff(myHero, "AurelionSolQ") or myHero:GetSpellData(_W).name == "AurelionSolWToggle" then
-        orbwalker:SetMovement(false)
-        orbwalker:SetAttack(false)
+        Orbwalker:SetMovement(false)
+        Orbwalker:SetAttack(false)
     else
-        orbwalker:SetMovement(true)
-        orbwalker:SetAttack(true)
+        Orbwalker:SetMovement(true)
+        Orbwalker:SetAttack(true)
     end
 
     if Control.IsKeyDown(HK_Q) then
