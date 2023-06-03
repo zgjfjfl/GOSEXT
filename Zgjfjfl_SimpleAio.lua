@@ -4313,9 +4313,13 @@ function AurelionSol:LoadMenu()
         self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR when hit X enemies", value = 2, min = 1, max = 5})
         self.Menu.Combo:MenuElement({id = "Rsm", name = "R Semi-Manual Key", key = string.byte("S")})
 
+    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
         self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        self.Menu.Draw:MenuElement({id = "W2", name = "[W] Range in minimap", toggle = true, value = false})
         self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
         self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 
@@ -4338,6 +4342,10 @@ function AurelionSol:onTick()
 
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
+    end
+
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
     end
 
     if self.Menu.Combo.Rsm:Value() then
@@ -4372,6 +4380,14 @@ function AurelionSol:Combo()
             self:CastQ(Etarget)
         end
         if self.Menu.Combo.E:Value() and myHero.activeSpell.isCharging == false then
+            self:CastEAoE(Etarget)
+        end
+    end
+end
+
+function AurelionSol:Harass()
+    if isValid(Etarget) then
+        if self.Menu.Harass.E:Value() then
             self:CastEAoE(Etarget)
         end
     end
@@ -4436,7 +4452,10 @@ function AurelionSol:Draw()
         Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 255, 255, 255))
     end
     if self.Menu.Draw.W:Value() and isSpellReady(_W) then
-        Draw.Circle(myHero.pos, self.wSpell.Range, 1, Draw.Color(255, 0, 0, 255))
+        Draw.Circle(myHero.pos, self.wSpell.Range, 1, Draw.Color(255, 0, 255, 255))
+    end
+    if self.Menu.Draw.W2:Value() and isSpellReady(_W) then
+        Draw.CircleMinimap(myHero.pos, self.wSpell.Range, 1, Draw.Color(200, 0, 255, 255))
     end
     if self.Menu.Draw.E:Value() and isSpellReady(_E) then
         Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 0, 0, 0))
