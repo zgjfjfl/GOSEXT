@@ -3342,7 +3342,7 @@ function KSante:Combo()
                 end
             end
             if self.Menu.Combo.EM:Value() then
-                local minions = ObjectManager:GetAllyMinions(550)
+                local Minions = ObjectManager:GetAllyMinions(550)
                 for i = 1, #Minions do
                     local minion = Minions[i]
                     if getEnemyCount(self.qSpell.Range, myHero.pos) == 0 and getEnemyCount(self.qSpell.Range, minion.pos) >= 1 then
