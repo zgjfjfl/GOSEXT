@@ -3358,7 +3358,7 @@ function KSante:Combo()
              lastQ = GetTickCount()
         end
 
-        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and not isSpellReady(_Q) then
+        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
             if doesMyChampionHaveBuff("KSanteRTransform") and self.Menu.Combo.W2:Value() then
                  self:CastW(target,self.Menu.Combo.WTime2:Value())
             elseif not doesMyChampionHaveBuff("KSanteRTransform") and self.Menu.Combo.W1:Value() then
@@ -3430,7 +3430,7 @@ function KSante:LaneClear()
     local target = HealthPrediction:GetLaneClearTarget()
     if target and isValid(target) then
         if self.Menu.Clear1.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
-            bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
+            bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius*2)
             if bestCount >= self.Menu.Clear1.QCount:Value() then 
                 Control.CastSpell(HK_Q, bestPosition)
                 lastQ = GetTickCount()
@@ -3446,7 +3446,7 @@ function KSante:JungleClear()
     local target = HealthPrediction:GetJungleTarget()
     if target and isValid(target) then
         if self.Menu.Clear2.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
-            bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
+            bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius*2)
             if bestCount > 0 then 
                 Control.CastSpell(HK_Q, bestPosition)
                 lastQ = GetTickCount()
@@ -3456,13 +3456,14 @@ function KSante:JungleClear()
 end
 
 function KSante:LastHit()
+    if _G.SDK.Attack:IsActive() then return end
     local minionInRange = ObjectManager:GetEnemyMinions(self.qSpell.Range)
     if next(minionInRange) == nil then return end
 	
     for i = 1, #minionInRange do
         local minion = minionInRange[i]
         local AArange = myHero.range + myHero.boundingRadius
-        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(minion.pos) < self.qSpell.Range and  myHero.pos:DistanceTo(minion.pos) > AArange then
+        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(minion.pos) < self.qSpell.Range then
             if self:getqDmg(minion) >= minion.health and not minion.dead then
                 Control.CastSpell(HK_Q, minion)
                 lastQ = GetTickCount()
