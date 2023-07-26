@@ -236,7 +236,6 @@ local function getAllyCount(range, unit)
     return count
 end
 
-
 local function isImmobile(unit)
     for i = 0, unit.buffCount do
         local buff = unit:GetBuff(i)
@@ -470,7 +469,7 @@ function Ornn:LoadMenu()
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "EQ", name = "[E] to Q", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "EWall", name = "[E] to Wall", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "ED", name = "[E] X distance enemy from wall or Q", min = 0, max = 300, value = 250, step = 10})
+        self.Menu.Combo:MenuElement({id = "ED", name = "E KnockUp Range", min = 0, max = 360, value = 300, step = 10})
         self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR1 when hit X enemies inrange", min = 1, max = 5, value = 2, step = 1})
 
@@ -530,7 +529,8 @@ function Ornn:GetQpos()
     --print("GetQpos called")
     for i = GameParticleCount(), 1, -1 do
         local particle = GameParticle(i)
-        if particle and particle.name:find("Ornn") and particle.name:find("Q_Indicator") then
+        local Name = particle.name
+        if particle and Name:find("Ornn") and Name:find("Q_Indicator") then
             TableInsert(self.qPos, {pos = particle.pos, Timer = Game.Timer()})
             --print(particle.pos)
             break
@@ -553,10 +553,9 @@ function Ornn:Combo()
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) and target.pos2D.onScreen then
 
-        local objpos1 = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())
-        local objpos2 = target.pos:Extended(myHero.pos, self.Menu.Combo.ED:Value())
+        local objpos = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())
 
-        if (not MapPosition:intersectsWall(target.pos, objpos1) or not isSpellReady(_E)) and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
+        if (not MapPosition:intersectsWall(target.pos, objpos) or not isSpellReady(_E)) and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
             if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
                 castSpellHigh(self.qSpell, HK_Q, target)
                 lastQ = GetTickCount()
@@ -582,13 +581,17 @@ function Ornn:Combo()
 
         if self.Menu.Combo.EWall:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
             if not MapPosition:intersectsWall(myHero.pos, target.pos) then
-                if MapPosition:intersectsWall(target.pos, objpos1) and myHero.pos:DistanceTo(objpos1) < self.eSpell.Range then
-                    Control.CastSpell(HK_E, objpos1)
-                    lastE = GetTickCount()
+                if MapPosition:intersectsWall(target.pos, objpos) then
+                    local ECastPos = MapPosition:getIntersectionPoint3D(target.pos, objpos)
+                    if myHero.pos:DistanceTo(ECastPos) < self.eSpell.Range then
+                        Control.CastSpell(HK_E, ECastPos)
+                        lastE = GetTickCount()
+                    end
                 end
             else
-                if MapPosition:intersectsWall(target.pos, objpos2) and not MapPosition:intersectsWall(myHero.pos, objpos2) and myHero.pos:DistanceTo(objpos2) < self.eSpell.Range then
-                    Control.CastSpell(HK_E, objpos2)
+                local ECastPos2 = MapPosition:getIntersectionPoint3D(myHero.pos, target.pos)
+                if target.pos:DistanceTo(ECastPos2) < self.Menu.Combo.ED:Value() and myHero.pos:DistanceTo(ECastPos2) < self.eSpell.Range then
+                    Control.CastSpell(HK_E, ECastPos2)
                     lastE = GetTickCount()
                 end
             end
