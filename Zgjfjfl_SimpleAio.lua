@@ -256,43 +256,6 @@ local function isInvulnerable(unit)
     return false
 end
 
-local vectorCast = {}
-local mouseReturnPos = mousePos
-local mouseCurrentPos = mousePos
-local nextVectorCast = 0
-local function CastVectorSpell(key, pos1, pos2)
-	if nextVectorCast > Game.Timer() then return end
-	nextVectorCast = Game.Timer() + 1.5
-	Orbwalker:SetMovement(false)
-	Orbwalker:SetAttack(false)
-	vectorCast[#vectorCast + 1] = function () 
-		mouseReturnPos = mousePos
-		mouseCurrentPos = pos1
-		Control.SetCursorPos(pos1)
-	end
-	vectorCast[#vectorCast + 1] = function () 
-		Control.KeyDown(key)
-	end
-	vectorCast[#vectorCast + 1] = function () 
-		local deltaMousePos =  mousePos-mouseCurrentPos
-		mouseReturnPos = mouseReturnPos + deltaMousePos
-		Control.SetCursorPos(pos2)
-		mouseCurrentPos = pos2
-	end
-	vectorCast[#vectorCast + 1] = function ()
-		Control.KeyUp(key)
-	end
-	vectorCast[#vectorCast + 1] = function ()	
-		local deltaMousePos =  mousePos -mouseCurrentPos
-		mouseReturnPos = mouseReturnPos + deltaMousePos
-		Control.SetCursorPos(mouseReturnPos)
-	end
-	vectorCast[#vectorCast + 1] = function () 
-		Orbwalker:SetMovement(true)
-		Orbwalker:SetAttack(true)
-	end		
-end
-
 local function recalling()
     for i, Buff in pairs(GetBuffs(myHero)) do
         if Buff.name == "recall" and Buff.duration > 0 then
@@ -982,10 +945,14 @@ function Poppy:Combo()
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
 	
-        local endPos = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())
-        if MapPosition:inWall(endPos) and self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
-            Control.CastSpell(HK_E, target)
-            lastE = GetTickCount()
+	for dis = 20, self.Menu.Combo.ED:Value(), 20 do
+            local endPos = target.pos:Extended(myHero.pos, -dis)
+            if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
+                if MapPosition:inWall(endPos) then
+                    Control.CastSpell(HK_E, target)
+                    lastE = GetTickCount()
+                end
+            end
         end
 				        
         if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
@@ -2879,8 +2846,8 @@ function Taliyah:__init()
 	
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)
-    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1000, Speed = myHero:GetSpellData(_Q).speed, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-    self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 225, Range = 900, Speed = math.huge, Collision = false}
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1000, Speed = 3600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+    self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1, Radius = 225, Range = 900, Speed = math.huge, Collision = false}
     self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 200, Range = 950, Speed = 1700, Collision = false}
 end
 
@@ -2892,7 +2859,7 @@ function Taliyah:LoadMenu()
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "Wpush", name = "[W] push range", value = 400, min = 100, max = 600, step = 50})
         self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Erange", name = "[E] cast range", value = 950, min = 100, max = 950, step = 50})
+        self.Menu.Combo:MenuElement({id = "Erange", name = "[E] cast range", value = 900, min = 100, max = 950, step = 50})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -2903,14 +2870,49 @@ function Taliyah:LoadMenu()
         self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 end
 
-local NextTick = Game.Timer()
+local vectorCast = {}
+local mouseReturnPos = mousePos
+local mouseCurrentPos = mousePos
+local nextVectorCast = 0
+function Taliyah:CastVectorSpell(key, pos1, pos2)
+	if nextVectorCast > Game.Timer() then return end
+	nextVectorCast = Game.Timer() + 1.5
+	Orbwalker:SetMovement(false)
+	Orbwalker:SetAttack(false)
+	vectorCast[#vectorCast + 1] = function () 
+		mouseReturnPos = mousePos
+		mouseCurrentPos = pos1
+		Control.SetCursorPos(pos1)
+	end
+	vectorCast[#vectorCast + 1] = function () 
+		Control.KeyDown(key)
+	end
+	vectorCast[#vectorCast + 1] = function () 
+		local deltaMousePos =  mousePos-mouseCurrentPos
+		mouseReturnPos = mouseReturnPos + deltaMousePos
+		Control.SetCursorPos(pos2)
+		mouseCurrentPos = pos2
+	end
+	vectorCast[#vectorCast + 1] = function ()
+		Control.KeyUp(key)
+	end
+	vectorCast[#vectorCast + 1] = function ()	
+		local deltaMousePos =  mousePos -mouseCurrentPos
+		mouseReturnPos = mouseReturnPos + deltaMousePos
+		Control.SetCursorPos(mouseReturnPos)
+	end
+	vectorCast[#vectorCast + 1] = function () 
+		Orbwalker:SetMovement(true)
+		Orbwalker:SetAttack(true)
+	end		
+end
+
 function Taliyah:onTick()
 
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end    
-    local currentTime = Game.Timer()
-    if NextTick > currentTime then return end	
+
     if #vectorCast > 0 then
         vectorCast[1]()
         table.remove(vectorCast, 1)
@@ -2929,30 +2931,28 @@ function Taliyah:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = TargetSelector:GetTarget(self.eSpell.Range)
+    local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
         if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
              lastQ = GetTickCount()
         end
 
-        if myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.Erange:Value() and self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.Erange:Value() and self.Menu.Combo.E:Value() and isSpellReady(_E) and not isSpellReady(_W) and lastE + 350 < GetTickCount() then
              Control.CastSpell(HK_E, target)
              lastE = GetTickCount()
         end
 
-        local pred = GGPrediction:SpellPrediction(self.wSpell)
-        pred:GetPrediction(target, myHero)
-        if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
-            local endPos1 = pred.CastPosition + (myHero.pos - pred.CastPosition):Normalized() * 225
-            local endPos2 = pred.CastPosition + (pred.CastPosition - myHero.pos):Normalized() * 225
-            local d = myHero.pos:DistanceTo(pred.CastPosition)
-            if self.Menu.Combo.W:Value() and isSpellReady(_W) then
-                if d < self.wSpell.Range and d > self.Menu.Combo.Wpush:Value() then
-                    CastVectorSpell(HK_W, target.pos, endPos1)
-                elseif d <= self.Menu.Combo.Wpush:Value() then
-                    CastVectorSpell(HK_W, target.pos, endPos2)
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) then
+            local predPos = target:GetPrediction(self.wSpell.Speed, self.wSpell.Delay)
+            local d = myHero.pos:DistanceTo(predPos)
+            if d < self.wSpell.Range then
+                local endPos = predPos + (myHero.pos - predPos):Normalized() * 225
+                if d <= self.Menu.Combo.Wpush:Value() then
+                    endPos = predPos + (predPos - myHero.pos):Normalized() * 225
                 end
+                self:CastVectorSpell(HK_W, predPos, endPos)
+                return
             end
         end
     end
