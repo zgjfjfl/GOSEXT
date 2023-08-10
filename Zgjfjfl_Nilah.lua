@@ -321,7 +321,7 @@ function Nilah:getqDmg(target)
     local qbaseDmg  = 5 * qlvl
     local qadDmg = myHero.totalDamage * (0.075 *qlvl + 0.825 )
     local qDmg = qbaseDmg * (myHero.critChance + 1) + qadDmg * (myHero.critChance + 1)
-    return Damage:CalculateDamage(myHero, target, Damage_TYPE_PHYSICAL, qDmg)
+    return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg)
 end
 
 function Nilah:geteDmg(target)
@@ -329,7 +329,7 @@ function Nilah:geteDmg(target)
     local ebaseDmg  = 40 + elvl * 25
     local eadDmg = myHero.bonusDamage * 0.2
     local eDmg = ebaseDmg + eadDmg
-    return Damage:CalculateDamage(myHero, target, Damage_TYPE_PHYSICAL, eDmg)
+    return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg)
 end
 
 function Nilah:Flee()
