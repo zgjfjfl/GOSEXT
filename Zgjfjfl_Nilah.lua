@@ -11,6 +11,22 @@ local GameHero          = Game.Hero
 local GameMinionCount     = Game.MinionCount
 local GameMinion          = Game.Minion
 
+local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Damage
+
+Callback.Add("Load", function()
+
+    Orbwalker = _G.SDK.Orbwalker
+    TargetSelector = _G.SDK.TargetSelector
+    ObjectManager = _G.SDK.ObjectManager
+    HealthPrediction = _G.SDK.HealthPrediction
+    Damage = _G.SDK.Damage
+
+    if table.contains(Heroes, myHero.charName) then
+        _G[myHero.charName]()
+    end
+
+end)
+
 
 local function isSpellReady(spell)
     return  myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 and myHero:GetSpellData(spell).mana <= myHero.mana and Game.CanUseSpell(spell) == 0
@@ -104,7 +120,7 @@ function Nilah:__init()
 	
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)    
-    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 665, Speed = math.huge, Collision = false}
+    self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 600, Speed = math.huge, Collision = false}
     self.eSpell = { Range = 550 }
     self.rSpell = { Range = 400 }  
 end
@@ -150,16 +166,17 @@ end
 
 function Nilah:onTickEvent()
 
-    if orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
         self:Combo()
     end
-    if orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:QBuildings()
         self:LaneClear()
     end
-    if orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
         self:Flee()
     end
     self:AutoW()
@@ -171,7 +188,7 @@ function Nilah:Combo()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
 
         if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and getDistance(myHero.pos, target.pos) <= self.qSpell.Range then
@@ -201,21 +218,20 @@ function Nilah:Harass()
 
     if _G.SDK.Attack:IsActive() then return end
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
             
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and getDistance(myHero.pos, target.pos) <= self.qSpell.Range and myHero.mana/myHero.maxMana >= self.Menu.Harass.Mana:Value() / 100 then
             castSpellHigh(self.qSpell, HK_Q, target)
         end
-
     end
 end
 
 function Nilah:AutoW()
-    if self.Menu.Auto.W:Value() then
+    if self.Menu.Auto.W:Value() and isSpellReady(_W) then
         for i, hero in pairs(getEnemyHeroes()) do
             if hero.alive and hero.visible then
-                if hero.activeSpell.target == myHero.handle and myHero.health/myHero.maxHealth <= self.Menu.Auto.WHP:Value()/100 and isSpellReady(_W) then
+                if hero.activeSpell.target == myHero.handle and myHero.health/myHero.maxHealth <= self.Menu.Auto.WHP:Value()/100 then
                     Control.CastSpell(HK_W)
                 end
             end
@@ -224,7 +240,7 @@ function Nilah:AutoW()
 end
 
 function Nilah:LaneClear()
-if isSpellReady(_Q) and myHero.mana/myHero.maxMana >= self.Menu.Clear.Mana:Value() / 100 then
+  if isSpellReady(_Q) and myHero.mana/myHero.maxMana >= self.Menu.Clear.Mana:Value() / 100 then
     if self.Menu.Clear.Q:Value() then
     local target = HealthPrediction:GetJungleTarget()
         if not target then
@@ -239,54 +255,61 @@ if isSpellReady(_Q) and myHero.mana/myHero.maxMana >= self.Menu.Clear.Mana:Value
     end
 
     if self.Menu.Clear.QR:Value() then
-        local minionInRange = _G.SDK.ObjectManager:GetEnemyMinions(self.qSpell.Range)
+        local minionInRange = ObjectManager:GetEnemyMinions(self.qSpell.Range)
         if next(minionInRange) == nil then end
         for i = 1, #minionInRange do
         local minion = minionInRange[i]
             local AARange = myHero.range + myHero.boundingRadius
+            local QDmg = self:getqDmg(minion)
             if getDistance(myHero.pos, minion.pos) <= self.qSpell.Range and getDistance(myHero.pos, minion.pos) > AARange then
-                if self:getqDmg(minion) >= HealthPrediction:GetPrediction(minion, self.qSpell.Delay) then
+                if QDmg >= HealthPrediction:GetPrediction(minion, self.qSpell.Delay) then
                     Control.CastSpell(HK_Q, minion)
                 end
             end
         end
     end
+  end
+end
 
+function Nilah:QBuildings()
+  if isSpellReady(_Q) and myHero.mana/myHero.maxMana >= self.Menu.Clear.Mana:Value() / 100 then
     if self.Menu.Clear.QT:Value() then
-        local turrets = _G.SDK.ObjectManager:GetEnemyTurrets(self.qSpell.Range)
+        local turrets = ObjectManager:GetEnemyTurrets(self.qSpell.Range)
         for i, turret in ipairs(turrets) do
             if turret.isTargetable then
                 Control.CastSpell(HK_Q, turret)
             end
         end
-        local barracks = _G.SDK.ObjectManager:GetEnemyBuildings(self.qSpell.Range+270)
+        local barracks = ObjectManager:GetEnemyBuildings(self.qSpell.Range+270)
         for i, barrack in ipairs(barracks) do
             if barrack.type == Obj_AI_Barracks then
                 Control.CastSpell(HK_Q, barrack)
             end
         end
-        local nexus = _G.SDK.ObjectManager:GetEnemyBuildings(self.qSpell.Range+380)
+        local nexus = ObjectManager:GetEnemyBuildings(self.qSpell.Range+380)
         for i, base in ipairs(nexus) do
             if base.type == Obj_AI_Nexus then
                 Control.CastSpell(HK_Q, base)
             end
         end
     end
-end
+  end
 end
 	
 function Nilah:KillSteal()
 
-    local target = _G.SDK.TargetSelector:GetTarget(self.qSpell.Range)
+    local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
-		
+
+        local Qdmg = self:getqDmg(target)
+        local Edmg = self:geteDmg(target)		
         if isSpellReady(_Q) and self.Menu.KS.Q:Value() then
-            if self:getqDmg(target) > target.health and getDistance(myHero.pos, target.pos) <= self.qSpell.Range then
+            if Qdmg > target.health and getDistance(myHero.pos, target.pos) <= self.qSpell.Range then
                 castSpellHigh(self.qSpell, HK_Q, target)
             end	
         end
         if isSpellReady(_E) and self.Menu.KS.E:Value() and not isSpellReady(_Q) then 
-            if target.health <= self:geteDmg(target) and getDistance(myHero.pos, target.pos) <= self.eSpell.Range then
+            if target.health <= Edmg and getDistance(myHero.pos, target.pos) <= self.eSpell.Range then
                 Control.CastSpell(HK_E, target)	
             end	
         end
@@ -298,28 +321,30 @@ function Nilah:getqDmg(target)
     local qbaseDmg  = 5 * qlvl
     local qadDmg = myHero.totalDamage * (0.075 *qlvl + 0.825 )
     local qDmg = qbaseDmg * (myHero.critChance + 1) + qadDmg * (myHero.critChance + 1)
-    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg)
+    return Damage:CalculateDamage(myHero, target, Damage_TYPE_PHYSICAL, qDmg)
 end
 
 function Nilah:geteDmg(target)
     local elvl = myHero:GetSpellData(_E).level
     local ebaseDmg  = 40 + elvl * 25
-    local eadDmg = myHero.totalDamage * 0.2
+    local eadDmg = myHero.bonusDamage * 0.2
     local eDmg = ebaseDmg + eadDmg
-    return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg)
+    return Damage:CalculateDamage(myHero, target, Damage_TYPE_PHYSICAL, eDmg)
 end
 
 function Nilah:Flee()
-    local FleeETarget, FleeEDistance = self:getFleeETarget()
-    local distance = getDistance(FleeETarget.pos, myHero.pos)
-    if FleeETarget and FleeEDistance < getDistance(mousePos, myHero.pos) and distance <= 550 and isSpellReady(_E) then
-        Control.CastSpell(HK_E, FleeETarget)
-    end
+	if self.Menu.Flee.E:Value() and isSpellReady(_E) then
+		local FleeETarget, FleeEDistance = self:getFleeETarget()
+		local distance = getDistance(myHero.pos, mousePos)
+		if FleeETarget and FleeEDistance < distance then
+        		Control.CastSpell(HK_E, FleeETarget)
+    		end
+	end
 end
 
 function Nilah:Draw()
     if self.Menu.Draw.Q:Value() and isSpellReady(_Q)then
-        Draw.Circle(myHero.pos, self.qSpell.Range-65, 1, Draw.Color(255, 255, 255, 255))
+        Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 255, 255, 255))
     end
     if self.Menu.Draw.E:Value() and isSpellReady(_E)then
         Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 0, 0, 0))
@@ -333,45 +358,30 @@ function Nilah:getFleeETarget()
     local FleeETarget = nil
     local FleeEDistance = math.huge
     
-    if self.Menu.Flee.E:Value() then
         for i = 1, GameHeroCount() do
             local hero = GameHero(i)
             if hero and not hero.dead and (hero.isAlly or hero.isEnemy) and not hero.isMe then
-                local distance = getDistance(mousePos, hero.pos)
-                
-                if distance < FleeEDistance then
+                local distance = getDistance(hero.pos, mousePos)
+                local distance2 = getDistance(myHero.pos, hero.pos)
+                if distance < FleeEDistance and distance2 <= 550 then
                     FleeEDistance = distance
                     FleeETarget = hero
                 end
             end
         end
-    end
     
-    if self.Menu.Flee.E:Value() then
         for i = 1, GameMinionCount() do
             local minion = GameMinion(i)
             if minion and (minion.isAlly or minion.isEnemy or minion.isJungle) and not minion.dead then
-                local distance = getDistance(mousePos, minion.pos)
-                
-                if distance < FleeEDistance then
+                local distance = getDistance(minion.pos, mousePos)
+                local distance2 = getDistance(myHero.pos, minion.pos)
+                if distance < FleeEDistance and distance2 <= 550 then
                     FleeEDistance = distance
                     FleeETarget = minion
                 end
             end
         end
-    end
 
     return FleeETarget, FleeEDistance
 end
 
-
-function onLoadEvent()
-
-    orbwalker = _G.SDK.Orbwalker
-    HealthPrediction = _G.SDK.HealthPrediction
-    if table.contains(Heroes, myHero.charName) then
-		_G[myHero.charName]()
-    end
-end
-
-Callback.Add('Load', onLoadEvent)
