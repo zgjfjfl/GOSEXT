@@ -4630,7 +4630,7 @@ function Heimerdinger:Combo()
             self:CastR()
             self:CastQ(target)
         else
-            if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < 650 and getEnemyCount(650, myHero.pos) >= 1 then
+            if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "HeimerdingerQ" and myHero.pos:DistanceTo(target.pos) < 650 and getEnemyCount(650, myHero.pos) >= 1 then
                 self:CastQ(target)
             end
         end
@@ -4639,7 +4639,7 @@ function Heimerdinger:Combo()
             self:CastR()
             self:CastE2(target)
         else
-            if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) < E.Range then
+            if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero:GetSpellData(_E).name == "HeimerdingerE" and myHero.pos:DistanceTo(target.pos) < E.Range then
                 self:CastE(target)
             end
 
@@ -4647,7 +4647,7 @@ function Heimerdinger:Combo()
                 self:CastR()
                 self:CastW(target)
             else
-                if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < W.Range then
+                if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "HeimerdingerW" and myHero.pos:DistanceTo(target.pos) < W.Range then
                     self:CastW(target)
                 end
             end
