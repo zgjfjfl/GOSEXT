@@ -4652,6 +4652,18 @@ function Heimerdinger:Combo()
                 end
             end
         end
+        if not self.Menu.Combo.RQ:Value() and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < 650 and getEnemyCount(650, myHero.pos) >= 1 then
+            self:CastQ(target)
+        end
+        if not self.Menu.Combo.RE:Value() and self.Menu.Combo.E:Value() and isSpellReady(_E) and haveBuff(myHero, "HeimerdingerR") and myHero.pos:DistanceTo(target.pos) < E2.Range then
+            self:CastE2(target)
+        end
+        if not self.Menu.Combo.RE:Value() and self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) < E.Range then
+            self:CastE(target)
+        end
+        if not self.Menu.Combo.RW:Value() and self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < W.Range then
+            self:CastW(target)
+        end
     end
 end
 
