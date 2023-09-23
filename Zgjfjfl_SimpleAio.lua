@@ -1,4 +1,4 @@
-local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai", "Gragas", "Milio", "AurelionSol", "Heimerdinger"}
+local Heroes ={"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai", "Gragas", "Milio", "AurelionSol", "Heimerdinger", "Briar"}
 
 if not table.contains(Heroes, myHero.charName) then 
     print('SimpleAio not supported ' .. myHero.charName)
@@ -27,7 +27,7 @@ local lastW = 0
 local lastE = 0
 local lastR = 0
 
-local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell
+local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data
 
 Callback.Add("Load", function()
 
@@ -38,6 +38,7 @@ Callback.Add("Load", function()
     Attack = _G.SDK.Attack
     Damage = _G.SDK.Damage
     Spell = _G.SDK.Spell
+    Data = _G.SDK.Data
 
     if table.contains(Heroes, myHero.charName) then
         _G[myHero.charName]()
@@ -240,7 +241,7 @@ end
 local function isImmobile(unit)
     for i = 0, unit.buffCount do
         local buff = unit:GetBuff(i)
-        if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35 or buff.name == "recall") and buff.count > 0 then
+        if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
             return true
         end
     end
@@ -4579,9 +4580,9 @@ function Heimerdinger:__init()
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)    
     Q = {Delay = 0.25, Range = 350}
-    W = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 1100, Speed = 900, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}} 
-    E = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 135, Range = 925, Speed = 1200, Collision = false}
-    E2 = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 135, Range = 1325, Speed = 1200, Collision = false}
+    W = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 1200, Speed = 900, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}} 
+    E = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 135, Range = 970, Speed = 1200, Collision = false}
+    E2 = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 150, Range = 1500, Speed = 1200, Collision = false}
 end
 
 function Heimerdinger:LoadMenu()
@@ -4589,6 +4590,8 @@ function Heimerdinger:LoadMenu()
             
     self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
         self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "QRange1", name = "QTurret distance self", value = 300, min = 100, max = 350, step = 10})
+        self.Menu.Combo:MenuElement({id = "QRange2", name = "Cast[Q] distance target ", value = 700, min = 500, max = 1000, step = 50})
         self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "RQ", name = "[RQ]", toggle = true, value = true})
@@ -4601,6 +4604,13 @@ function Heimerdinger:LoadMenu()
         self.Menu.Harass:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
         self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
+    self.Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+        self.Menu.Misc:MenuElement({id = "QAmmo", name = "Save 1 QTurret in Combo", toggle = true, value = false})
+        self.Menu.Misc:MenuElement({id = "QAHp", name = "When target <=HP% use last QTurret", value = 20, min = 0, max = 100, step = 5})
+        self.Menu.Misc:MenuElement({id = "Flee", name = "Flee [RE] or [E]", toggle = true, value = false})
+        self.Menu.Misc:MenuElement({id = "RW", name = "Semi-Manual [RW] Key", key = string.byte("Z")})
+        self.Menu.Misc:MenuElement({id = "RE", name = "Semi-Manual [RE] Key", key = string.byte("T")})
+
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
         self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
@@ -4609,7 +4619,6 @@ function Heimerdinger:LoadMenu()
 end
 
 function Heimerdinger:onTick()
-
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end
@@ -4620,45 +4629,57 @@ function Heimerdinger:onTick()
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+        self:Flee()
+    end
+    if self.Menu.Misc.RW:Value() then
+        self:SemiManualRW()
+    end
+    if self.Menu.Misc.RE:Value() then
+        self:SemiManualRE()
+    end
 end
 
 function Heimerdinger:Combo()
     if Attack:IsActive() then return end
     local target = TargetSelector:GetTarget(1500)
     if isValid(target) then
-        if self.Menu.Combo.RQ:Value() and isSpellReady(_Q) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < 650 and getEnemyCount(650, myHero.pos) >= self.Menu.Combo.RQCount:Value() then
+        if self.Menu.Combo.RQ:Value() and isSpellReady(_Q) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.QRange2:Value() and getEnemyCount(self.Menu.Combo.QRange2:Value(), myHero.pos) >= self.Menu.Combo.RQCount:Value() then
             self:CastR()
             self:CastQ(target)
-        else
-            if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "HeimerdingerQ" and myHero.pos:DistanceTo(target.pos) < 650 and getEnemyCount(650, myHero.pos) >= 1 then
+        elseif self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.QRange2:Value() and getEnemyCount(self.Menu.Combo.QRange2:Value(), myHero.pos) >= 1 then
+            if not self.Menu.Misc.QAmmo:Value() then
                 self:CastQ(target)
+            else
+                if target.health/target.maxHealth >= self.Menu.Misc.QAHp:Value()/100 then
+                    if myHero:GetSpellData(_Q).ammo > 1 then
+                        self:CastQ(target)
+                    end
+                else
+                    self:CastQ(target)
+                end
             end
         end
 
         if self.Menu.Combo.RE:Value() and isSpellReady(_E) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < E2.Range and getEnemyCount(275, target.pos) >= self.Menu.Combo.RECount:Value() then
             self:CastR()
             self:CastE2(target)
-        else
-            if self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero:GetSpellData(_E).name == "HeimerdingerE" and myHero.pos:DistanceTo(target.pos) < E.Range then
-                self:CastE(target)
-            end
-
-            if self.Menu.Combo.RW:Value() and isSpellReady(_W) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < W.Range and self:getRWDmg(target) >= target.health then
-                self:CastR()
-                self:CastW(target)
+        elseif self.Menu.Combo.E:Value() and isSpellReady(_E) then
+            if haveBuff(myHero, "HeimerdingerR") then
+                if myHero.pos:DistanceTo(target.pos) < E2.Range then
+                    self:CastE2(target)
+                end
             else
-                if self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "HeimerdingerW" and myHero.pos:DistanceTo(target.pos) < W.Range then
-                    self:CastW(target)
+                if myHero.pos:DistanceTo(target.pos) < E.Range then
+                    self:CastE(target)
                 end
             end
         end
-        if not self.Menu.Combo.RQ:Value() and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "HeimerdingerQUlt" and myHero.pos:DistanceTo(target.pos) < 650 and getEnemyCount(650, myHero.pos) >= 1 then
-            self:CastQ(target)
-        end
-        if not self.Menu.Combo.RE:Value() and self.Menu.Combo.E:Value() and isSpellReady(_E) and myHero:GetSpellData(_E).name == "HeimerdingerEUlt" and myHero.pos:DistanceTo(target.pos) < E2.Range then
-            self:CastE2(target)
-        end
-        if not self.Menu.Combo.RW:Value() and self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "HeimerdingerWUlt" and myHero.pos:DistanceTo(target.pos) < W.Range then
+
+        if self.Menu.Combo.RW:Value() and isSpellReady(_W) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < W.Range and self:getRWDmg(target) >= target.health then
+            self:CastR()
+            self:CastW(target)
+        elseif self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < W.Range then
             self:CastW(target)
         end
     end
@@ -4678,8 +4699,42 @@ function Heimerdinger:Harass()
     end
 end
 
+function Heimerdinger:SemiManualRW()
+    local target = TargetSelector:GetTarget(1500)
+    if isValid(target) then
+        if isSpellReady(_W) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < W.Range then
+            self:CastR()
+            self:CastW(target)
+        end
+    end
+end
+
+function Heimerdinger:SemiManualRE()
+    local target = TargetSelector:GetTarget(1500)
+    if isValid(target) then
+        if isSpellReady(_E) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < E2.Range then
+            self:CastR()
+            self:CastE2(target)
+        end
+    end
+end
+
+function Heimerdinger:Flee()
+    local target = TargetSelector:GetTarget(1500)
+    if isValid(target) and self.Menu.Misc.Flee:Value() then
+        if isSpellReady(_E) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < E2.Range then
+            self:CastR()
+            self:CastE2(target)
+        else
+            if isSpellReady(_E) and not isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < E.Range then
+                self:CastE(target)
+            end
+        end
+    end
+end
+
 function Heimerdinger:CastQ(target)
-    local Castpos = myHero.pos:Extended(target.pos, 300)
+    local Castpos = myHero.pos:Extended(target.pos, self.Menu.Combo.QRange1:Value())
     if lastQ + 350 < GetTickCount() then
         Control.CastSpell(HK_Q, Castpos)
         lastQ = GetTickCount()
@@ -4727,8 +4782,8 @@ end
 
 function Heimerdinger:getRWDmg(target)
     local rlvl = myHero:GetSpellData(_R).level
-    local baseDmg  = 45 * rlvl + 90
-    local apDmg = myHero.ap * 0.45
+    local baseDmg  = 194.5 * rlvl + 308.5
+    local apDmg = myHero.ap * 1.83
     local rwDmg = baseDmg + apDmg
     return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, rwDmg)
 end
@@ -4747,3 +4802,162 @@ function Heimerdinger:Draw()
         Draw.Circle(myHero.pos, E2.Range, 1, Draw.Color(255, 255, 0, 0))
     end
 end
+
+-----------------------------------
+
+class "Briar"
+        
+function Briar:__init()	     
+    print("Zgjfjfl_Briar Loaded")
+    self:LoadMenu()
+    Callback.Add("Tick", function() self:onTickEvent() end)    
+    Q = {Range = 450}
+    W = {Range = 1000}
+    E = {Range = 600}
+    R = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 1, Radius = 160, Range = 10000, Speed = 2000, Collision = false} 
+end
+
+function Briar:LoadMenu()
+    self.Menu = MenuElement({type = MENU, id = "zgBriar", name = "Zgjfjfl Briar"})
+            
+    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = false})
+        self.Menu.Combo:MenuElement({id = "W2", name = "[W2] in Combo", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "W2Kill", name = "Auto [W2] can kills", toggle = true, value = true})
+        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
+        self.Menu.Combo:MenuElement({id = "EHP", name = "Use E when self <= HP%", value = 30, min = 0, max = 100, step = 5})
+        self.Menu.Combo:MenuElement({id = "EWall", name = "[E] to wall when target isImmobile", toggle = true, value = false})
+        self.Menu.Combo:MenuElement({id = "RM", name = "[R] Semi-Manual Key", key = string.byte("T")})
+
+
+    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Jungle Clear"})
+        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = false})
+        self.Menu.Clear:MenuElement({id = "W2", name = "[W2]", toggle = true, value = true})
+        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
+        self.Menu.Clear:MenuElement({id = "EHP", name = "Use E when self <= HP%", value = 30, min = 0, max = 100, step = 5})
+end
+
+function Briar:onTickEvent()
+    if haveBuff(myHero, "BriarWFrenzyBuff") or haveBuff(myHero, "BriarRSelf") or myHero.activeSpell.name == "BriarE" then
+        Orbwalker:SetMovement(false)
+        Orbwalker:SetAttack(false)
+    else
+        Orbwalker:SetMovement(true)
+        Orbwalker:SetAttack(true)
+    end
+
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_JUNGLECLEAR] then
+        self:JungleClear()
+    end
+    if self.Menu.Combo.RM:Value() then
+        self:RSemiManual()
+    end
+    if self.Menu.Combo.W2Kill:Value() then
+        self:AutoW2()
+    end
+end
+
+function Briar:Combo()
+
+    if Attack:IsActive() then return end
+
+    local target = TargetSelector:GetTarget(1000)
+    if isValid(target) then
+
+        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and getDistance(myHero.pos, target.pos) <= Q.Range and getDistance(myHero.pos, target.pos) > Data:GetAutoAttackRange(myHero) then
+            Control.CastSpell(HK_Q, target)
+        end
+
+        if self.Menu.Combo.W:Value() and not haveBuff(myHero, "BriarRSelf") and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarW" and getDistance(myHero.pos, target.pos) < W.Range then
+            Control.CastSpell(HK_W, target)
+        end 
+       
+        if self.Menu.Combo.W2:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and getDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and getBuffData(myHero, "BriarWAttackSpell").duration < 3 then
+            Control.CastSpell(HK_W)
+        end
+
+        if self.Menu.Combo.EWall:Value() and isSpellReady(_E) then
+            local Pos = myHero.pos:Extended(target.pos, E.Range)
+            local Pos2 = MapPosition:getIntersectionPoint3D(myHero.pos, Pos)
+            if Pos2 and isImmobile(target) and getDistance(myHero.pos, target.pos) < E.Range then
+                self:CastE(target)
+            end
+        end
+
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and getDistance(myHero.pos, target.pos) < E.Range and myHero.health/myHero.maxHealth <= self.Menu.Combo.EHP:Value()/100 then
+            self:CastE(target)
+        end
+    end
+end
+
+function Briar:RSemiManual()
+    local target = TargetSelector:GetTarget(R.Range)
+    if isValid(target) then
+        if isSpellReady(_R) then
+            local pred = GGPrediction:SpellPrediction(R)
+            pred:GetPrediction(target, myHero)
+            if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+                Control.CastSpell(HK_R, pred.CastPosition)
+            end
+        end
+    end
+end
+
+function Briar:CastE(target)
+    Control.SetCursorPos(target)
+    Control.KeyDown(HK_E)
+    DelayAction(function() Control.SetCursorPos(mousePos) end, 0.1)
+    DelayAction(function() Control.KeyUp(HK_E) end, 1)
+end
+
+
+function Briar:JungleClear()
+    if Attack:IsActive() then return end
+    local target = HealthPrediction:GetJungleTarget()
+    if isValid(target) then
+
+        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and getDistance(myHero.pos, target.pos) <= Q.Range then
+            Control.CastSpell(HK_Q, target)
+        end
+
+        if self.Menu.Clear.W:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarW" and getDistance(myHero.pos, target.pos) < W.Range then
+            Control.CastSpell(HK_W, target)
+        end 
+       
+        if self.Menu.Clear.W2:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and getDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and getBuffData(myHero, "BriarWAttackSpell").duration < 3 then
+            Control.CastSpell(HK_W)
+        end
+
+        if self.Menu.Clear.E:Value() and isSpellReady(_E) and getDistance(myHero.pos, target.pos) < E.Range and myHero.health/myHero.maxHealth <= self.Menu.Clear.EHP:Value()/100 then
+            self:CastE(target)
+        end
+    end
+end
+
+function Briar:AutoW2()
+    local target = TargetSelector:GetTarget(1000)
+    if isValid(target) then
+
+        local W2Dmg = self:getW2BonusDmg(target)      
+        if isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and getDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and W2Dmg >= (target.health + target.shieldAD) then
+            Control.CastSpell(HK_W)
+        end
+    end
+end
+
+
+function Briar:getW2BonusDmg(target)
+    local Wlvl = myHero:GetSpellData(_W).level
+    local baseDmg  = 15 * Wlvl - 10
+    local adDmg = myHero.totalDamage * 0.05
+    local bonusDmg = (0.1 * (target.maxHealth - target.health)) * (1 + 0.04 * (myHero.bonusDamage/100))
+    local Dmg = baseDmg + adDmg + bonusDmg
+    return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, Dmg)
+end
+
+
