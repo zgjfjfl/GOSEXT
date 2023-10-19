@@ -32,7 +32,7 @@ local lastW = 0
 local lastE = 0
 local lastR = 0
 
-local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data
+local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data, Cursor
 
 Callback.Add("Load", function()
 
@@ -44,6 +44,7 @@ Callback.Add("Load", function()
 	Damage = _G.SDK.Damage
 	Spell = _G.SDK.Spell
 	Data = _G.SDK.Data
+	Cursor = _G.SDK.Cursor
 
     	if table.contains(Heroes, myHero.charName) then
 		_G[myHero.charName]()
@@ -400,6 +401,9 @@ function Lux:OnTick()
 	if myHero.activeSpell and myHero.activeSpell.valid and myHero.activeSpell.spellWasCast then
 		return
 	end
+	if Cursor.Step > 0 then
+		return
+	end
 
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
 		self:Combo()
@@ -647,6 +651,9 @@ function Zyra:OnTick()
 		return
 	end
 	if myHero.activeSpell and myHero.activeSpell.valid and myHero.activeSpell.spellWasCast then
+		return
+	end
+	if Cursor.Step > 0 then
 		return
 	end
 
@@ -911,6 +918,9 @@ function Brand:OnTick()
 		return
 	end
 	if myHero.activeSpell and myHero.activeSpell.valid and myHero.activeSpell.spellWasCast then
+		return
+	end
+	if Cursor.Step > 0 then
 		return
 	end
 
