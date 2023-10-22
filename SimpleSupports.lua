@@ -1,4 +1,4 @@
-local Heroes ={"Lux", "Zyra", "Brand", "Velkoz"}
+local Heroes ={"Lux", "Zyra", "Brand", "Velkoz", "Ziggs"}
 
 if not table.contains(Heroes, myHero.charName) then 
 	print('Supports SimpleAio not supported ' .. myHero.charName)
@@ -192,6 +192,20 @@ local function IsImmobile(unit)
 	return false
 end
 
+local function GetImmobileDuration(unit)
+	local MaxDuration = 0
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
+		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
+			local BuffDuration = buff.duration
+			if BuffDuration > MaxDuration then
+				MaxDuration = BuffDuration
+			end
+            	end
+	end
+	return MaxDuration
+end
+
 local function IsInvulnerable(unit)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
@@ -269,7 +283,7 @@ local function CalculateBoundingBoxAvg(targets, predSpeed, predDelay)
 	return avg
 end
 
-local function CalculateBestCirclePosition(targets, radius, edgeDetect, spellRange, spellSpeed, spellDelay)
+local function CalculateBestCirclePosition(targets, radius, edgeDetect, RSpellange, spellSpeed, spellDelay)
 	local avgCastPos = CalculateBoundingBoxAvg(targets, spellSpeed, spellDelay)
 	local newCluster = {}
 	local distantEnemies = {}
@@ -302,17 +316,17 @@ local function CalculateBestCirclePosition(targets, radius, edgeDetect, spellRan
 		end
 	end
 	
-	if(edgeDetect) and myHero.pos:DistanceTo(avgCastPos) > spellRange then
+	if(edgeDetect) and myHero.pos:DistanceTo(avgCastPos) > RSpellange then
 
-		local checkPos = myHero.pos:Extended(avgCastPos, spellRange)
+		local checkPos = myHero.pos:Extended(avgCastPos, RSpellange)
 		local furthestTarget = FindFurthestTargetFromMe(newCluster)
-		local fakeMyHeroPos = avgCastPos:Extended(myHero.pos, spellRange + radius - 50)
+		local fakeMyHeroPos = avgCastPos:Extended(myHero.pos, RSpellange + radius - 50)
 		if(furthestTarget ~= nil) then
-			fakeMyHeroPos = avgCastPos:Extended(myHero.pos, spellRange + radius - furthestTarget.pos:DistanceTo(avgCastPos))
+			fakeMyHeroPos = avgCastPos:Extended(myHero.pos, RSpellange + radius - furthestTarget.pos:DistanceTo(avgCastPos))
 		end
 
 		if(myHero.pos:DistanceTo(avgCastPos) >= fakeMyHeroPos:DistanceTo(avgCastPos)) then
-			checkPos = fakeMyHeroPos:Extended(avgCastPos, spellRange)
+			checkPos = fakeMyHeroPos:Extended(avgCastPos, RSpellange)
 		end
 		
 		local hitAllCheck = true
@@ -1102,7 +1116,7 @@ function Velkoz:__init()
 	Callback.Add("Tick", function() self:OnTick() end)
 	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 50, Range = 1100, Speed = 1300, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_ENEMYHERO}}
 	QSplit = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 45, Range = 1000, Speed = 2100, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	QDummy = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 45, Range = 1400, Speed = 1200, Collision = false}
+	QDummy = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 45, Range = MathSqrt(QSpell.Range^2 + QSplit.Range^2), Speed = 1200, Collision = false}
 	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 85, Range = 1000, Speed = 1700, Collision = false}
 	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1.0, Radius = 225, Range = 800, Speed = MathHuge, Collision = false}
 	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 80, Range = 1500, Speed = MathHuge, Collision = false}
@@ -1182,7 +1196,7 @@ end
 function Velkoz:Harass()
 	local target = TargetSelector:GetTarget(1500)
 	if IsValid(target) and target.pos2D.onScreen then
-		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= QDummy.Range then
+		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < QDummy.Range then
 			self:CastQ(target)
 		end
 		if Menu.Harass.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range - 50 then
@@ -1259,14 +1273,14 @@ function Velkoz:CastQ(target)
 				local QDummyPrediction = GGPrediction:SpellPrediction(QDummy)
 				QDummyPrediction:GetPrediction(target, myHero)
 				if QDummyPrediction:CanHit(3) then
-					self:BestAim(QDummyPrediction.UnitPosition)
+					self:BestAim(QDummyPrediction.CastPosition)
 				end
 			end
 		else
 			local QDummyPrediction = GGPrediction:SpellPrediction(QDummy)
 			QDummyPrediction:GetPrediction(target, myHero)
 			if QDummyPrediction:CanHit(3) then
-				self:BestAim(QDummyPrediction.UnitPosition)
+				self:BestAim(QDummyPrediction.CastPosition)
 			end
 		end		
 	end
@@ -1279,26 +1293,24 @@ function Velkoz:DetonateQ(target)
         		local particle = GameParticle(i)
         		local Name = particle.name
         		if particle and Name:find("Velkoz") and Name:find("Q_mis") then
-				QSplit.Collision = false
 				local realPos = particle.pos + (particle.pos - myHero.pos):Normalized()*50
-				local endPos = Vector(realPos.x,myHero.pos.y,realPos.z)
-            			local dir = (endPos - myHero.pos):Normalized()
+            			local dir = (realPos - myHero.pos):Normalized()
             			local pDir = dir:Perpendicular()
-            			local leftEndPos = endPos + pDir * QSplit.Range
-            			local rightEndPos = endPos - pDir * QSplit.Range
+            			local leftEndPos = realPos + pDir * 1000
+            			local rightEndPos = realPos - pDir * 1000
 
-				local lEndPos = Vector(leftEndPos.x,myHero.pos.y,leftEndPos.z)
-				local rEndPos = Vector(rightEndPos.x,myHero.pos.y,rightEndPos.z)
+				local lEndPos = Vector(leftEndPos.x, realPos.y, leftEndPos.z)
+				local rEndPos = Vector(rightEndPos.x, realPos.y, rightEndPos.z)
 
-				local Prediction = GGPrediction:SpellPrediction(QSplit)
-				Prediction:GetPrediction(target, endPos)
+				local Prediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 45, Range = MathSqrt(QSpell.Range^2 + QSplit.Range^2), Speed = 2100, Collision = false})
+				Prediction:GetPrediction(target, realPos)
 				if Prediction:CanHit(3) then
-					local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(Prediction.CastPosition, endPos, lEndPos)
+					local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(Prediction.CastPosition, realPos, lEndPos)
 					if isOnSegment and GGPrediction:IsInRange(Prediction.CastPosition, point, (QSplit.Radius + target.boundingRadius)) then
 						Control.CastSpell(HK_Q)
 						return
 					end
-					local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(Prediction.CastPosition, endPos, rEndPos)
+					local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(Prediction.CastPosition, realPos, rEndPos)
 					if isOnSegment and GGPrediction:IsInRange(Prediction.CastPosition, point, (QSplit.Radius + target.boundingRadius)) then
 						Control.CastSpell(HK_Q)
 						return
@@ -1340,7 +1352,6 @@ end
 function Velkoz:BestAim(predictionPos)
 	local pointList = Velkoz:AimQ(predictionPos)
 	local c1 = Vector(predictionPos):DistanceTo(myHero.pos)
-
 	for _, point in ipairs(pointList) do
 		for j = 400, 1100, 50 do
 			local posExtend = myHero.pos:Extended(point, j)
@@ -1422,4 +1433,285 @@ function Velkoz:Draw()
 		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 end
+
+------------------------------------
+
+class "Ziggs"
+        
+function Ziggs:__init()	     
+	print("Support Ziggs Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	Q1Spell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 180, Range = 850, Speed = 1700, Collision = false}
+	Q2Spell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 180, Range = 1400, Speed = 1700, Collision = false}
+	WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 400, Range = 1200, Speed = 1750, Collision = false}
+	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 325, Range = 1000, Speed = 1750, Collision = false}
+	RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.375, Radius = 230, Range = 5000, Speed = 1750, Collision = false}
+end
+
+function Ziggs:LoadMenu()            
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "W", name = "Combo [W] on long-range Enemy", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "R", name = "Combo [R]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "RCount", name = "Combo [R] hit x targets", value = 3, min=1, max=5, step=1})
+	Menu.Combo:MenuElement({id = "Rsm", name = "R Semi-Manual Key", key = string.byte("T")})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "W", name = "Harass [W]", toggle = true, value = false})
+        Menu.Harass:MenuElement({id = "E", name = "Harass [E]", toggle = true, value = true})
+
+    Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
+        Menu.Auto:MenuElement({id = "W2", name = "Auto [W2]", toggle = true, value = true})
+        Menu.Auto:MenuElement({id = "W2time", name = "Auto [W2] Delay X time(ms)", value = 500, min=0,max=1000,step=50})
+        Menu.Auto:MenuElement({id = "WTurret", name = "Auto [W] low turret", toggle = true, value = true})
+        Menu.Auto:MenuElement({id = "WPeel", name = "Auto [W] Peel", toggle = true, value = true})
+        Menu.Auto:MenuElement({id = "RCC", name = "Auto [W] On 'CC'", toggle = true, value = true})
+        Menu.Auto:MenuElement({id = "RKill", name = "Auto [R] Kills", toggle = true, value = true})
+
+    Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        Menu.Flee:MenuElement({id = "W", name = "[W] to mouse", toggle = true, value = true})
+
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W", name = "Draw [W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "Rmini", name = "Draw [R] Range in minimap", toggle = true, value = false})
+end
+
+function Ziggs:OnTick()
+    if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
+        return
+    end
+    if Menu.Auto.W2:Value() then
+        if myHero:GetSpellData(_W).name == "ZiggsWToggle" and IsReady(_W) then
+            if lastW + Menu.Auto.W2time:Value() < GetTickCount() then
+                Control.CastSpell(HK_W)
+            end
+        end
+    end
+
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        self:Combo()
+    end
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+        self:Harass()
+    end
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+        self:Flee()
+    end
+    if Menu.Combo.Rsm:Value() and IsReady(_R) then
+        self:SemiManualR()
+    end
+    self:Auto()
+end
+
+function Ziggs:Combo()
+
+    if Attack:IsActive() then return end
+
+    local target = TargetSelector:GetTarget(1500)
+    if IsValid(target) and target.pos2D.onScreen then
+
+        if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= Q2Spell.Range then
+            self:CastQ(target)
+        end
+        if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
+            self:CastE(target)
+        end
+        if Menu.Combo.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "ZiggsW" and target.range > 300 and myHero.pos:DistanceTo(target.pos) <= WSpell.Range then
+            self:CastW(target)
+        end
+    end
+    local Rtarget = TargetSelector:GetTarget(5000)
+    if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
+        if Menu.Combo.R:Value() and IsReady(_R) then
+            self:CastRAoE(Rtarget)
+        end
+    end
+end	
+
+function Ziggs:Harass()
+
+    if Attack:IsActive() then return end
+
+    local target = TargetSelector:GetTarget(1500)
+    if IsValid(target) and target.pos2D.onScreen then
+            
+        if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= Q2Spell.Range then
+            self:CastQ(target)
+        end
+        if Menu.Harass.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "ZiggsW" and myHero.pos:DistanceTo(target.pos) <= WSpell.Range then
+            self:CastW(target)
+        end
+        if Menu.Harass.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
+            self:CastE(target)
+        end
+    end
+end
+
+function Ziggs:Flee()
+	if Menu.Flee.W:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
+		local castPos = myHero.pos:Extended(mousePos,-100)
+		Control.CastSpell(HK_W, castPos)
+		lastW = GetTickCount()
+	end
+end
+
+function Ziggs:SemiManualR()
+	local Rtarget = TargetSelector:GetTarget(5000)
+	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
+		local enemies = GetEnemiesAtPos(RSpell.Range + RSpell.Radius, RSpell.Radius*2, Rtarget.pos, Rtarget)
+		if #enemies >= 2 and lastR + 500 < GetTickCount() then
+			local AoEPos = CalculateBestCirclePosition(enemies, RSpell.Radius, true, RSpell.Range, RSpell.Speed, RSpell.Delay)
+			Control.CastSpell(HK_R, AoEPos)
+			lastR = GetTickCount()
+		elseif #enemies == 1 then
+			self:CastR(Rtarget)
+        	end
+	end
+end
+
+function Ziggs:Auto()
+	local enemies = ObjectManager:GetEnemyHeroes(RSpell.Range)
+	for i, enemy in ipairs(enemies) do
+        	if IsValid(enemy) and enemy.pos2D.onScreen then
+
+			if Menu.Auto.WPeel:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
+				local IsHeroMelee = enemy.range < 300
+				if IsHeroMelee and myHero.pos:DistanceTo(enemy.pos) <= enemy.boundingRadius + enemy.range + myHero.boundingRadius then
+					local castPos = Vector(myHero.pos):Extended(Vector(enemy.pos), MathMin(200, myHero.pos:DistanceTo(enemy.pos)/2))
+                			Control.CastSpell(HK_W, castPos)
+					lastW = GetTickCount()
+				end
+            		end
+			if Menu.Auto.RCC:Value() and IsReady(_R) and GetImmobileDuration(enemy) > 1 then
+				self:CastR(enemy)
+			end
+			if Menu.Auto.RKill:Value() and IsReady(_R) then
+				local Rdmg = self:GetRDmg(enemy)
+				if Rdmg > enemy.health + enemy.shieldAP + enemy.shieldAD then
+                			self:CastR(enemy)
+				end
+        		end
+		end
+	end
+	if Menu.Auto.WTurret:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
+        	local turrets = ObjectManager:GetEnemyTurrets(1000)
+        	for i, turret in ipairs(turrets) do
+			if turret and turret.health/turret.maxHealth < 0.275 then
+                		Control.CastSpell(HK_W, turret)
+				lastW = GetTickCount()
+			end
+		end
+	end
+end
+
+function Ziggs:CastQ(unit)
+	if myHero.pos:DistanceTo(unit.pos) > 850 then
+		local startPos = Vector(myHero.pos):Extended(Vector(unit.pos), 665)
+		local castPos = Vector(myHero.pos):Extended(Vector(unit.pos), 850)
+		local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(startPos, unit.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius/2, {GGPrediction.COLLISION_MINION}, unit.networkID)
+		if collisionCount == 0 then
+			local QPrediction = GGPrediction:SpellPrediction(Q2Spell)
+			QPrediction:GetPrediction(unit, myHero)
+			if QPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and not MapPosition:inWall(castPos) and lastQ + 350 < GetTickCount() then
+				Control.CastSpell(HK_Q, QPrediction.CastPosition)
+				lastQ = GetTickCount()
+			end
+		end
+	elseif myHero.pos:DistanceTo(unit.pos) < 850 then
+		local QPrediction = GGPrediction:SpellPrediction(Q1Spell)
+		QPrediction:GetPrediction(unit, myHero)
+		if QPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and lastQ + 350 < GetTickCount() then
+			Control.CastSpell(HK_Q, QPrediction.CastPosition)
+			lastQ = GetTickCount()
+		end
+	end
+end
+
+function Ziggs:CastW(unit)
+	local WPrediction = GGPrediction:SpellPrediction(WSpell)
+	WPrediction:GetPrediction(unit, myHero)
+	if WPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and lastW + 350 < GetTickCount() then
+		local castPos1 = Vector(Vector(WPrediction.CastPosition)):Extended(Vector(myHero.pos), 200)
+		local castPos2 = Vector(myHero.pos):Extended(Vector(WPrediction.CastPosition), 1000)
+		if myHero.pos:DistanceTo(unit.pos) <= 1000 then
+			Control.CastSpell(HK_W, castPos1)
+			lastW = GetTickCount()
+		elseif myHero.pos:DistanceTo(unit.pos) > 1000 and myHero.pos:DistanceTo(unit.pos) <= 1200 then
+			Control.CastSpell(HK_W, castPos2)
+			lastW = GetTickCount()
+		end
+	end
+end
+
+function Ziggs:CastE(unit)
+	local EPrediction = GGPrediction:SpellPrediction(ESpell)
+	EPrediction:GetPrediction(unit, myHero)
+	if EPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and lastE + 350 < GetTickCount() then
+		local castPos = Vector(myHero.pos):Extended(Vector(EPrediction.CastPosition), 900)
+		if myHero.pos:DistanceTo(unit.pos) <= 900 then
+			Control.CastSpell(HK_E, EPrediction.CastPosition)
+			lastE = GetTickCount()
+		elseif myHero.pos:DistanceTo(unit.pos) > 900 and myHero.pos:DistanceTo(unit.pos) <= 1000 then
+			Control.CastSpell(HK_E, castPos)
+			lastE = GetTickCount()
+		end
+	end
+end
+
+function Ziggs:CastR(unit)
+	local RPrediction = GGPrediction:SpellPrediction(RSpell)
+	RPrediction:GetPrediction(unit, myHero)
+	if RPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and lastR + 500 < GetTickCount() then
+		Control.CastSpell(HK_R, RPrediction.CastPosition)
+		lastR = GetTickCount()
+	end
+end
+
+function Ziggs:CastRAoE(unit)
+	local comboRCount = Menu.Combo.RCount:Value()
+	local enemies = GetEnemiesAtPos(RSpell.Range + RSpell.Radius, RSpell.Radius*2, unit.pos, unit)
+	if comboRCount > 1 and #enemies >= comboRCount and lastR + 500 < GetTickCount() then
+		local AoEPos = CalculateBestCirclePosition(enemies, RSpell.Radius, true, RSpell.Range, RSpell.Speed, RSpell.Delay)
+		Control.CastSpell(HK_R, AoEPos)
+		lastR = GetTickCount()
+	elseif comboRCount == 1 and #enemies > 0 then
+		self:CastR(unit)
+        end
+end
+
+function Ziggs:GetRDmg(target)
+	local rlvl = myHero:GetSpellData(_R).level
+	local baseDmg  = 150 * rlvl + 150
+	local apDmg = myHero.ap * 1.1
+	local Dmg = baseDmg + apDmg
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
+end
+
+function Ziggs:Draw()
+	if Menu.Draw.Q:Value() and IsReady(_Q) then
+		Draw.Circle(myHero.pos, Q2Spell.Range, 1, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+	if Menu.Draw.R:Value() and IsReady(_R) then
+		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+	end
+	if Menu.Draw.Rmini:Value() and IsReady(_R) then
+		Draw.CircleMinimap(myHero.pos, RSpell.Range, 0.5, Draw.Color(200,50,180,230))
+	end
+end
+------------------------------
+
 
