@@ -1102,7 +1102,7 @@ function Velkoz:__init()
 	Callback.Add("Tick", function() self:OnTick() end)
 	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 50, Range = 1100, Speed = 1300, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_ENEMYHERO}}
 	QSplit = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 45, Range = 1000, Speed = 2100, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	QDummy = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 45, Range = MathSqrt(QSpell.Range^2 + QSplit.Range^2), Speed = 1200, Collision = false}
+	QDummy = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 45, Range = 1400, Speed = 1200, Collision = false}
 	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 85, Range = 1000, Speed = 1700, Collision = false}
 	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1.0, Radius = 225, Range = 800, Speed = MathHuge, Collision = false}
 	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 80, Range = 1500, Speed = MathHuge, Collision = false}
@@ -1161,7 +1161,7 @@ end
 function Velkoz:Combo()
 	local target = TargetSelector:GetTarget(1500)
     	if IsValid(target) and target.pos2D.onScreen then
-		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= QDummy.Range then
+		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < QDummy.Range then
 			self:CastQ(target)
 		end
 		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
@@ -1259,14 +1259,14 @@ function Velkoz:CastQ(target)
 				local QDummyPrediction = GGPrediction:SpellPrediction(QDummy)
 				QDummyPrediction:GetPrediction(target, myHero)
 				if QDummyPrediction:CanHit(3) then
-					self:BestAim(QDummyPrediction.CastPosition)
+					self:BestAim(QDummyPrediction.UnitPosition)
 				end
 			end
 		else
 			local QDummyPrediction = GGPrediction:SpellPrediction(QDummy)
 			QDummyPrediction:GetPrediction(target, myHero)
 			if QDummyPrediction:CanHit(3) then
-				self:BestAim(QDummyPrediction.CastPosition)
+				self:BestAim(QDummyPrediction.UnitPosition)
 			end
 		end		
 	end
