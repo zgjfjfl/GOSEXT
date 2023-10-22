@@ -1,4 +1,4 @@
-local Heroes ={"Lux", "Zyra", "Brand"}
+local Heroes ={"Lux", "Zyra", "Brand", "Velkoz"}
 
 if not table.contains(Heroes, myHero.charName) then 
 	print('Supports SimpleAio not supported ' .. myHero.charName)
@@ -26,6 +26,7 @@ local MathHuge = math.huge
 local MathMin = math.min
 local MathMax = math.max
 local MathFloor = math.floor
+local MathSqrt = math.sqrt
 
 local lastQ = 0
 local lastW = 0
@@ -398,10 +399,7 @@ function Lux:OnTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
 		return
 	end
-	if myHero.activeSpell and myHero.activeSpell.valid and myHero.activeSpell.spellWasCast then
-		return
-	end
-	if Cursor.Step > 0 then
+	if not Orbwalker:CanMove() then
 		return
 	end
 
@@ -650,10 +648,7 @@ function Zyra:OnTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
 		return
 	end
-	if myHero.activeSpell and myHero.activeSpell.valid and myHero.activeSpell.spellWasCast then
-		return
-	end
-	if Cursor.Step > 0 then
+	if not Orbwalker:CanMove() then
 		return
 	end
 
@@ -917,10 +912,7 @@ function Brand:OnTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
 		return
 	end
-	if myHero.activeSpell and myHero.activeSpell.valid and myHero.activeSpell.spellWasCast then
-		return
-	end
-	if Cursor.Step > 0 then
+	if not Orbwalker:CanMove() then
 		return
 	end
 
@@ -1085,6 +1077,338 @@ function Brand:GetWDmg(target)
 end
 
 function Brand:Draw()
+	if Menu.Draw.Q:Value() and IsReady(_Q) then
+		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+	if Menu.Draw.R:Value() and IsReady(_R) then
+		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+	end
+end
+
+--------------------------------------
+class "Velkoz"
+        
+function Velkoz:__init()	     
+	print("Support Velkoz Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 50, Range = 1100, Speed = 1300, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_ENEMYHERO}}
+	QSplit = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 45, Range = 1000, Speed = 2100, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	QDummy = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 45, Range = MathSqrt(QSpell.Range^2 + QSplit.Range^2), Speed = 1200, Collision = false}
+	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 85, Range = 1000, Speed = 1700, Collision = false}
+	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1.0, Radius = 225, Range = 800, Speed = MathHuge, Collision = false}
+	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 80, Range = 1500, Speed = MathHuge, Collision = false}
+end
+
+function Velkoz:LoadMenu() 
+            
+    	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "W", name = "Combo [W]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "R", name = "Combo [R]", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "W", name = "Harass [W]", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
+	Menu.Auto:MenuElement({id = "W", name = "Auto [W] on 'CC'", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "E", name = "Auto [E] on 'CC'", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Kill", name = "Kills"})
+	Menu.Kill:MenuElement({id = "W", name = "Auto [W] Kills", toggle = true, value = true})
+	Menu.Kill:MenuElement({id = "E", name = "Auto [E] Kills", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "W", name = "Draw [W] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
+end
+
+function Velkoz:OnTick()
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
+		return
+	end
+
+	if HaveBuff(myHero, "VelkozR") then
+		Orbwalker:SetMovement(false)
+		Orbwalker:SetAttack(false)
+	else
+		Orbwalker:SetMovement(true)
+		Orbwalker:SetAttack(true)
+	end
+
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		self:Combo()
+	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	end
+	self:AutoW()
+	self:AutoE()
+end
+
+function Velkoz:Combo()
+	local target = TargetSelector:GetTarget(1500)
+    	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= QDummy.Range then
+			self:CastQ(target)
+		end
+		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
+			self:CastGGPred(HK_E, target)
+		end
+		if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range - 50 then
+			self:CastGGPred(HK_W, target)
+		end
+		if Menu.Combo.R:Value() and IsReady(_R) and lastR + 350 < GetTickCount() and GetEnemyCount(400, myHero.pos) == 0 and myHero.pos:DistanceTo(target.pos) < RSpell.Range - 50 and not IsUnderTurret(myHero) then
+			if target.health < self:GetRDmg(target) then
+				Control.CastSpell(HK_R, target)
+				lastR = GetTickCount()
+			end
+		end				
+	end
+end
+
+function Velkoz:Harass()
+	local target = TargetSelector:GetTarget(1500)
+	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= QDummy.Range then
+			self:CastQ(target)
+		end
+		if Menu.Harass.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range - 50 then
+			self:CastGGPred(HK_W, target)
+		end
+	end
+end
+
+function Velkoz:AutoW()
+	if IsReady(_W) then
+		local enemies = ObjectManager:GetEnemyHeroes(WSpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pos2D.onScreen then
+				if Menu.Auto.W:Value() and IsImmobile(target) then
+					self:CastGGPred(HK_W, target)
+				end
+				local Hp = target.health + target.shieldAD + target.shieldAP
+				if Menu.Kill.W:Value() and Hp < self:GetWDmg(target) then
+					self:CastGGPred(HK_W, target)
+				end
+			end
+		end
+	end	
+end
+
+function Velkoz:AutoE()
+	if IsReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pos2D.onScreen then
+				if Menu.Auto.E:Value() and IsImmobile(target) then
+					self:CastGGPred(HK_E, target)
+				end
+				local Hp = target.health + target.shieldAD + target.shieldAP
+				if Menu.Kill.E:Value() and Hp < self:GetEDmg(target) then
+					self:CastGGPred(HK_E, target)
+				end
+			end
+		end
+	end	
+end
+
+function Velkoz:CastGGPred(spell, unit)
+	if spell == HK_W then
+		local WPrediction = GGPrediction:SpellPrediction(WSpell)
+		WPrediction:GetPrediction(unit, myHero)
+		if WPrediction:CanHit(3) and lastW + 350 < GetTickCount() and Orbwalker:CanMove() then
+			Control.CastSpell(HK_W, WPrediction.CastPosition)
+			lastW = GetTickCount()
+		end
+	elseif spell == HK_E then
+		local EPrediction = GGPrediction:SpellPrediction(ESpell)
+		EPrediction:GetPrediction(unit, myHero)
+		if EPrediction:CanHit(3) and lastE + 350 < GetTickCount() and Orbwalker:CanMove() then
+			Control.CastSpell(HK_E, EPrediction.CastPosition)
+			lastE = GetTickCount()
+		end	
+	end
+end
+
+function Velkoz:CastQ(target)
+	if myHero:GetSpellData(_Q).toggleState == 0 and lastQ + 350 < GetTickCount() and Orbwalker:CanMove() then
+		if myHero.pos:DistanceTo(target.pos) <= QSpell.Range then
+                	local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, QSpell.CollisionTypes, target.networkID)
+                	if collisionCount == 0 then
+				local QPrediction = GGPrediction:SpellPrediction(QSpell)
+				QPrediction:GetPrediction(target, myHero)
+				if QPrediction:CanHit(3) then
+					Control.CastSpell(HK_Q, QPrediction.CastPosition)
+					lastQ = GetTickCount()
+					return
+				end
+			else
+				local QDummyPrediction = GGPrediction:SpellPrediction(QDummy)
+				QDummyPrediction:GetPrediction(target, myHero)
+				if QDummyPrediction:CanHit(3) then
+					self:BestAim(QDummyPrediction.CastPosition)
+				end
+			end
+		else
+			local QDummyPrediction = GGPrediction:SpellPrediction(QDummy)
+			QDummyPrediction:GetPrediction(target, myHero)
+			if QDummyPrediction:CanHit(3) then
+				self:BestAim(QDummyPrediction.CastPosition)
+			end
+		end		
+	end
+	self:DetonateQ(target)
+end
+
+function Velkoz:DetonateQ(target)
+	if myHero:GetSpellData(_Q).toggleState == 1 then
+		for i = GameParticleCount(), 1, -1 do
+        		local particle = GameParticle(i)
+        		local Name = particle.name
+        		if particle and Name:find("Velkoz") and Name:find("Q_mis") then
+				QSplit.Collision = false
+				local realPos = particle.pos + (particle.pos - myHero.pos):Normalized()*50
+				local endPos = Vector(realPos.x,myHero.pos.y,realPos.z)
+            			local dir = (endPos - myHero.pos):Normalized()
+            			local pDir = dir:Perpendicular()
+            			local leftEndPos = endPos + pDir * QSplit.Range
+            			local rightEndPos = endPos - pDir * QSplit.Range
+
+				local lEndPos = Vector(leftEndPos.x,myHero.pos.y,leftEndPos.z)
+				local rEndPos = Vector(rightEndPos.x,myHero.pos.y,rightEndPos.z)
+
+				local Prediction = GGPrediction:SpellPrediction(QSplit)
+				Prediction:GetPrediction(target, endPos)
+				if Prediction:CanHit(3) then
+					local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(Prediction.CastPosition, endPos, lEndPos)
+					if isOnSegment and GGPrediction:IsInRange(Prediction.CastPosition, point, (QSplit.Radius + target.boundingRadius)) then
+						Control.CastSpell(HK_Q)
+						return
+					end
+					local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(Prediction.CastPosition, endPos, rEndPos)
+					if isOnSegment and GGPrediction:IsInRange(Prediction.CastPosition, point, (QSplit.Radius + target.boundingRadius)) then
+						Control.CastSpell(HK_Q)
+						return
+					end
+				end
+			end
+		end
+	end
+end
+
+function Velkoz:AimQ(finalPos)
+	local CircleLineSegmentN = 36
+	local radius = 500
+	local position = myHero.pos
+	local points = {}
+
+	for i = 1, CircleLineSegmentN do
+		local angle = i * 2 * math.pi / CircleLineSegmentN
+		local x = position.x + radius * math.cos(angle)
+		local z = position.z + radius * math.sin(angle)
+		local y = position.y
+		local point = Vector(x, y, z)
+
+		if point:DistanceTo(myHero.pos:Extended(finalPos, radius)) < 430 then
+			TableInsert(points, point)
+		end
+	end
+
+	table.sort(points, function(a, b)
+		return a:DistanceTo(finalPos) < b:DistanceTo(finalPos)
+	end)
+
+	TableRemove(points, 1)
+	TableRemove(points, 1)
+
+	return points
+end
+
+function Velkoz:BestAim(predictionPos)
+	local pointList = Velkoz:AimQ(predictionPos)
+	local c1 = Vector(predictionPos):DistanceTo(myHero.pos)
+
+	for _, point in ipairs(pointList) do
+		for j = 400, 1100, 50 do
+			local posExtend = myHero.pos:Extended(point, j)
+			local a1 = myHero.pos:DistanceTo(posExtend)
+			local b1 = math.sqrt(c1 * c1 - a1 * a1)
+
+			if b1 < QSplit.Range then
+            			local pointA = myHero.pos:Extended(point, a1)
+				local endPos = Vector(pointA.x,myHero.pos.y,pointA.z)
+            			local dir = (endPos - myHero.pos):Normalized()
+            			local pDir = dir:Perpendicular()
+            			local leftEndPos = endPos + pDir * b1
+            			local rightEndPos = endPos - pDir * b1
+
+				local lEndPos = Vector(leftEndPos.x,myHero.pos.y,leftEndPos.z)
+				local rEndPos = Vector(rightEndPos.x,myHero.pos.y,rightEndPos.z)
+
+            			if lEndPos:DistanceTo(predictionPos) < QSplit.Radius then
+                			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, endPos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+                			if collisionCount > 0 then
+                    				break
+                			end
+                			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(endPos, lEndPos, QSplit.Speed, QSplit.Delay, QSplit.Radius, {GGPrediction.COLLISION_MINION}, nil)
+                			if collisionCount > 0 then
+                    				break
+                			end
+                			Control.CastSpell(HK_Q, endPos)
+					lastQ = GetTickCount()
+                			return
+            			end
+
+				if rEndPos:DistanceTo(predictionPos) < QSplit.Radius then
+					local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, endPos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+					if collisionCount > 0 then
+						break
+					end
+					local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(endPos, rEndPos, QSplit.Speed, QSplit.Delay, QSplit.Radius, {GGPrediction.COLLISION_MINION}, nil)
+                			if collisionCount > 0 then
+                    				break
+                			end
+					Control.CastSpell(HK_Q, endPos)
+					lastQ = GetTickCount()
+					return
+				end
+			end
+		end
+	end
+end
+
+function Velkoz:GetWDmg(target)
+	local level = myHero:GetSpellData(_W).level
+    	local WDmg = ({30, 50, 70, 90, 110})[level] + 0.2 * myHero.ap
+    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg)
+end
+
+function Velkoz:GetEDmg(target)
+	local level = myHero:GetSpellData(_E).level
+    	local EDmg = ({70, 100, 130, 160, 190})[level] + 0.3 * myHero.ap
+    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
+end
+
+function Velkoz:GetRDmg(target)
+	local level = myHero:GetSpellData(_R).level
+    	local RDmg = ({450, 625, 800})[level] + 1.25 * myHero.ap
+    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, RDmg)
+end
+
+function Velkoz:Draw()
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
 		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end
