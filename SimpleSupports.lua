@@ -1604,7 +1604,7 @@ function Ziggs:Auto()
 	if Menu.Auto.WTurret:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
         	local turrets = ObjectManager:GetEnemyTurrets(1000)
         	for i, turret in ipairs(turrets) do
-			if turret and turret.health/turret.maxHealth < 0.275 then
+			if turret and turret.health/turret.maxHealth < 0.27 then
                 		Control.CastSpell(HK_W, turret)
 				lastW = GetTickCount()
 			end
