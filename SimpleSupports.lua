@@ -1470,7 +1470,7 @@ function Ziggs:LoadMenu()
         Menu.Auto:MenuElement({id = "W2time", name = "Auto [W2] Delay X time(ms)", value = 500, min=0,max=1000,step=50})
         Menu.Auto:MenuElement({id = "WTurret", name = "Auto [W] low turret", toggle = true, value = true})
         Menu.Auto:MenuElement({id = "WPeel", name = "Auto [W] Peel", toggle = true, value = true})
-        Menu.Auto:MenuElement({id = "RCC", name = "Auto [W] On 'CC'", toggle = true, value = true})
+        Menu.Auto:MenuElement({id = "RCC", name = "Auto [R] On 'CC'", toggle = true, value = true})
         Menu.Auto:MenuElement({id = "RKill", name = "Auto [R] Kills", toggle = true, value = true})
 
     Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
