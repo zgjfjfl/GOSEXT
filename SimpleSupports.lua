@@ -623,10 +623,10 @@ function Zyra:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1, Radius = 100, Range = 800, Speed = MathHuge, Collision = false}
+	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 100, Range = 800, Speed = MathHuge, Collision = false}
 	WSpell = {Range = 850}
 	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1100, Speed = 1150, Collision = false}
-	RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1, Radius = 500, Range = 950, Speed = MathHuge, Collision = false}
+	RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 500, Range = 950, Speed = MathHuge, Collision = false}
 end
 
 function Zyra:LoadMenu() 
