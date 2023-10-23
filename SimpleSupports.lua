@@ -1590,7 +1590,7 @@ function Ziggs:Auto()
 					lastW = GetTickCount()
 				end
             		end
-			if Menu.Auto.RCC:Value() and IsReady(_R) and GetImmobileDuration(enemy) > 1 then
+			if Menu.Auto.RCC:Value() and IsReady(_R) and GetImmobileDuration(enemy) > 0.5 then
 				self:CastR(enemy)
 			end
 			if Menu.Auto.RKill:Value() and IsReady(_R) then
