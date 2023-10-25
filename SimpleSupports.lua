@@ -826,7 +826,7 @@ end
 
 function Zyra:GetPDmg(target)
 	local level = myHero.levelData.lvl
-    	local PDmg = (20 + 68 / 17 * (level - 1)) + 0.18 * myHero.ap
+    	local PDmg = (16 + 4 * level) + 0.18 * myHero.ap
     	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, PDmg)
 end
 
