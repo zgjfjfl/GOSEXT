@@ -1,7 +1,7 @@
 local Heroes ={"Lux", "Zyra", "Brand", "Velkoz", "Ziggs"}
 
 if not table.contains(Heroes, myHero.charName) then 
-	print('Supports SimpleAio not supported ' .. myHero.charName)
+	print('SimpleSupports not supported ' .. myHero.charName)
 	return 
 end
 
@@ -817,19 +817,19 @@ end
 
 function Zyra:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
-    	local QDmg = ({60, 95, 130, 165, 200})[level] + 0.6 * myHero.ap
+    	local QDmg = ({60, 100, 140, 180, 220})[level] + 0.65 * myHero.ap
     	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
 end
 
 function Zyra:GetPDmg(target)
 	local level = myHero.levelData.lvl
-    	local PDmg = 40 + 60 / 17 * (level - 1)
+    	local PDmg = (20 + 68 / 17 * (level - 1)) + 0.18 * myHero.ap
     	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, PDmg)
 end
 
 function Zyra:GetEDmg(target)
     	local level = myHero:GetSpellData(_E).level
-    	local EDmg = ({60, 105, 150, 195, 240})[level] + 0.5 * myHero.ap
+    	local EDmg = ({60, 95, 130, 165, 200})[level] + 0.6 * myHero.ap
     	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
 end
 
@@ -1438,7 +1438,7 @@ end
 
 class "Ziggs"
         
-function Ziggs:__init()	     
+function Ziggs:__init()     
 	print("Support Ziggs Loaded") 
 	self:LoadMenu()
 	
@@ -1451,7 +1451,7 @@ function Ziggs:__init()
 	RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.375, Radius = 230, Range = 5000, Speed = 1750, Collision = false}
 end
 
-function Ziggs:LoadMenu()            
+function Ziggs:LoadMenu()           
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "W", name = "Combo [W] on long-range Enemy", toggle = true, value = true})
@@ -1465,94 +1465,97 @@ function Ziggs:LoadMenu()
 	Menu.Harass:MenuElement({id = "W", name = "Harass [W]", toggle = true, value = false})
         Menu.Harass:MenuElement({id = "E", name = "Harass [E]", toggle = true, value = true})
 
-    Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
-        Menu.Auto:MenuElement({id = "W2", name = "Auto [W2]", toggle = true, value = true})
-        Menu.Auto:MenuElement({id = "W2time", name = "Auto [W2] Delay X time(ms)", value = 500, min=0,max=1000,step=50})
-        Menu.Auto:MenuElement({id = "WTurret", name = "Auto [W] low turret", toggle = true, value = true})
-        Menu.Auto:MenuElement({id = "WPeel", name = "Auto [W] Peel", toggle = true, value = true})
-        Menu.Auto:MenuElement({id = "RCC", name = "Auto [R] On 'CC'", toggle = true, value = true})
-        Menu.Auto:MenuElement({id = "RKill", name = "Auto [R] Kills", toggle = true, value = true})
+	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
+	Menu.Auto:MenuElement({id = "W2", name = "Auto [W2]", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "W2time", name = "Auto [W2] Delay X time(ms)", value = 500, min=0,max=1000,step=50})
+	Menu.Auto:MenuElement({id = "WTurret", name = "Auto [W] low turret", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "WPeel", name = "Auto [W] Peel", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "RCC", name = "Auto [R] On 'CC'", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "RKill", name = "Auto [R] Kills", toggle = true, value = true})
 
-    Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-        Menu.Flee:MenuElement({id = "W", name = "[W] to mouse", toggle = true, value = true})
+	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+	Menu.Flee:MenuElement({id = "W", name = "[W] to mouse", toggle = true, value = true})
 
-    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
-        Menu.Draw:MenuElement({id = "W", name = "Draw [W] Range", toggle = true, value = false})
-        Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
-        Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
-        Menu.Draw:MenuElement({id = "Rmini", name = "Draw [R] Range in minimap", toggle = true, value = false})
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "W", name = "Draw [W] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "Rmini", name = "Draw [R] Range in minimap", toggle = true, value = false})
 end
 
 function Ziggs:OnTick()
-    if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
-        return
-    end
-    if Menu.Auto.W2:Value() then
-        if myHero:GetSpellData(_W).name == "ZiggsWToggle" and IsReady(_W) then
-            if lastW + Menu.Auto.W2time:Value() < GetTickCount() then
-                Control.CastSpell(HK_W)
-            end
-        end
-    end
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
+		return
+	end
+	if Menu.Auto.W2:Value() then
+		if myHero:GetSpellData(_W).name == "ZiggsWToggle" and IsReady(_W) then
+			if lastW + Menu.Auto.W2time:Value() < GetTickCount() then
+				Control.CastSpell(HK_W)
+			end
+		end
+	end
 
-    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
-        self:Combo()
-    end
-    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
-        self:Harass()
-    end
-    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
-        self:Flee()
-    end
-    if Menu.Combo.Rsm:Value() and IsReady(_R) then
-        self:SemiManualR()
-    end
-    self:Auto()
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		self:Combo()
+	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+		self:Flee()
+	end
+	if Menu.Combo.Rsm:Value() and IsReady(_R) then
+		self:SemiManualR()
+	end
+	self:Auto()
 end
 
 function Ziggs:Combo()
 
-    if Attack:IsActive() then return end
+	if Attack:IsActive() then return end
 
-    local target = TargetSelector:GetTarget(1500)
-    if IsValid(target) and target.pos2D.onScreen then
+	local target = TargetSelector:GetTarget(1500)
+	if IsValid(target) and target.pos2D.onScreen then
 
-        if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= Q2Spell.Range then
-            self:CastQ(target)
-        end
-        if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
-            self:CastE(target)
-        end
-        if Menu.Combo.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "ZiggsW" and target.range > 300 and myHero.pos:DistanceTo(target.pos) <= WSpell.Range then
-            self:CastW(target)
-        end
-    end
-    local Rtarget = TargetSelector:GetTarget(5000)
-    if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
-        if Menu.Combo.R:Value() and IsReady(_R) then
-            self:CastRAoE(Rtarget)
-        end
-    end
+		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= Q2Spell.Range then
+			self:CastQ(target)
+		end
+		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
+			self:CastE(target)
+		end
+		if Menu.Combo.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "ZiggsW" and myHero.pos:DistanceTo(target.pos) <= WSpell.Range then
+			local IsRange = not (Data.HEROES[target.charName] and Data.HEROES[target.charName][2]) or target.range > 300
+			if IsRange then
+ 				self:CastW(target)
+			end
+		end
+	end
+	local Rtarget = TargetSelector:GetTarget(5000)
+	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
+		if Menu.Combo.R:Value() and IsReady(_R) then
+			self:CastRAoE(Rtarget)
+		end
+	end
 end	
 
 function Ziggs:Harass()
 
-    if Attack:IsActive() then return end
+	if Attack:IsActive() then return end
 
-    local target = TargetSelector:GetTarget(1500)
-    if IsValid(target) and target.pos2D.onScreen then
+	local target = TargetSelector:GetTarget(1500)
+	if IsValid(target) and target.pos2D.onScreen then
             
-        if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= Q2Spell.Range then
-            self:CastQ(target)
-        end
-        if Menu.Harass.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "ZiggsW" and myHero.pos:DistanceTo(target.pos) <= WSpell.Range then
-            self:CastW(target)
-        end
-        if Menu.Harass.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
-            self:CastE(target)
-        end
-    end
+		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= Q2Spell.Range then
+			self:CastQ(target)
+		end
+		if Menu.Harass.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "ZiggsW" and myHero.pos:DistanceTo(target.pos) <= WSpell.Range then
+			self:CastW(target)
+		end
+		if Menu.Harass.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
+			self:CastE(target)
+		end
+	end
 end
 
 function Ziggs:Flee()
@@ -1583,8 +1586,8 @@ function Ziggs:Auto()
         	if IsValid(enemy) and enemy.pos2D.onScreen then
 
 			if Menu.Auto.WPeel:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
-				local IsHeroMelee = enemy.range < 300
-				if IsHeroMelee and myHero.pos:DistanceTo(enemy.pos) <= enemy.boundingRadius + enemy.range + myHero.boundingRadius then
+				local IsMelee = Data.HEROES[enemy.charName] and Data.HEROES[enemy.charName][2] or enemy.range < 300
+				if IsMelee and myHero.pos:DistanceTo(enemy.pos) <= enemy.boundingRadius + enemy.range + myHero.boundingRadius then
 					local castPos = Vector(myHero.pos):Extended(Vector(enemy.pos), MathMin(200, myHero.pos:DistanceTo(enemy.pos)/2))
                 			Control.CastSpell(HK_W, castPos)
 					lastW = GetTickCount()
@@ -1604,7 +1607,7 @@ function Ziggs:Auto()
 	if Menu.Auto.WTurret:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
         	local turrets = ObjectManager:GetEnemyTurrets(1000)
         	for i, turret in ipairs(turrets) do
-			if turret and turret.health/turret.maxHealth < 0.27 then
+			if turret and turret.health/turret.maxHealth < (myHero:GetSpellData(_W).level*2.5 + 22.5)/100 then
                 		Control.CastSpell(HK_W, turret)
 				lastW = GetTickCount()
 			end
@@ -1639,7 +1642,7 @@ function Ziggs:CastW(unit)
 	local WPrediction = GGPrediction:SpellPrediction(WSpell)
 	WPrediction:GetPrediction(unit, myHero)
 	if WPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and lastW + 350 < GetTickCount() then
-		local castPos1 = Vector(Vector(WPrediction.CastPosition)):Extended(Vector(myHero.pos), 200)
+		local castPos1 = Vector(Vector(WPrediction.CastPosition)):Extended(Vector(myHero.pos), 150)
 		local castPos2 = Vector(myHero.pos):Extended(Vector(WPrediction.CastPosition), 1000)
 		if myHero.pos:DistanceTo(unit.pos) <= 1000 then
 			Control.CastSpell(HK_W, castPos1)

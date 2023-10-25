@@ -179,7 +179,7 @@ local function haveBuff(unit, buffName)
     return false
 end
 
-function getBuffData(unit, buffname)
+local function getBuffData(unit, buffname)
     for i = 0, unit.buffCount do
         local buff = unit:GetBuff(i)
         if buff.name == buffname and buff.count > 0 then 
@@ -3381,8 +3381,8 @@ function KSante:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end    
-    local myHerobonusHealth = math.min(math.floor(myHero.maxHealth - (570 + 115 * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1800)
-    local time = math.floor(1/9000 * myHerobonusHealth * 100) / 100
+    local bonusHealth = math.min(math.floor(myHero.maxHealth - (570 + 115 * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1200)
+    local time = math.floor(bonusHealth / 6000 * 100) / 100
     --print(time)
     self.q1Spell.Delay = 0.45 - time
     self.q3Spell.Delay = 0.45 - time
@@ -4515,7 +4515,7 @@ end
 function AurelionSol:SemiManualR()
     if isValid(Rtarget) then
         if isSpellReady(_R) and lastR + 250 < GetTickCount() then
-            local enemies = GetEnemiesAtPos(self.rSpell.Range + self.rSpell.Radius, self.rSpell.Radius*2, Rtarget.pos,Rtarget)
+            local enemies = GetEnemiesAtPos(self.rSpell.Range + self.rSpell.Radius/2, self.rSpell.Radius, Rtarget.pos,Rtarget)
             if #enemies >= 2 then
                 local AoEPos = CalculateBestCirclePosition(enemies, self.rSpell.Radius, true, self.rSpell.Range, self.rSpell.Speed, self.rSpell.Delay)
                 Control.CastSpell(HK_R, AoEPos)
@@ -4530,7 +4530,7 @@ end
 
 function AurelionSol:CastEAoE(target)
     if isSpellReady(_E) and lastE + 350 < GetTickCount() then
-        local enemies = GetEnemiesAtPos(self.eSpell.Range + self.eSpell.Radius, self.eSpell.Radius*2, target.pos,target)
+        local enemies = GetEnemiesAtPos(self.eSpell.Range + self.eSpell.Radius/2, self.eSpell.Radius, target.pos,target)
         if #enemies >= 2 then
             local AoEPos = CalculateBestCirclePosition(enemies, self.eSpell.Radius, true, self.eSpell.Range, self.eSpell.Speed, self.eSpell.Delay)
             Control.CastSpell(HK_E, AoEPos)
@@ -4544,12 +4544,13 @@ end
 
 function AurelionSol:CastRAoE(target)
     if isSpellReady(_R) and lastR + 250 < GetTickCount() then
-        local enemies = GetEnemiesAtPos(self.rSpell.Range + self.rSpell.Radius, self.rSpell.Radius*2, target.pos,target)
-        if #enemies >= self.Menu.Combo.Rcount:Value() and self.Menu.Combo.Rcount:Value() ~= 1 then
+        local enemies = GetEnemiesAtPos(self.rSpell.Range + self.rSpell.Radius/2, self.rSpell.Radius, target.pos,target)
+        local Rcount = self.Menu.Combo.Rcount:Value()
+        if Rcount > 1 and #enemies >= Rcount then
             local AoEPos = CalculateBestCirclePosition(enemies, self.rSpell.Radius, true, self.rSpell.Range, self.rSpell.Speed, self.rSpell.Delay)
             Control.CastSpell(HK_R, AoEPos)
             lastR = GetTickCount()
-        elseif #enemies == self.Menu.Combo.Rcount:Value() and self.Menu.Combo.Rcount:Value() == 1 then
+        elseif Rcount == 1 and #enemies > 0 then
             castSpellHigh(self.rSpell, HK_R, target)
             lastR = GetTickCount()
         end
@@ -4970,7 +4971,7 @@ function Briar:getW2BonusDmg(target)
     local Wlvl = myHero:GetSpellData(_W).level
     local baseDmg  = 15 * Wlvl - 10
     local adDmg = myHero.totalDamage * 0.05
-    local bonusDmg = (0.1 + 0.04 * math.floor(myHero.bonusDamage/100))* (target.maxHealth - target.health)
+    local bonusDmg = (0.1 + 0.035 * math.floor(myHero.bonusDamage/100))* (target.maxHealth - target.health)
     local Dmg = baseDmg + adDmg + bonusDmg
     return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, Dmg)
 end
