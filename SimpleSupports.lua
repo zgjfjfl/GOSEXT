@@ -756,7 +756,10 @@ function Zyra:CastGGPred(spell, unit)
 			Control.CastSpell(HK_Q, QPrediction.CastPosition)
 			lastQ = GetTickCount()
 			local pos = QPrediction.CastPosition
-			if Menu.Auto.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(pos) < WSpell.Range then
+			if myHero.pos:DistanceTo(pos) > WSpell.Range then
+				pos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), WSpell.Range)
+			end
+			if Menu.Auto.W:Value() and IsReady(_W) then
 				DelayAction(function() Control.CastSpell(HK_W, pos) end,0.25)
 			end
 		end
