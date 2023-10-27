@@ -3354,7 +3354,7 @@ function KSante:LoadMenu()
         self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "EA", name = "use E close to enemy AApassive", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "ET", name = "use E close to enemy useQ", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "EM", name = "use E allyminion close to enemy", toggle = true, value = true})
+        --self.Menu.Combo:MenuElement({id = "EM", name = "use E allyminion close to enemy", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "EH", name = "use E allyhero close to enemy", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "RT", name = "[R] enemy close to allyturret (not near wall)", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "RM", name = "[R] Manual R when enemy near wall ", key = string.byte("T")})
@@ -3381,8 +3381,8 @@ function KSante:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end    
-    local bonusHealth = math.min(math.floor(myHero.maxHealth - (570 + 115 * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1200)
-    local time = math.floor(bonusHealth / 6000 * 100) / 100
+    local bonusHealth = math.min(math.floor(myHero.maxHealth - (570 + 115 * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1600)
+    local time = math.floor(bonusHealth / 8000 * 100) / 100
     --print(time)
     self.q1Spell.Delay = 0.45 - time
     self.q3Spell.Delay = 0.45 - time
@@ -3413,9 +3413,9 @@ function KSante:onTick()
         self:Harass()
     end
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+        self:LastHit()
         self:LaneClear()
         self:JungleClear()
-        self:LastHit()
     end
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
         self:LastHit()
@@ -3447,7 +3447,7 @@ function KSante:Combo()
                     lastE = GetTickCount()
                 end
             end
-            if self.Menu.Combo.EM:Value() then
+            --[[if self.Menu.Combo.EM:Value() then
                 local Minions = ObjectManager:GetAllyMinions(550)
                 for i = 1, #Minions do
                     local minion = Minions[i]
@@ -3456,7 +3456,7 @@ function KSante:Combo()
                         lastE = GetTickCount()
                     end
                 end
-            end
+            end]]
         end
 
         if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
@@ -3542,31 +3542,30 @@ function KSante:RSemiManual()
 end
 
 function KSante:LaneClear()
-
     if Attack:IsActive() then return end
-
-    local target = HealthPrediction:GetLaneClearTarget()
-    if target and isValid(target) then
-        if self.Menu.Clear1.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
-            bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius*2)
-            if bestCount >= self.Menu.Clear1.QCount:Value() then 
-                Control.CastSpell(HK_Q, bestPosition)
-                lastQ = GetTickCount()
+    if self.Menu.Clear1.Q:Value() then
+        local minions = ObjectManager:GetEnemyMinions(self.qSpell.Range)
+        for i = 1, #minions do
+            local minion = minions[i]
+            if isValid(minion) and minion.team ~= 300 then
+                local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+                if collisionCount >= self.Menu.Clear1.QCount:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+                    Control.CastSpell(HK_Q, minion)
+                    lastQ = GetTickCount()
+                end
             end
         end
     end
 end
 
 function KSante:JungleClear()
-
     if Attack:IsActive() then return end
-
-    local target = HealthPrediction:GetJungleTarget()
-    if target and isValid(target) then
-        if self.Menu.Clear2.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
-            bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius*2)
-            if bestCount > 0 then 
-                Control.CastSpell(HK_Q, bestPosition)
+    if self.Menu.Clear1.Q:Value() then
+        local minions = ObjectManager:GetEnemyMinions(self.qSpell.Range)
+        for i = 1, #minions do
+            local minion = minions[i]
+            if isValid(minion) and minion.team == 300 and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+                Control.CastSpell(HK_Q, minion)
                 lastQ = GetTickCount()
             end
         end
@@ -3577,11 +3576,9 @@ function KSante:LastHit()
     if Attack:IsActive() then return end
     local minionInRange = ObjectManager:GetEnemyMinions(self.qSpell.Range)
     if next(minionInRange) == nil then return end
-	
     for i = 1, #minionInRange do
         local minion = minionInRange[i]
-        local AArange = myHero.range + myHero.boundingRadius
-        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(minion.pos) < self.qSpell.Range then
+        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
             if self:getqDmg(minion) >= minion.health and not minion.dead then
                 Control.CastSpell(HK_Q, minion)
                 lastQ = GetTickCount()
