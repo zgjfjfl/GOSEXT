@@ -1,4 +1,4 @@
-local Heroes ={"Lux", "Zyra", "Brand", "Velkoz", "Ziggs"}
+local Heroes ={"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko"}
 
 if not table.contains(Heroes, myHero.charName) then 
 	print('SimpleSupports not supported ' .. myHero.charName)
@@ -27,6 +27,7 @@ local MathMin = math.min
 local MathMax = math.max
 local MathFloor = math.floor
 local MathSqrt = math.sqrt
+local MathSort = table.sort
 
 local lastQ = 0
 local lastW = 0
@@ -47,7 +48,7 @@ Callback.Add("Load", function()
 	Data = _G.SDK.Data
 	Cursor = _G.SDK.Cursor
 
-    	if table.contains(Heroes, myHero.charName) then
+	if table.contains(Heroes, myHero.charName) then
 		_G[myHero.charName]()
 	end
 
@@ -55,7 +56,7 @@ Callback.Add("Load", function()
 		if args.Process and Menu.SupportMode:Value() and Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
 			if args.Target.type ~= Obj_AI_Hero then
 				args.Process = false
-                        	return
+				return
 			end
 		end
 	end)
@@ -201,7 +202,7 @@ local function GetImmobileDuration(unit)
 			if BuffDuration > MaxDuration then
 				MaxDuration = BuffDuration
 			end
-            	end
+		end
 	end
 	return MaxDuration
 end
@@ -365,9 +366,10 @@ Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Suppo
 	Menu:MenuElement({id = "SupportMode", name = "Support Mode (Disable Harass Lasthit)",value = true})
 
 --------------------------------------
+
 class "Lux"
-        
-function Lux:__init()	     
+
+function Lux:__init()
 	print("Support Lux Loaded") 
 	self:LoadMenu()
 	
@@ -380,8 +382,8 @@ function Lux:__init()
 end
 
 function Lux:LoadMenu() 
-            
-    	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "R", name = "Combo [R]", toggle = true, value = true})
@@ -426,19 +428,19 @@ function Lux:OnTick()
 	self:AutoQ()
 	self:AutoW()
 	self:AutoE()
-	self:AutoR()  
+	self:AutoR()
 end
 
 function Lux:Combo()
 	local target = TargetSelector:GetTarget(1500)
-    	if IsValid(target) and target.pos2D.onScreen then
+	if IsValid(target) and target.pos2D.onScreen then
 		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < ESpell.Range then
 			self:CastGGPred(HK_E, target)
 		end
 		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < QSpell.Range then
 			self:CastGGPred(HK_Q, target)
 		end
-    	end
+	end
 
 	if Menu.Combo.R:Value() and IsReady(_R) then						
 		local RPrediction = GGPrediction:SpellPrediction(RSpell)
@@ -577,26 +579,26 @@ end
 
 function Lux:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
-    	local QDmg = ({80, 120, 160, 200, 240})[level] + 0.6 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
+	local QDmg = ({80, 120, 160, 200, 240})[level] + 0.6 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
 end
 
 function Lux:GetEDmg(target)
-    	local level = myHero:GetSpellData(_E).level
-    	local EDmg = ({70, 120, 170, 220, 270})[level] + 0.8 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
+	local level = myHero:GetSpellData(_E).level
+	local EDmg = ({70, 120, 170, 220, 270})[level] + 0.8 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
 end
 
 function Lux:GetRDmg(target)
 	local R2Dmg = 0
 	local buff = GetBuffData(target, "LuxIlluminatingFraulein")
 	local level = myHero:GetSpellData(_R).level
-    	local R1Dmg = ({300, 400, 500})[level] + 1.2 * myHero.ap
+	local R1Dmg = ({300, 400, 500})[level] + 1.2 * myHero.ap
 	if buff.count > 0 and buff.duration > 1.25 then
  		R2Dmg = 10 + 10 * myHero.levelData.lvl + myHero.ap * 0.2
 	end
 	local RDmg = R1Dmg + R2Dmg
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, RDmg)
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, RDmg)
 end
 
 function Lux:Draw()
@@ -615,9 +617,10 @@ function Lux:Draw()
 end
 
 --------------------------------------
+
 class "Zyra"
-        
-function Zyra:__init()	     
+
+function Zyra:__init()
 	print("Support Zyra Loaded") 
 	self:LoadMenu()
 	
@@ -630,14 +633,14 @@ function Zyra:__init()
 end
 
 function Zyra:LoadMenu() 
-            
-    	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "R", name = "Combo [R]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "RKill", name = "Combo [R] If TotalDmg Can Kill", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "RCount", name = "Combo [R] If Hit X Enemies", value = 2, min = 1, max = 5, step = 1})
-        Menu.Combo:MenuElement({id = "RM", name = "[R] Semi-Manual Key", key = string.byte("T")})
+	Menu.Combo:MenuElement({id = "RM", name = "[R] Semi-Manual Key", key = string.byte("T")})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
@@ -681,15 +684,15 @@ end
 
 function Zyra:Combo()
 	local target = TargetSelector:GetTarget(1200)
-    	if IsValid(target) and target.pos2D.onScreen then
+	if IsValid(target) and target.pos2D.onScreen then
 		if Menu.Combo.R:Value() and IsReady(_R) and myHero.pos:DistanceTo(target.pos) < RSpell.Range then
 			local canUseR = true
 			if IsReady(_Q) and self:GetQDmg(target) >= target.health then
-            			canUseR = false
-        		end
+				canUseR = false
+			end
 			if IsReady(_E) and self:GetEDmg(target) >= target.health then
-            			canUseR = false
-        		end
+				canUseR = false
+			end
 			if Menu.Combo.RKill:Value() and canUseR then
 				local Hp = (target.health + target.shieldAD + target.shieldAP)
 				if Hp < self:ComboDmg(target) then
@@ -792,7 +795,7 @@ function Zyra:CastRAoE(target)
 		local enemies = GetEnemiesAtPos(RSpell.Range, RSpell.Radius, target.pos, target)
 		local RCount = Menu.Combo.RCount:Value() 
 		if RCount > 1 and #enemies >= RCount then
-			local AoEPos = CalculateBestCirclePosition(enemies, RSpell.Radius, true, 700, RSpell.Speed, RSpell.Delay)
+			local AoEPos = CalculateBestCirclePosition(enemies, RSpell.Radius/2, true, 700, RSpell.Speed, RSpell.Delay)
 			Control.CastSpell(HK_R, AoEPos)
 			lastR = GetTickCount()
 		elseif RCount == 1 and #enemies > 0 then
@@ -803,12 +806,12 @@ end
 
 function Zyra:RSemiManual()
 	local target = TargetSelector:GetTarget(RSpell.Range)
-    	if IsValid(target) and target.pos2D.onScreen then
+	if IsValid(target) and target.pos2D.onScreen then
 		if IsReady(_R) and lastR + 350 < GetTickCount() then
 			local enemies = GetEnemiesAtPos(RSpell.Range, RSpell.Radius, target.pos, target)
 			local RCount = Menu.Combo.RCount:Value() 
 			if #enemies >= 2 then
-				local AoEPos = CalculateBestCirclePosition(enemies, RSpell.Radius, true, 700, RSpell.Speed, RSpell.Delay)
+				local AoEPos = CalculateBestCirclePosition(enemies, RSpell.Radius/2, true, 700, RSpell.Speed, RSpell.Delay)
 				Control.CastSpell(HK_R, AoEPos)
 				lastR = GetTickCount()
 			elseif #enemies == 1 then
@@ -820,26 +823,26 @@ end
 
 function Zyra:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
-    	local QDmg = ({60, 100, 140, 180, 220})[level] + 0.65 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
+	local QDmg = ({60, 100, 140, 180, 220})[level] + 0.65 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
 end
 
 function Zyra:GetPDmg(target)
 	local level = myHero.levelData.lvl
-    	local PDmg = (16 + 4 * level) + 0.18 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, PDmg)
+	local PDmg = (16 + 4 * level) + 0.18 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, PDmg)
 end
 
 function Zyra:GetEDmg(target)
-    	local level = myHero:GetSpellData(_E).level
-    	local EDmg = ({60, 95, 130, 165, 200})[level] + 0.6 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
+	local level = myHero:GetSpellData(_E).level
+	local EDmg = ({60, 95, 130, 165, 200})[level] + 0.6 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
 end
 
 function Zyra:GetRDmg(target)
 	local level = myHero:GetSpellData(_R).level
-    	local RDmg = ({180, 265, 350})[level] + 0.7 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, RDmg)
+	local RDmg = ({180, 265, 350})[level] + 0.7 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, RDmg)
 end
 
 function Zyra:ComboDmg(target)
@@ -880,14 +883,16 @@ function Zyra:Draw()
 end
 
 --------------------------------------
+
 class "Brand"
-        
-function Brand:__init()	     
+
+function Brand:__init()
 	print("Support Brand Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
+	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1100, Speed = 1600, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.877, Radius = 260, Range = 1030, Speed = MathHuge, Collision = false}
 	ESpell = {Range = 675}
@@ -895,8 +900,8 @@ function Brand:__init()
 end
 
 function Brand:LoadMenu() 
-            
-    	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo(when spell ready)", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "QStun", name = "Combo [Q] Only Can Stun", toggle = true, value = true})
@@ -934,14 +939,7 @@ function Brand:OnTick()
 	end
 
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
-		if Menu.Combo.DisableAA:Value() and (IsReady(_Q) or IsReady(_W) or IsReady(_E)) then
-			Orbwalker:SetAttack(false)
-		else
-			Orbwalker:SetAttack(true)
-		end
 		self:Combo()
-	else
-    		Orbwalker:SetAttack(true)
 	end
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
 		self:Harass()
@@ -950,9 +948,17 @@ function Brand:OnTick()
 	self:AutoW()
 end
 
+function Brand:OnPreAttack(args)
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		if Menu.Combo.DisableAA:Value() and (IsReady(_Q) or IsReady(_W) or IsReady(_E)) then
+			args.Process = false
+		end
+	end
+end
+
 function Brand:Combo()
 	local target = TargetSelector:GetTarget(1200)
-    	if IsValid(target) and target.pos2D.onScreen then
+	if IsValid(target) and target.pos2D.onScreen then
 		if Menu.Combo.E:Value() and IsReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
 			Control.CastSpell(HK_E, target)
 			lastE = GetTickCount()
@@ -984,10 +990,10 @@ function Brand:Combo()
 end
 
 function Brand:Harass()
-	local target = TargetSelector:GetTarget(QSpell.Range)
+	local target = TargetSelector:GetTarget(1200)
 	if IsValid(target) and target.pos2D.onScreen then
-		if Menu.Harass.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
-			self:CastGGPred(HK_W, target)
+		if Menu.Harass.W:Value() and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+			self:CastWAoE(target)
 		end
 		if Menu.Harass.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
 			Control.CastSpell(HK_E, target)
@@ -1066,8 +1072,8 @@ end
 function Brand:CastWAoE(target)
 	if IsReady(_W) and lastW + 350 < GetTickCount() then
 		local enemies = GetEnemiesAtPos(WSpell.Range, WSpell.Radius, target.pos, target) 
-		if  #enemies >= 2 then
-			local AoEPos = CalculateBestCirclePosition(enemies, WSpell.Radius, true, 900, WSpell.Speed, WSpell.Delay)
+		if #enemies >= 2 then
+			local AoEPos = CalculateBestCirclePosition(enemies, WSpell.Radius/2, true, 900, WSpell.Speed, WSpell.Delay)
 			Control.CastSpell(HK_W, AoEPos)
 			lastW = GetTickCount()
 		elseif #enemies == 1 then
@@ -1077,20 +1083,20 @@ function Brand:CastWAoE(target)
 end
 
 function Brand:GetPDmg(target)
-    	local PDmg = target.maxHealth * 0.025
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, PDmg)
+	local PDmg = target.maxHealth * 0.025
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, PDmg)
 end
 
 function Brand:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
-    	local QDmg = ({80, 110, 140, 170, 200})[level] + 0.65 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
+	local QDmg = ({80, 110, 140, 170, 200})[level] + 0.65 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
 end
 
 function Brand:GetWDmg(target)
 	local level = myHero:GetSpellData(_W).level
-    	local WDmg = ({75, 120, 165, 210, 255})[level] + 0.6 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg)
+	local WDmg = ({75, 120, 165, 210, 255})[level] + 0.6 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg)
 end
 
 function Brand:Draw()
@@ -1109,9 +1115,10 @@ function Brand:Draw()
 end
 
 --------------------------------------
+
 class "Velkoz"
-        
-function Velkoz:__init()	     
+
+function Velkoz:__init()
 	print("Support Velkoz Loaded") 
 	self:LoadMenu()
 	
@@ -1126,8 +1133,8 @@ function Velkoz:__init()
 end
 
 function Velkoz:LoadMenu() 
-            
-    	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "W", name = "Combo [W]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
@@ -1177,7 +1184,7 @@ end
 
 function Velkoz:Combo()
 	local target = TargetSelector:GetTarget(1500)
-    	if IsValid(target) and target.pos2D.onScreen then
+	if IsValid(target) and target.pos2D.onScreen then
 		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < QDummy.Range then
 			self:CastQ(target)
 		end
@@ -1263,8 +1270,8 @@ end
 function Velkoz:CastQ(target)
 	if myHero:GetSpellData(_Q).toggleState == 0 and lastQ + 350 < GetTickCount() and Orbwalker:CanMove() then
 		if myHero.pos:DistanceTo(target.pos) <= QSpell.Range then
-                	local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, QSpell.CollisionTypes, target.networkID)
-                	if collisionCount == 0 then
+			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, QSpell.CollisionTypes, target.networkID)
+			if collisionCount == 0 then
 				local QPrediction = GGPrediction:SpellPrediction(QSpell)
 				QPrediction:GetPrediction(target, myHero)
 				if QPrediction:CanHit(3) then
@@ -1293,14 +1300,14 @@ end
 function Velkoz:DetonateQ(target)
 	if myHero:GetSpellData(_Q).toggleState == 1 then
 		for i = GameParticleCount(), 1, -1 do
-        		local particle = GameParticle(i)
-        		local Name = particle.name
-        		if particle and Name:find("Velkoz") and Name:find("Q_mis") then
+			local particle = GameParticle(i)
+			local Name = particle.name
+			if particle and Name:find("Velkoz") and Name:find("Q_mis") then
 				local realPos = particle.pos + (particle.pos - myHero.pos):Normalized()*50
-            			local dir = (realPos - myHero.pos):Normalized()
-            			local pDir = dir:Perpendicular()
-            			local leftEndPos = realPos + pDir * 1000
-            			local rightEndPos = realPos - pDir * 1000
+				local dir = (realPos - myHero.pos):Normalized()
+				local pDir = dir:Perpendicular()
+				local leftEndPos = realPos + pDir * 1000
+				local rightEndPos = realPos - pDir * 1000
 
 				local lEndPos = Vector(leftEndPos.x, realPos.y, leftEndPos.z)
 				local rEndPos = Vector(rightEndPos.x, realPos.y, rightEndPos.z)
@@ -1362,29 +1369,29 @@ function Velkoz:BestAim(predictionPos)
 			local b1 = math.sqrt(c1 * c1 - a1 * a1)
 
 			if b1 < QSplit.Range then
-            			local pointA = myHero.pos:Extended(point, a1)
+				local pointA = myHero.pos:Extended(point, a1)
 				local endPos = Vector(pointA.x,myHero.pos.y,pointA.z)
-            			local dir = (endPos - myHero.pos):Normalized()
-            			local pDir = dir:Perpendicular()
-            			local leftEndPos = endPos + pDir * b1
-            			local rightEndPos = endPos - pDir * b1
+				local dir = (endPos - myHero.pos):Normalized()
+				local pDir = dir:Perpendicular()
+				local leftEndPos = endPos + pDir * b1
+				local rightEndPos = endPos - pDir * b1
 
 				local lEndPos = Vector(leftEndPos.x,myHero.pos.y,leftEndPos.z)
 				local rEndPos = Vector(rightEndPos.x,myHero.pos.y,rightEndPos.z)
 
-            			if lEndPos:DistanceTo(predictionPos) < QSplit.Radius then
-                			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, endPos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
-                			if collisionCount > 0 then
-                    				break
-                			end
-                			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(endPos, lEndPos, QSplit.Speed, QSplit.Delay, QSplit.Radius, {GGPrediction.COLLISION_MINION}, nil)
-                			if collisionCount > 0 then
-                    				break
-                			end
-                			Control.CastSpell(HK_Q, endPos)
+				if lEndPos:DistanceTo(predictionPos) < QSplit.Radius then
+					local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, endPos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+					if collisionCount > 0 then
+						break
+					end
+					local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(endPos, lEndPos, QSplit.Speed, QSplit.Delay, QSplit.Radius, {GGPrediction.COLLISION_MINION}, nil)
+					if collisionCount > 0 then
+						break
+					end
+					Control.CastSpell(HK_Q, endPos)
 					lastQ = GetTickCount()
-                			return
-            			end
+					return
+				end
 
 				if rEndPos:DistanceTo(predictionPos) < QSplit.Radius then
 					local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, endPos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
@@ -1392,9 +1399,9 @@ function Velkoz:BestAim(predictionPos)
 						break
 					end
 					local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(endPos, rEndPos, QSplit.Speed, QSplit.Delay, QSplit.Radius, {GGPrediction.COLLISION_MINION}, nil)
-                			if collisionCount > 0 then
-                    				break
-                			end
+					if collisionCount > 0 then
+						break
+					end
 					Control.CastSpell(HK_Q, endPos)
 					lastQ = GetTickCount()
 					return
@@ -1406,20 +1413,20 @@ end
 
 function Velkoz:GetWDmg(target)
 	local level = myHero:GetSpellData(_W).level
-    	local WDmg = ({30, 50, 70, 90, 110})[level] + 0.2 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg)
+	local WDmg = ({30, 50, 70, 90, 110})[level] + 0.2 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg)
 end
 
 function Velkoz:GetEDmg(target)
 	local level = myHero:GetSpellData(_E).level
-    	local EDmg = ({70, 100, 130, 160, 190})[level] + 0.3 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
+	local EDmg = ({70, 100, 130, 160, 190})[level] + 0.3 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
 end
 
 function Velkoz:GetRDmg(target)
 	local level = myHero:GetSpellData(_R).level
-    	local RDmg = ({450, 625, 800})[level] + 1.25 * myHero.ap
-    	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, RDmg)
+	local RDmg = ({450, 625, 800})[level] + 1.25 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, RDmg)
 end
 
 function Velkoz:Draw()
@@ -1440,8 +1447,8 @@ end
 ------------------------------------
 
 class "Ziggs"
-        
-function Ziggs:__init()     
+
+function Ziggs:__init()
 	print("Support Ziggs Loaded") 
 	self:LoadMenu()
 	
@@ -1454,7 +1461,7 @@ function Ziggs:__init()
 	RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.375, Radius = 230, Range = 5000, Speed = 1750, Collision = false}
 end
 
-function Ziggs:LoadMenu()           
+function Ziggs:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "W", name = "Combo [W] on long-range Enemy", toggle = true, value = true})
@@ -1466,7 +1473,7 @@ function Ziggs:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "W", name = "Harass [W]", toggle = true, value = false})
-        Menu.Harass:MenuElement({id = "E", name = "Harass [E]", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "E", name = "Harass [E]", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
 	Menu.Auto:MenuElement({id = "W2", name = "Auto [W2]", toggle = true, value = true})
@@ -1548,7 +1555,7 @@ function Ziggs:Harass()
 
 	local target = TargetSelector:GetTarget(1500)
 	if IsValid(target) and target.pos2D.onScreen then
-            
+
 		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= Q2Spell.Range then
 			self:CastQ(target)
 		end
@@ -1564,8 +1571,10 @@ end
 function Ziggs:Flee()
 	if Menu.Flee.W:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
 		local castPos = myHero.pos:Extended(mousePos,-100)
-		Control.CastSpell(HK_W, castPos)
-		lastW = GetTickCount()
+		if castPos:To2D().onScreen then
+			Control.CastSpell(HK_W, castPos)
+			astW = GetTickCount()
+		end
 	end
 end
 
@@ -1575,43 +1584,44 @@ function Ziggs:SemiManualR()
 		local enemies = GetEnemiesAtPos(RSpell.Range + RSpell.Radius, RSpell.Radius*2, Rtarget.pos, Rtarget)
 		if #enemies >= 2 and lastR + 500 < GetTickCount() then
 			local AoEPos = CalculateBestCirclePosition(enemies, RSpell.Radius, true, RSpell.Range, RSpell.Speed, RSpell.Delay)
-			Control.CastSpell(HK_R, AoEPos)
-			lastR = GetTickCount()
+			if AoEPos:To2D().onScreen then
+				Control.CastSpell(HK_R, AoEPos)
+				lastR = GetTickCount()
+			end
 		elseif #enemies == 1 then
 			self:CastR(Rtarget)
-        	end
+		end
 	end
 end
 
 function Ziggs:Auto()
 	local enemies = ObjectManager:GetEnemyHeroes(RSpell.Range)
 	for i, enemy in ipairs(enemies) do
-        	if IsValid(enemy) and enemy.pos2D.onScreen then
-
+		if IsValid(enemy) and enemy.pos2D.onScreen then
 			if Menu.Auto.WPeel:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
 				local IsMelee = Data.HEROES[enemy.charName] and Data.HEROES[enemy.charName][2] or enemy.range < 300
 				if IsMelee and myHero.pos:DistanceTo(enemy.pos) <= enemy.boundingRadius + enemy.range + myHero.boundingRadius then
 					local castPos = Vector(myHero.pos):Extended(Vector(enemy.pos), MathMin(200, myHero.pos:DistanceTo(enemy.pos)/2))
-                			Control.CastSpell(HK_W, castPos)
+					Control.CastSpell(HK_W, castPos)
 					lastW = GetTickCount()
 				end
-            		end
+			end
 			if Menu.Auto.RCC:Value() and IsReady(_R) and GetImmobileDuration(enemy) > 0.5 then
 				self:CastR(enemy)
 			end
 			if Menu.Auto.RKill:Value() and IsReady(_R) then
 				local Rdmg = self:GetRDmg(enemy)
 				if Rdmg > enemy.health + enemy.shieldAP + enemy.shieldAD then
-                			self:CastR(enemy)
+					self:CastR(enemy)
 				end
-        		end
+			end
 		end
 	end
 	if Menu.Auto.WTurret:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
-        	local turrets = ObjectManager:GetEnemyTurrets(1000)
-        	for i, turret in ipairs(turrets) do
+	local turrets = ObjectManager:GetEnemyTurrets(1000)
+	for i, turret in ipairs(turrets) do
 			if turret and turret.health/turret.maxHealth < (myHero:GetSpellData(_W).level*2.5 + 22.5)/100 then
-                		Control.CastSpell(HK_W, turret)
+				Control.CastSpell(HK_W, turret)
 				lastW = GetTickCount()
 			end
 		end
@@ -1686,16 +1696,18 @@ function Ziggs:CastRAoE(unit)
 	local enemies = GetEnemiesAtPos(RSpell.Range + RSpell.Radius, RSpell.Radius*2, unit.pos, unit)
 	if comboRCount > 1 and #enemies >= comboRCount and lastR + 500 < GetTickCount() then
 		local AoEPos = CalculateBestCirclePosition(enemies, RSpell.Radius, true, RSpell.Range, RSpell.Speed, RSpell.Delay)
-		Control.CastSpell(HK_R, AoEPos)
-		lastR = GetTickCount()
+		if AoEPos:To2D().onScreen then
+			Control.CastSpell(HK_R, AoEPos)
+			lastR = GetTickCount()
+		end
 	elseif comboRCount == 1 and #enemies > 0 then
 		self:CastR(unit)
-        end
+	end
 end
 
 function Ziggs:GetRDmg(target)
 	local rlvl = myHero:GetSpellData(_R).level
-	local baseDmg  = 150 * rlvl + 150
+	local baseDmg = 150 * rlvl + 150
 	local apDmg = myHero.ap * 1.1
 	local Dmg = baseDmg + apDmg
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
@@ -1718,6 +1730,516 @@ function Ziggs:Draw()
 		Draw.CircleMinimap(myHero.pos, RSpell.Range, 0.5, Draw.Color(200,50,180,230))
 	end
 end
+
 ------------------------------
+
+class "Swain"
+
+function Swain:__init()
+	print("Support Swain Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_CONE, Delay = 0.25, Angle = 32, Range = 725, Speed = MathHuge, Collision = false}
+	WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 325, Range = 5500, Speed = MathHuge, Collision = false}
+	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 85, Range = 950, Speed = MathHuge, Collision = false}
+end
+
+function Swain:LoadMenu()
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Waoe", name = "Combo [W] AoE", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
+	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] on CC", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "W", name = "Auto [W] on CC", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "Wgap", name = "Auto [W] AnitGap", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "E2", name = "Auto [E2] pulls", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "W", name = "Draw [W] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
+end
+
+function Swain:OnTick()
+	WSpell.Range = 5000 + 500*myHero:GetSpellData(_W).level
+
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
+		return
+	end
+
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		self:Combo()
+	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	end
+	self:Auto()
+end
+
+function Swain:Combo()
+	if Attack:IsActive() then return end
+	local target = TargetSelector:GetTarget(1500)
+	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Combo.E:Value() and IsReady(_E) and myHero:GetSpellData(_E).name == "SwainE" and myHero.pos:DistanceTo(target.pos) < ESpell.Range then
+			self:CastGGPred(HK_E, target)
+		end
+		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < QSpell.Range then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+	local Wtarget = TargetSelector:GetTarget(WSpell.Range)
+	if IsValid(Wtarget) and Wtarget.pos2D.onScreen then
+		if Menu.Combo.Waoe:Value() and IsReady(_W) then
+			self:CastWAoE(Wtarget)
+		end
+	end
+end	
+
+function Swain:Harass()
+	if Attack:IsActive() then return end
+	local target = TargetSelector:GetTarget(QSpell.Range)
+	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < QSpell.Range then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+end
+
+function Swain:CastWAoE(unit)
+	local enemies = GetEnemiesAtPos(WSpell.Range + WSpell.Radius/2, WSpell.Radius, unit.pos, unit)
+	if #enemies > 1 then
+		local AoEPos = CalculateBestCirclePosition(enemies, WSpell.Radius/2, true, WSpell.Range, WSpell.Speed, WSpell.Delay)
+		Control.CastSpell(HK_W, AoEPos)
+		lastW = GetTickCount()
+	end
+end
+
+function Swain:Auto()
+	for i, enemy in ipairs(GetEnemyHeroes()) do
+		if IsValid(enemy) and enemy.pos2D.onScreen then
+			local buff = GetBuffData(enemy, "swaineroot")
+			if Menu.Auto.E2:Value() and IsReady(_E) and myHero:GetSpellData(_E).name == "SwainE2" and buff.count > 0 and buff.duration < 1 then
+				Control.CastSpell(HK_E)
+			end
+			if Menu.Auto.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(enemy.pos) < QSpell.Range and IsImmobile(enemy) then
+				self:CastGGPred(HK_Q, enemy)
+			end
+			if Menu.Auto.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(enemy.pos) <= WSpell.Range and IsImmobile(enemy) then
+				self:CastGGPred(HK_W, enemy)
+			end
+			if Menu.Auto.Wgap:Value() and myHero.pos:DistanceTo(enemy.pos) < 1500 and enemy.pathing.isDashing then
+				if myHero.pos:DistanceTo(enemy.pathing.endPos) < myHero.range and IsReady(_W) and lastW + 350 < GetTickCount() then
+					Control.CastSpell(HK_W, enemy.pathing.endPos)
+					lastW = GetTickCount()
+				end
+			end
+		end
+	end
+end
+
+function Swain:CastGGPred(spell, unit)
+	if spell == HK_Q then
+		local QPrediction = GGPrediction:SpellPrediction(QSpell)
+		QPrediction:GetPrediction(unit, myHero)
+		if QPrediction:CanHit(3) and lastQ + 350 < GetTickCount() and Orbwalker:CanMove() then
+			Control.CastSpell(HK_Q, QPrediction.CastPosition)
+			lastQ = GetTickCount()
+		end
+	elseif spell == HK_W then
+		local WPrediction = GGPrediction:SpellPrediction(WSpell)
+		WPrediction:GetPrediction(unit, myHero)
+		if WPrediction:CanHit(3) and lastW + 350 < GetTickCount() and Orbwalker:CanMove() then
+			Control.CastSpell(HK_W, WPrediction.CastPosition)
+			lastW = GetTickCount()
+		end
+	elseif spell == HK_E then
+		local EPrediction = GGPrediction:SpellPrediction(ESpell)
+		EPrediction:GetPrediction(unit, myHero)
+		if EPrediction:CanHit(3) and lastE + 350 < GetTickCount() and Orbwalker:CanMove() then
+			local endPos = myHero.pos + (EPrediction.CastPosition - myHero.pos):Normalized() * ESpell.Range
+			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(endPos, EPrediction.CastPosition, 1400, 0.1, ESpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+			if collisionCount == 0 then
+				Control.CastSpell(HK_E, EPrediction.CastPosition)
+				lastE = GetTickCount()
+			end
+		end	
+	end
+end
+
+function Swain:Draw()
+	if Menu.Draw.Q:Value() and IsReady(_Q) then
+		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+end
+
+--------------------------------------
+
+class "Seraphine"
+
+function Seraphine:__init()
+	print("Support Seraphine Loaded")
+	self:LoadMenu()
+
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 350, Range = 900, Speed = 1200, Collision = false}
+	WSpell = {Range = 800}
+	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1300, Speed = 1200, Collision = false}
+	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 160, Range = 1200*2, Speed = 1600, Collision = false}
+end
+
+function Seraphine:LoadMenu()
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Rsm", name = "R Semi-Manual Key", key = string.byte("T")})
+	Menu.Combo:MenuElement({name = " ", drop = {"(Can reset distance by hit allies or other enemies)"}})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
+	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] on 'CC'", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "W", name = "Auto [W] Shield", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "Whp", name = "Auto [W] allies or self Low hp%", value = true, min = 0, max = 100, value = 30, step = 5})
+	Menu.Auto:MenuElement({id = "E", name = "Auto [E] on 'CC'", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Kill", name = "Kills"})
+	Menu.Kill:MenuElement({id = "Q", name = "Auto [Q] Kills", toggle = true, value = true})
+	Menu.Kill:MenuElement({id = "E", name = "Auto [E] Kills", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "W", name = "Draw [W] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
+end
+
+function Seraphine:OnTick()
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
+		return
+	end
+	if not Orbwalker:CanMove() then
+		return
+	end
+
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		self:Combo()
+	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	end
+	if Menu.Combo.Rsm:Value() and IsReady(_R) then
+		self:SemiManualR()
+	end
+	self:AutoQ()
+	self:AutoW()
+	self:AutoE()
+end
+
+function Seraphine:Combo()
+	local target = TargetSelector:GetTarget(1500)
+	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < ESpell.Range then
+			self:CastGGPred(HK_E, target)
+		end
+		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < QSpell.Range then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+end
+
+function Seraphine:Harass()
+	local target = TargetSelector:GetTarget(QSpell.Range)
+	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < QSpell.Range then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+end
+
+function SortByDistance(obj1, obj2)
+	return myHero.pos:DistanceTo(obj1.pos) < myHero.pos:DistanceTo(obj2.pos)
+end
+
+function Seraphine:SemiManualR()
+	local Rtarget = TargetSelector:GetTarget(RSpell.Range)
+	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
+		if myHero.pos:DistanceTo(Rtarget.pos) < 1200 then
+			self:CastGGPred(HK_R, Rtarget)
+		else
+			local isWall1, collisionObjects1, collisionCount1 = GGPrediction:GetCollision(myHero.pos, Rtarget.pos, RSpell.Speed, RSpell.Delay, RSpell.Radius/2, {GGPrediction.COLLISION_ALLYHERO}, myHero.networkID)
+			local isWall2, collisionObjects2, collisionCount2 = GGPrediction:GetCollision(myHero.pos, Rtarget.pos, RSpell.Speed, RSpell.Delay, RSpell.Radius/2, {GGPrediction.COLLISION_ENEMYHERO}, Rtarget.networkID)
+			MathSort(collisionObjects1, SortByDistance)
+			MathSort(collisionObjects2, SortByDistance)
+			if (collisionCount1 > 0 and myHero.pos:DistanceTo(collisionObjects1[1].pos) < 1200) or (collisionCount2 > 0 and myHero.pos:DistanceTo(collisionObjects2[1].pos) < 1200) then
+				self:CastGGPred(HK_R, Rtarget)
+			end
+		end
+	end
+end
+
+function Seraphine:AutoQ()
+	if IsReady(_Q) then
+		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pos2D.onScreen then
+				if Menu.Auto.Q:Value() and IsImmobile(target) then
+					self:CastGGPred(HK_Q, target)
+				end
+				if Menu.Kill.Q:Value() and (target.health + target.shieldAD + target.shieldAP) < self:GetQDmg(target) then
+					self:CastGGPred(HK_Q, target)
+				end
+			end
+		end
+	end
+end
+
+function Seraphine:AutoW()
+	if Menu.Auto.W:Value() and IsReady(_W) and lastW + 350 < GetTickCount() then
+		if myHero.health/myHero.maxHealth <= Menu.Auto.Whp:Value()/100 and GetEnemyCount(1000, myHero.pos) > 0 then
+			Control.CastSpell(HK_W)
+			lastW = GetTickCount()
+		end
+		local allies = ObjectManager:GetAllyHeroes(WSpell.Range)
+		for i, ally in ipairs(allies) do			
+			if IsValid(ally) and not ally.isMe and ally.health/ally.maxHealth <= Menu.Auto.Whp:Value()/100 and GetEnemyCount(1000, ally.pos) > 0 then
+				Control.CastSpell(HK_W, ally.pos)
+				lastW = GetTickCount()
+			end
+		end
+	end
+end
+
+function Seraphine:AutoE()
+	if IsReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pos2D.onScreen then
+				if Menu.Auto.E:Value() and IsImmobile(target) then
+					self:CastGGPred(HK_E, target)
+				end
+				if Menu.Kill.E:Value() and (target.health + target.shieldAD + target.shieldAP) < self:GetEDmg(target) then
+					self:CastGGPred(HK_E, target)
+				end
+			end
+		end
+	end	
+end
+
+function Seraphine:CastGGPred(spell, unit)
+	if spell == HK_Q then
+		local QPrediction = GGPrediction:SpellPrediction(QSpell)
+		QPrediction:GetPrediction(unit, myHero)
+		if QPrediction:CanHit(3) and lastQ + 350 < GetTickCount() then
+			Control.CastSpell(HK_Q, QPrediction.CastPosition)
+			lastQ = GetTickCount()
+		end
+	elseif spell == HK_E then
+		local EPrediction = GGPrediction:SpellPrediction(ESpell)
+		EPrediction:GetPrediction(unit, myHero)
+		if EPrediction:CanHit(3) and lastE + 350 < GetTickCount() then
+			Control.CastSpell(HK_E, EPrediction.CastPosition)
+			lastE = GetTickCount()
+		end		
+	
+	elseif spell == HK_R then
+		local RPrediction = GGPrediction:SpellPrediction(RSpell)
+		RPrediction:GetPrediction(unit, myHero)
+		if RPrediction:CanHit(3) and lastR + 600 < GetTickCount() then
+			Control.CastSpell(HK_R, RPrediction.CastPosition)
+			lastR = GetTickCount()
+		end	
+	end
+end
+
+function Seraphine:GetQDmg(target)
+	local level = myHero:GetSpellData(_Q).level
+	local QDmg = ({55, 80, 105, 130, 155})[level] + 0.5 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
+end
+
+function Seraphine:GetEDmg(target)
+	local level = myHero:GetSpellData(_E).level
+	local EDmg = ({60, 95, 130, 165, 200})[level] + 0.35 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
+end
+
+function Seraphine:Draw()
+	if Menu.Draw.Q:Value() and IsReady(_Q) then
+		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+	if Menu.Draw.R:Value() and IsReady(_R) then
+		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+	end
+end
+
+---------------------------------
+
+class "Neeko"
+
+function Neeko:__init()
+	print("Support Neeko Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 250, Range = 900, Speed = 2000, Collision = false}
+	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1000, Speed = 1300, Collision = false}
+end
+
+function Neeko:LoadMenu() 
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
+	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] on 'CC'", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "E", name = "Auto [E] on 'CC'", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Kill", name = "Kills"})
+	Menu.Kill:MenuElement({id = "Q", name = "Auto [Q] Kills", toggle = true, value = true})
+	Menu.Kill:MenuElement({id = "E", name = "Auto [E] Kills", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
+end
+
+function Neeko:OnTick()
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
+		return
+	end
+	if not Orbwalker:CanMove() then
+		return
+	end
+
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		self:Combo()
+	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	end
+	self:AutoQ()
+	self:AutoE()
+end
+
+function Neeko:Combo()
+	local target = TargetSelector:GetTarget(1000)
+	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < ESpell.Range then
+			self:CastGGPred(HK_E, target)
+		end
+		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= QSpell.Range and not IsReady(_E) then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+end
+
+function Neeko:Harass()
+	local target = TargetSelector:GetTarget(QSpell.Range)
+	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= QSpell.Range then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+end
+
+function Neeko:AutoQ()
+	if IsReady(_Q) then
+		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pos2D.onScreen then
+				if Menu.Auto.Q:Value() and IsImmobile(target) then
+					self:CastGGPred(HK_Q, target)
+				end
+				if Menu.Kill.Q:Value() and (target.health + target.shieldAD + target.shieldAP) < self:GetQDmg(target) then
+					self:CastGGPred(HK_Q, target)
+				end
+			end
+		end
+	end
+end
+
+function Neeko:AutoE()
+	if IsReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pos2D.onScreen then
+				if Menu.Auto.E:Value() and IsImmobile(target) then
+					self:CastGGPred(HK_E, target)
+				end
+				if Menu.Kill.E:Value() and (target.health + target.shieldAD + target.shieldAP) < self:GetEDmg(target) then
+					self:CastGGPred(HK_E, target)
+				end
+			end
+		end
+	end	
+end
+
+function Neeko:CastGGPred(spell, unit)
+	if spell == HK_Q then
+		local QPrediction = GGPrediction:SpellPrediction(QSpell)
+		QPrediction:GetPrediction(unit, myHero)
+		if QPrediction:CanHit(3) and lastQ + 350 < GetTickCount() then
+			Control.CastSpell(HK_Q, QPrediction.CastPosition)
+			lastQ = GetTickCount()
+		end
+	elseif spell == HK_E then
+		local EPrediction = GGPrediction:SpellPrediction(ESpell)
+		EPrediction:GetPrediction(unit, myHero)
+		if EPrediction:CanHit(3) and lastE + 350 < GetTickCount() then
+			Control.CastSpell(HK_E, EPrediction.CastPosition)
+			lastE = GetTickCount()
+		end
+	end
+end
+
+function Neeko:GetQDmg(target)
+	local level = myHero:GetSpellData(_Q).level
+	local QDmg = ({80, 125, 170, 215, 260})[level] + 0.5 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
+end
+
+function Neeko:GetEDmg(target)
+	local level = myHero:GetSpellData(_E).level
+	local EDmg = ({70, 105, 140, 175, 210})[level] + 0.65 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
+end
+
+function Neeko:Draw()
+	if Menu.Draw.Q:Value() and IsReady(_Q) then
+		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+end
+
+
 
 
