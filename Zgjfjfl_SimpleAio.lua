@@ -460,8 +460,8 @@ function Ornn:onTick()
     end
 
     if self.qTimer and Game.Timer() >= self.qTimer then
-        self.qTimer = nil
         self:GetQpos()
+        self.qTimer = nil
     end
 
     self:UpdateQpos()
@@ -479,26 +479,23 @@ function Ornn:onTick()
 end
 
 function Ornn:OnWndMsg(msg, wParam)
-    if wParam == HK_Q then
-        self.qTimer = Game.Timer() + 0.9
+    if isSpellReady(_Q) and wParam == HK_Q then
+        self.qTimer = Game.Timer() + 1
     end
 end
 
 function Ornn:onQCast(spell)
-    --print(spell)
     if spell == _Q then
-        self.qTimer = Game.Timer() + 0.9
+        self.qTimer = Game.Timer() + 1
     end
 end
 
 function Ornn:GetQpos()
-    --print("GetQpos called")
     for i = GameParticleCount(), 1, -1 do
         local particle = GameParticle(i)
         local Name = particle.name
         if particle and Name:find("Ornn") and Name:find("Q_Indicator") then
             TableInsert(self.qPos, {pos = particle.pos, Timer = Game.Timer()})
-            --print(particle.pos)
             break
         end
     end
@@ -534,14 +531,17 @@ function Ornn:Combo()
         end
 
         if self.Menu.Combo.EQ:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
-
+            local castPos = nil
             for _, qPos in pairs(self.qPos) do
-                if Game.Timer() >= qPos.Timer + 0.5 then
-                    if not MapPosition:intersectsWall(myHero.pos, qPos.pos) and getEnemyCount(self.Menu.Combo.ED:Value(), qPos.pos) >= 1 and myHero.pos:DistanceTo(qPos.pos) <= self.eSpell.Range then
-                        Control.CastSpell(HK_E, qPos.pos)
-                        lastE = GetTickCount()
-                    end
+                if not MapPosition:intersectsWall(myHero.pos, qPos.pos) and getEnemyCount(self.Menu.Combo.ED:Value(), qPos.pos) >= 1 and myHero.pos:DistanceTo(qPos.pos) <= self.eSpell.Range then
+                    castPos = qPos.pos
+                    break
                 end
+            end
+            if castPos then
+                Control.CastSpell(HK_E, castPos)
+                lastE = GetTickCount()
+		self.qPos = {}
             end
         end
 
@@ -621,7 +621,6 @@ function Ornn:Harass()
 end
 
 function Ornn:Draw()
-
    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
     end
@@ -4412,7 +4411,8 @@ function AurelionSol:__init()
     self:LoadMenu()
 
     Callback.Add("Draw", function() self:Draw() end)
-    Callback.Add("Tick", function() self:onTick() end)    
+    Callback.Add("Tick", function() self:onTick() end)
+    Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
     self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 75, Range = 750, Speed = 1500, Collision = false}
     self.wSpell = { Range = 1200 } 
     self.eSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 275, Range = 750, Speed = 1300, Collision = false}
@@ -4423,11 +4423,12 @@ function AurelionSol:LoadMenu()
     self.Menu = MenuElement({type = MENU, id = "zgAurelionSol", name = "Zgjfjfl AurelionSol"})
             
     self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        self.Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
         self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR when hit X enemies", value = 2, min = 1, max = 5})
-        self.Menu.Combo:MenuElement({id = "Rsm", name = "R Semi-Manual Key", key = string.byte("S")})
+        self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR when hit X enemies", value = 3, min = 1, max = 5})
+        self.Menu.Combo:MenuElement({id = "Rsm", name = "R Semi-Manual Key", key = string.byte("T")})
 
     self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
         self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
@@ -4485,6 +4486,14 @@ function AurelionSol:onTick()
     end
 end
 
+function AurelionSol:OnPreAttack(args)
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+        if self.Menu.Combo.DisableAA:Value() then
+            args.Process = false
+        end
+    end
+end
+
 function AurelionSol:Combo()
     if isValid(Rtarget) then
         if self.Menu.Combo.R:Value() and myHero.activeSpell.isCharging == false then 
@@ -4514,7 +4523,7 @@ function AurelionSol:SemiManualR()
         if isSpellReady(_R) and lastR + 250 < GetTickCount() then
             local enemies = GetEnemiesAtPos(self.rSpell.Range + self.rSpell.Radius/2, self.rSpell.Radius, Rtarget.pos,Rtarget)
             if #enemies >= 2 then
-                local AoEPos = CalculateBestCirclePosition(enemies, self.rSpell.Radius, true, self.rSpell.Range, self.rSpell.Speed, self.rSpell.Delay)
+                local AoEPos = CalculateBestCirclePosition(enemies, self.rSpell.Radius/2, true, self.rSpell.Range, self.rSpell.Speed, self.rSpell.Delay)
                 Control.CastSpell(HK_R, AoEPos)
                 lastR = GetTickCount()
             else
@@ -4529,7 +4538,7 @@ function AurelionSol:CastEAoE(target)
     if isSpellReady(_E) and lastE + 350 < GetTickCount() then
         local enemies = GetEnemiesAtPos(self.eSpell.Range + self.eSpell.Radius/2, self.eSpell.Radius, target.pos,target)
         if #enemies >= 2 then
-            local AoEPos = CalculateBestCirclePosition(enemies, self.eSpell.Radius, true, self.eSpell.Range, self.eSpell.Speed, self.eSpell.Delay)
+            local AoEPos = CalculateBestCirclePosition(enemies, self.eSpell.Radius/2, true, self.eSpell.Range, self.eSpell.Speed, self.eSpell.Delay)
             Control.CastSpell(HK_E, AoEPos)
             lastE = GetTickCount()
         else
@@ -4544,7 +4553,7 @@ function AurelionSol:CastRAoE(target)
         local enemies = GetEnemiesAtPos(self.rSpell.Range + self.rSpell.Radius/2, self.rSpell.Radius, target.pos,target)
         local Rcount = self.Menu.Combo.Rcount:Value()
         if Rcount > 1 and #enemies >= Rcount then
-            local AoEPos = CalculateBestCirclePosition(enemies, self.rSpell.Radius, true, self.rSpell.Range, self.rSpell.Speed, self.rSpell.Delay)
+            local AoEPos = CalculateBestCirclePosition(enemies, self.rSpell.Radius/2, true, self.rSpell.Range, self.rSpell.Speed, self.rSpell.Delay)
             Control.CastSpell(HK_R, AoEPos)
             lastR = GetTickCount()
         elseif Rcount == 1 and #enemies > 0 then
