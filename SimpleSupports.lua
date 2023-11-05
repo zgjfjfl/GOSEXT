@@ -151,7 +151,7 @@ end
 
 local function GetEnemyCount(range, unit)
 	local count = 0
-		for i, hero in ipairs(GetEnemyHeroes()) do
+	for i, hero in ipairs(GetEnemyHeroes()) do
 		local Range = range * range
 		if GetDistanceSqr(unit, hero.pos) < Range and IsValid(hero) then
 			count = count + 1
@@ -2113,6 +2113,7 @@ function Neeko:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Erange", name = "[E] Range Set", value = 1000, min = 500, max = 1000, step = 50})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
@@ -2151,7 +2152,7 @@ end
 function Neeko:Combo()
 	local target = TargetSelector:GetTarget(1000)
 	if IsValid(target) and target.pos2D.onScreen then
-		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < ESpell.Range then
+		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Erange:Value() then
 			self:CastGGPred(HK_E, target)
 		end
 		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= QSpell.Range and not IsReady(_E) then
@@ -2187,7 +2188,7 @@ end
 
 function Neeko:AutoE()
 	if IsReady(_E) then
-		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(Menu.Combo.Erange:Value())
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pos2D.onScreen then
 				if Menu.Auto.E:Value() and IsImmobile(target) then
