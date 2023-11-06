@@ -140,7 +140,7 @@ local function HaveBuff(unit, buffName)
 end
 
 local function GetBuffData(unit, buffname)
-	for i = 0, unit.buffCount do
+	for i = 1, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff.name == buffname and buff.count > 0 then 
 			return buff
@@ -184,7 +184,7 @@ local function GetAllyCount(range, unit)
 end
 
 local function IsImmobile(unit)
-	for i = 0, unit.buffCount do
+	for i = 1, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
 			return true
@@ -195,7 +195,7 @@ end
 
 local function GetImmobileDuration(unit)
 	local MaxDuration = 0
-	for i = 0, unit.buffCount do
+	for i = 1, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
 			local BuffDuration = buff.duration
@@ -208,7 +208,7 @@ local function GetImmobileDuration(unit)
 end
 
 local function IsInvulnerable(unit)
-	for i = 0, unit.buffCount do
+	for i = 1, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff and buff.type == 18 and buff.count > 0 then
 			return true
@@ -434,11 +434,11 @@ end
 function Lux:Combo()
 	local target = TargetSelector:GetTarget(1500)
 	if IsValid(target) and target.pos2D.onScreen then
-		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < ESpell.Range then
-			self:CastGGPred(HK_E, target)
-		end
 		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < QSpell.Range then
 			self:CastGGPred(HK_Q, target)
+		end
+		if Menu.Combo.E:Value() and IsReady(_E) and not IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < ESpell.Range then
+			self:CastGGPred(HK_E, target)
 		end
 	end
 
