@@ -651,6 +651,7 @@ function JarvanIV:__init()
 	
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)
+    Orbwalker:OnPreMovement(function(...) self:OnPreMovement(...) end)
     self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 70, Range = 770, Speed = math.huge, Collision = false}
     self.wSpell = { Range = 600 }
     self.eSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 200, Range = 860, Speed = math.huge, Collision = false}
@@ -688,6 +689,14 @@ function JarvanIV:LoadMenu()
     self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
         self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
         self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+end
+
+function JarvanIV:OnPreMovement(args)
+    if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+        if isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
+            args.Process = false
+        end
+    end
 end
 
 function JarvanIV:onTick()
@@ -731,7 +740,7 @@ function JarvanIV:Combo()
             local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), offset)
             if self.Menu.Combo.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
                 if myHero.pos:DistanceTo(castPos) <= self.eSpell.Range then
-                    self:CastE(castPos)
+                    Control.CastSpell(HK_E, castPos)
                     Orbwalker:SetMovement(false)
                     Orbwalker:SetAttack(false)
                     DelayAction(function() Control.CastSpell(HK_Q, castPos) end, 0.1)
@@ -746,15 +755,13 @@ function JarvanIV:Combo()
             lastQ = GetTickCount()
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and ((myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and myHero.health/myHero.maxHealth <= self.Menu.Combo.WHp:Value()/100) or getEnemyCount(self.wSpell.Range, myHero.pos) >= self.Menu.Combo.WCount:Value()) then
+        if self.Menu.Combo.W:Value() and isSpellReady(_W) and ((myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and myHero.health/myHero.maxHealth <= self.Menu.Combo.WHp:Value()/100) or getEnemyCount(self.wSpell.Range, myHero.pos) >= self.Menu.Combo.WCount:Value()) then
             Control.CastSpell(HK_W)
-            lastW = GetTickCount()
         end
 
-        if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() and not CastingQ and not isDash and not haveBuff(myHero, "JarvanIVCataclysm") then
+        if self.Menu.Combo.R:Value() and isSpellReady(_R) and not CastingQ and not isDash and not haveBuff(myHero, "JarvanIVCataclysm") then
             if myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and (target.health/target.maxHealth <= self.Menu.Combo.RHp:Value()/100 or getEnemyCount(self.rSpell.Radius, target.pos) >= self.Menu.Combo.RCount:Value()) then
                 Control.CastSpell(HK_R, target)
-                lastR = GetTickCount()
             end
         end
 
@@ -783,8 +790,7 @@ function JarvanIV:Harass()
     if Attack:IsActive() then return end
 
     local target = TargetSelector:GetTarget(1000)
-    if target and isValid(target) then
-            
+    if target and isValid(target) then       
         if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
@@ -805,27 +811,18 @@ function JarvanIV:KillSteal()
             end	
         end
 
-        if isSpellReady(_E) and lastE + 250 < GetTickCount() and self.Menu.KS.E:Value() then
+        if isSpellReady(_E) and self.Menu.KS.E:Value() then
             if self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
                 castSpellHigh(self.eSpell, HK_E, target)
-                lastE = GetTickCount()
             end	
         end
 
-        if isSpellReady(_R) and lastR + 250 < GetTickCount() and self.Menu.KS.R:Value() and not haveBuff(myHero, "JarvanIVCataclysm") and not CastingQ and not isDash then
+        if isSpellReady(_R) and self.Menu.KS.R:Value() and not haveBuff(myHero, "JarvanIVCataclysm") and not CastingQ and not isDash then
             if self:getrDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range then
                 Control.CastSpell(HK_R, target)
-                lastR = GetTickCount()
             end	
         end
 
-    end
-end
-
-function JarvanIV:CastE(unit)
-    if lastE + 250 < GetTickCount() then
-        Control.CastSpell(HK_E, unit)
-        lastE = GetTickCount()
     end
 end
 
@@ -853,22 +850,18 @@ function JarvanIV:getrDmg(target)
     return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, rDmg) 
 end
 
-
 function JarvanIV:Flee()
     if self.Menu.Flee.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
         local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.eSpell.Range
-        self:CastE(pos)
-        Orbwalker:SetMovement(false)
+        Control.CastSpell(HK_E, pos)
         DelayAction(function() Control.CastSpell(HK_Q, pos) end, 0.1)
-        Orbwalker:SetMovement(true)
     end
 
     local target = TargetSelector:GetTarget(self.wSpell.Range)
     if target and isValid(target) then
-        if isSpellReady(_W) and lastW + 250 < GetTickCount() and self.Menu.Flee.W:Value() then
+        if isSpellReady(_W) and not isSpellReady(_Q) and self.Menu.Flee.W:Value() then
             if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
                 Control.CastSpell(HK_W)
-                lastW = GetTickCount()
             end	
         end
     end
