@@ -180,7 +180,7 @@ local function haveBuff(unit, buffName)
 end
 
 local function getBuffData(unit, buffname)
-    for i = 0, unit.buffCount do
+    for i = 1, unit.buffCount do
         local buff = unit:GetBuff(i)
         if buff.name == buffname and buff.count > 0 then 
             return buff
@@ -239,7 +239,7 @@ local function getAllyCount(range, unit)
 end
 
 local function isImmobile(unit)
-    for i = 0, unit.buffCount do
+    for i = 1, unit.buffCount do
         local buff = unit:GetBuff(i)
         if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
             return true
@@ -249,7 +249,7 @@ local function isImmobile(unit)
 end
 
 local function isInvulnerable(unit)
-    for i = 0, unit.buffCount do
+    for i = 1, unit.buffCount do
         local buff = unit:GetBuff(i)
         if buff and buff.type == 18 and buff.count > 0 then
             return true
@@ -274,6 +274,16 @@ local function isInRange(v1, v2, range)
     local dz = (v1.z or v1.y) - (v2.z or v2.y)
     if dx * dx + dz * dz <= range * range then
         return true
+    end
+    return false
+end
+
+local function IsFacing(unit)
+    local V = Vector((unit.pos - myHero.pos))
+    local D = Vector(unit.dir)
+    local Angle = 180 - math.deg(math.acos(V*D/(V:Len()*D:Len())))
+    if math.abs(Angle) < 90 then 
+        return true  
     end
     return false
 end
@@ -417,7 +427,6 @@ function Ornn:__init()
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTick() end)
     Callback.Add("WndMsg", function(msg, wParam) self:OnWndMsg(msg, wParam) end)
-    Spell:OnSpellCast(function(spell) self:onQCast(spell) end)
     self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 65, Range = 800, Speed = 1800, Collision = false}
     self.wSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 175, Range = 500, Speed = math.huge, Collision = false}
     self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 180, Range = 750, Speed = 1600, Collision = false}
@@ -479,16 +488,14 @@ function Ornn:onTick()
 end
 
 function Ornn:OnWndMsg(msg, wParam)
-    if isSpellReady(_Q) and wParam == HK_Q then
-        self.qTimer = Game.Timer() + 1
+    if msg == 257 then
+        if wParam == HK_Q then
+            --print('1')
+            self.qTimer = Game.Timer() + 1
+        end
     end
 end
 
-function Ornn:onQCast(spell)
-    if spell == _Q then
-        self.qTimer = Game.Timer() + 1
-    end
-end
 
 function Ornn:GetQpos()
     for i = GameParticleCount(), 1, -1 do
@@ -506,6 +513,7 @@ function Ornn:UpdateQpos()
         if Game.Timer() - qPos.Timer > 5 then
             TableRemove(self.qPos, k)
         end
+	--Draw.Circle(qPos.pos, 100, Draw.Color(192, 255, 255, 255))
     end
 end
 
@@ -719,7 +727,8 @@ function JarvanIV:Combo()
         local pred = GGPrediction:SpellPrediction(self.eSpell)
         pred:GetPrediction(target, myHero)
         if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
-            local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), -100)
+            local offset = IsFacing(target) and -100 or -200
+            local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), offset)
             if self.Menu.Combo.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
                 self:CastE(castPos)
                 Orbwalker:SetMovement(false)
@@ -730,7 +739,7 @@ function JarvanIV:Combo()
             end
         end
 		        
-        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and not isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and not isSpellReady(_E) and myHero:GetSpellData(_E).currentCd > 2 and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
@@ -4356,7 +4365,7 @@ function Milio:RCleans(unit)
         [35] = self.Menu.AutoR.CC.Asleep:Value()
     }    
 	
-    for i = 0, unit.buffCount do
+    for i = 1, unit.buffCount do
         local buff = unit:GetBuff(i)
         if buff and buff.count > 0 and buff.duration > 0.5 then
             if CleanBuffs[buff.type] then
