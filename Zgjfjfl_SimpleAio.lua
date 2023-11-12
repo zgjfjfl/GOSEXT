@@ -730,12 +730,14 @@ function JarvanIV:Combo()
             local offset = IsFacing(target) and -100 or -200
             local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), offset)
             if self.Menu.Combo.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
-                self:CastE(castPos)
-                Orbwalker:SetMovement(false)
-                Orbwalker:SetAttack(false)
-                DelayAction(function() Control.CastSpell(HK_Q, castPos) end, 0.1)
-                Orbwalker:SetMovement(true)
-                Orbwalker:SetAttack(true)
+                if myHero.pos:DistanceTo(castPos) <= self.eSpell.Range then
+                    self:CastE(castPos)
+                    Orbwalker:SetMovement(false)
+                    Orbwalker:SetAttack(false)
+                    DelayAction(function() Control.CastSpell(HK_Q, castPos) end, 0.1)
+                    Orbwalker:SetMovement(true)
+                    Orbwalker:SetAttack(true)
+                end
             end
         end
 		        
