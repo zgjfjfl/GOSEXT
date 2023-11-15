@@ -217,6 +217,16 @@ local function IsInvulnerable(unit)
 	return false
 end
 
+local function IsSlow(unit)
+	for i = 1, unit.buffCount do
+		local buff = unit:GetBuff(i)
+		if buff and buff.type == 11 and buff.count > 0 then
+			return true
+		end
+	end
+	return false
+end
+
 local function Recalling()
 	for i, Buff in pairs(GetBuffs(myHero)) do
 		if Buff.name == "recall" and Buff.duration > 0 then
@@ -1749,7 +1759,10 @@ end
 function Swain:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Wslow", name = "Combo [W] on Slow target", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Waoe", name = "Combo [W] AoE", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "WCount", name = "[W] hit x targets", value = 3, min=2, max=5, step=1})
+	Menu.Combo:MenuElement({id = "Wsm", name = "W Semi-Manual Key(Only Cursor near)", key = string.byte("T")})
 	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
@@ -1780,8 +1793,23 @@ function Swain:OnTick()
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
 		self:Harass()
 	end
+	if Menu.Combo.Wsm:Value() and IsReady(_W) then
+		self:SemiManualW()
+	end
 	self:Auto()
 end
+
+function Swain:SemiManualW()
+	for i, enemy in ipairs(GetEnemyHeroes()) do
+		if IsValid(enemy) and enemy.pos2D.onScreen then
+			if enemy.pos:DistanceTo(mousePos) < 500 then
+				self:CastGGPred(HK_W, enemy)
+				break
+			end
+		end
+	end
+end
+
 
 function Swain:Combo()
 	if Attack:IsActive() then return end
@@ -1800,6 +1828,13 @@ function Swain:Combo()
 			self:CastWAoE(Wtarget)
 		end
 	end
+	for i, enemy in ipairs(GetEnemyHeroes()) do
+		if IsValid(enemy) and enemy.pos2D.onScreen then
+			if Menu.Combo.Wslow:Value() and IsReady(_W) and myHero.pos:DistanceTo(enemy.pos) <= WSpell.Range and IsSlow(enemy) then
+				self:CastGGPred(HK_W, enemy)
+			end
+		end
+	end
 end	
 
 function Swain:Harass()
@@ -1814,10 +1849,12 @@ end
 
 function Swain:CastWAoE(unit)
 	local enemies = GetEnemiesAtPos(WSpell.Range + WSpell.Radius/2, WSpell.Radius, unit.pos, unit)
-	if #enemies > 1 then
+	if #enemies >= Menu.Combo.WCount:Value() then
 		local AoEPos = CalculateBestCirclePosition(enemies, WSpell.Radius/2, true, WSpell.Range, WSpell.Speed, WSpell.Delay)
-		Control.CastSpell(HK_W, AoEPos)
-		lastW = GetTickCount()
+		if AoEPos:To2D().onScreen and lastW + 350 < GetTickCount() then
+			Control.CastSpell(HK_W, AoEPos)
+			lastW = GetTickCount()
+		end
 	end
 end
 
