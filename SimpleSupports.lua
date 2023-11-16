@@ -1759,7 +1759,6 @@ end
 function Swain:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "Wslow", name = "Combo [W] on Slow target", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Waoe", name = "Combo [W] AoE", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "WCount", name = "[W] hit x targets", value = 3, min=2, max=5, step=1})
 	Menu.Combo:MenuElement({id = "Wsm", name = "W Semi-Manual Key(Only Cursor near)", key = string.byte("T")})
@@ -1771,6 +1770,7 @@ function Swain:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
 	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] on CC", toggle = true, value = true})
 	Menu.Auto:MenuElement({id = "W", name = "Auto [W] on CC", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "Wslow", name = "Auto [W] on Slow", toggle = true, value = true})
 	Menu.Auto:MenuElement({id = "Wgap", name = "Auto [W] AnitGap", toggle = true, value = true})
 	Menu.Auto:MenuElement({id = "E2", name = "Auto [E2] pulls", toggle = true, value = true})
 
@@ -1828,13 +1828,6 @@ function Swain:Combo()
 			self:CastWAoE(Wtarget)
 		end
 	end
-	for i, enemy in ipairs(GetEnemyHeroes()) do
-		if IsValid(enemy) and enemy.pos2D.onScreen then
-			if Menu.Combo.Wslow:Value() and IsReady(_W) and myHero.pos:DistanceTo(enemy.pos) <= WSpell.Range and IsSlow(enemy) then
-				self:CastGGPred(HK_W, enemy)
-			end
-		end
-	end
 end	
 
 function Swain:Harass()
@@ -1869,6 +1862,9 @@ function Swain:Auto()
 				self:CastGGPred(HK_Q, enemy)
 			end
 			if Menu.Auto.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(enemy.pos) <= WSpell.Range and IsImmobile(enemy) then
+				self:CastGGPred(HK_W, enemy)
+			end
+			if Menu.Auto.Wslow:Value() and IsReady(_W) and myHero.pos:DistanceTo(enemy.pos) <= WSpell.Range and IsSlow(enemy) then
 				self:CastGGPred(HK_W, enemy)
 			end
 			if Menu.Auto.Wgap:Value() and myHero.pos:DistanceTo(enemy.pos) < 1500 and enemy.pathing.isDashing then
