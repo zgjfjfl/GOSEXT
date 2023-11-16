@@ -1802,7 +1802,7 @@ end
 function Swain:SemiManualW()
 	for i, enemy in ipairs(GetEnemyHeroes()) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
-			if enemy.pos:DistanceTo(mousePos) < 500 then
+			if enemy.pos:DistanceTo(mousePos) < 500 and myHero.pos:DistanceTo(enemy.pos) <= WSpell.Range then
 				self:CastGGPred(HK_W, enemy)
 				break
 			end
