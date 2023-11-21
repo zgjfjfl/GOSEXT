@@ -1535,15 +1535,11 @@ function Ziggs:Combo()
 
 	if Attack:IsActive() then return end
 
-	local Qtarget = TargetSelector:GetTarget(1500)
-	if IsValid(Qtarget) then
-		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= Q2Spell.Range then
-			self:CastQ(Qtarget)
-		end
-	end
-
-	local target = TargetSelector:GetTarget(1200)
+	local target = TargetSelector:GetTarget(1500)
 	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= Q2Spell.Range then
+			self:CastQ(target)
+		end
 		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
 			self:CastE(target)
 		end
@@ -1644,23 +1640,23 @@ end
 
 function Ziggs:CastQ(unit)
 	if myHero.pos:DistanceTo(unit.pos) > 850 then
-		local startPos = Vector(myHero.pos):Extended(Vector(unit.pos), 665)
-		local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(startPos, unit.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius/2, {GGPrediction.COLLISION_MINION}, unit.networkID)
-		if collisionCount == 0 then
-			local QPrediction = GGPrediction:SpellPrediction(Q2Spell)
-			QPrediction:GetPrediction(unit, myHero)
-			if QPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) then
-				local castPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 850)
-				if castPos:To2D().onScreen and not MapPosition:inWall(castPos) and lastQ + 350 < GetTickCount() then
-					Control.CastSpell(HK_Q, castPos)
+		local QPrediction = GGPrediction:SpellPrediction(Q2Spell)
+		QPrediction:GetPrediction(unit, myHero)
+		if QPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) then
+			local startPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 600)
+			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(startPos, QPrediction.CastPosition, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius/2, {GGPrediction.COLLISION_MINION}, unit.networkID)
+			if collisionCount == 0 then
+				local endPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 850)
+				if Vector(QPrediction.CastPosition):To2D().onScreen and not MapPosition:inWall(endPos) and lastQ + 350 < GetTickCount() then
+					Control.CastSpell(HK_Q, QPrediction.CastPosition)
 					lastQ = GetTickCount()
 				end
 			end
 		end
-	elseif myHero.pos:DistanceTo(unit.pos) < 850 then
+	else
 		local QPrediction = GGPrediction:SpellPrediction(Q1Spell)
 		QPrediction:GetPrediction(unit, myHero)
-		if QPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and QPrediction.CastPosition:To2D().onScreen and lastQ + 350 < GetTickCount() then
+		if QPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and lastQ + 350 < GetTickCount() then
 			Control.CastSpell(HK_Q, QPrediction.CastPosition)
 			lastQ = GetTickCount()
 		end
