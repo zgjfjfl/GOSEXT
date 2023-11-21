@@ -1535,22 +1535,26 @@ function Ziggs:Combo()
 
 	if Attack:IsActive() then return end
 
-	local target = TargetSelector:GetTarget(1500)
-	if IsValid(target) and target.pos2D.onScreen then
-
+	local Qtarget = TargetSelector:GetTarget(1500)
+	if IsValid(Qtarget) then
 		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= Q2Spell.Range then
-			self:CastQ(target)
+			self:CastQ(Qtarget)
 		end
+	end
+
+	local target = TargetSelector:GetTarget(1200)
+	if IsValid(target) and target.pos2D.onScreen then
 		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
 			self:CastE(target)
 		end
 		if Menu.Combo.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "ZiggsW" and myHero.pos:DistanceTo(target.pos) <= WSpell.Range then
-			local IsRange = not (Data.HEROES[target.charName] and Data.HEROES[target.charName][2]) or target.range > 300
+			local IsRange = target.range > 300
 			if IsRange then
  				self:CastW(target)
 			end
 		end
 	end
+
 	local Rtarget = TargetSelector:GetTarget(5000)
 	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 		if Menu.Combo.R:Value() and IsReady(_R) then
@@ -1609,7 +1613,7 @@ function Ziggs:Auto()
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
 			if Menu.Auto.WPeel:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
-				local IsMelee = Data.HEROES[enemy.charName] and Data.HEROES[enemy.charName][2] or enemy.range < 300
+				local IsMelee = enemy.range < 300
 				if IsMelee and myHero.pos:DistanceTo(enemy.pos) <= enemy.boundingRadius + enemy.range + myHero.boundingRadius then
 					local castPos = Vector(myHero.pos):Extended(Vector(enemy.pos), MathMin(200, myHero.pos:DistanceTo(enemy.pos)/2))
 					Control.CastSpell(HK_W, castPos)
@@ -1641,20 +1645,22 @@ end
 function Ziggs:CastQ(unit)
 	if myHero.pos:DistanceTo(unit.pos) > 850 then
 		local startPos = Vector(myHero.pos):Extended(Vector(unit.pos), 665)
-		local castPos = Vector(myHero.pos):Extended(Vector(unit.pos), 850)
 		local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(startPos, unit.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius/2, {GGPrediction.COLLISION_MINION}, unit.networkID)
 		if collisionCount == 0 then
 			local QPrediction = GGPrediction:SpellPrediction(Q2Spell)
 			QPrediction:GetPrediction(unit, myHero)
-			if QPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and not MapPosition:inWall(castPos) and lastQ + 350 < GetTickCount() then
-				Control.CastSpell(HK_Q, QPrediction.CastPosition)
-				lastQ = GetTickCount()
+			if QPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) then
+				local castPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 850)
+				if castPos:To2D().onScreen and not MapPosition:inWall(castPos) and lastQ + 350 < GetTickCount() then
+					Control.CastSpell(HK_Q, castPos)
+					lastQ = GetTickCount()
+				end
 			end
 		end
 	elseif myHero.pos:DistanceTo(unit.pos) < 850 then
 		local QPrediction = GGPrediction:SpellPrediction(Q1Spell)
 		QPrediction:GetPrediction(unit, myHero)
-		if QPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and lastQ + 350 < GetTickCount() then
+		if QPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and QPrediction.CastPosition:To2D().onScreen and lastQ + 350 < GetTickCount() then
 			Control.CastSpell(HK_Q, QPrediction.CastPosition)
 			lastQ = GetTickCount()
 		end
@@ -1665,7 +1671,7 @@ function Ziggs:CastW(unit)
 	local WPrediction = GGPrediction:SpellPrediction(WSpell)
 	WPrediction:GetPrediction(unit, myHero)
 	if WPrediction:CanHit(GGPrediction.HITCHANCE_HIGH) and lastW + 350 < GetTickCount() then
-		local castPos1 = Vector(Vector(WPrediction.CastPosition)):Extended(Vector(myHero.pos), 150)
+		local castPos1 = Vector(Vector(WPrediction.CastPosition)):Extended(Vector(myHero.pos), 100)
 		local castPos2 = Vector(myHero.pos):Extended(Vector(WPrediction.CastPosition), 1000)
 		if myHero.pos:DistanceTo(unit.pos) <= 1000 then
 			Control.CastSpell(HK_W, castPos1)

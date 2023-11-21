@@ -220,7 +220,7 @@ local function getMinionCount(range, unit)
     for i = 1,GameMinionCount() do
         local hero = GameMinion(i)
         local Range = range * range
-        if hero.team ~= TEAM_ALLY and hero.dead == false and getDistanceSqr(unit, hero.pos) < Range then
+        if hero.team ~= myHero.team and hero.dead == false and getDistanceSqr(unit, hero.pos) < Range then
             count = count + 1
         end
     end
@@ -3533,6 +3533,7 @@ function KSante:CastW(target, time)
             end, time + Game.Latency()/1000)
     end
 end
+
 function KSante:RSemiManual()
     local target = TargetSelector:GetTarget(self.rSpell.Range)
     if target and isValid(target) then
@@ -3592,7 +3593,7 @@ end
 
 function KSante:getqDmg(unit)
     local qlvl = myHero:GetSpellData(_Q).level
-    local qbaseDmg  = 30 * qlvl
+    local qbaseDmg  = 25 * qlvl + 5
     local qadDmg = myHero.totalDamage * 0.4
     local qextDmg = myHero.bonusArmor * 0.3 + myHero.bonusMagicResist * 0.3
     local qDmg = qbaseDmg + qadDmg + qextDmg
