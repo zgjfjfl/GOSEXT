@@ -4982,7 +4982,7 @@ function Briar:getW2BonusDmg(target)
     local Wlvl = myHero:GetSpellData(_W).level
     local baseDmg  = 15 * Wlvl - 10
     local adDmg = myHero.totalDamage * 0.05
-    local bonusDmg = (0.1 + 0.035 * math.floor(myHero.bonusDamage/100))* (target.maxHealth - target.health)
+    local bonusDmg = (0.09 + 0.025 * math.floor(myHero.bonusDamage/100))* (target.maxHealth - target.health)
     local Dmg = baseDmg + adDmg + bonusDmg
     return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, Dmg)
 end
