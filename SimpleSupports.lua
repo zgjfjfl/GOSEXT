@@ -1765,7 +1765,7 @@ function Swain:LoadMenu()
 	Menu.Combo:MenuElement({id = "WCount", name = "[W] hit x targets", value = 3, min = 2, max = 5, step = 1})
 	Menu.Combo:MenuElement({id = "Wsm", name = "W Semi-Manual Key(Only Cursor near)", key = string.byte("T")})
 	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "ERange", name = "E Max Range Set", value = 950, min = 500, max = 950, step = 10})
+	Menu.Combo:MenuElement({id = "ERange", name = "E Range Set", value = 950, min = 500, max = 950, step = 10})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
@@ -1908,7 +1908,7 @@ function Swain:CastGGPred(spell, unit)
 		local EPrediction = GGPrediction:SpellPrediction(ESpell)
 		EPrediction:GetPrediction(unit, myHero)
 		if EPrediction:CanHit(3) and lastE + 350 < GetTickCount() and Orbwalker:CanMove() then
-			local endPos = myHero.pos + (EPrediction.CastPosition - myHero.pos):Normalized() * Menu.Combo.ERange:Value()
+			local endPos = myHero.pos + (EPrediction.CastPosition - myHero.pos):Normalized() * ESpell.Range
 			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(endPos, EPrediction.CastPosition, 1400, 0.1, ESpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
 			if collisionCount == 0 then
 				Control.CastSpell(HK_E, EPrediction.CastPosition)
@@ -1926,7 +1926,7 @@ function Swain:Draw()
 		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
 	end
 	if Menu.Draw.E:Value() and IsReady(_E) then
-		Draw.Circle(myHero.pos, Menu.Combo.ERange:Value(), 1, Draw.Color(255, 244, 238, 66))
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 end
 
