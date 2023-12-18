@@ -1,4 +1,4 @@
-local Heroes ={"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko"}
+local Heroes ={"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko", "Yuumi"}
 
 if not table.contains(Heroes, myHero.charName) then 
 	print('SimpleSupports not supported ' .. myHero.charName)
@@ -2283,6 +2283,280 @@ function Neeko:Draw()
 	end
 	if Menu.Draw.E:Value() and IsReady(_E) then
 		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+end
+
+---------------------------------
+
+class "Yuumi"
+
+function Yuumi:__init()
+	print("Support Yuumi Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	Q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 35, Range = 1150, Speed = 1950, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	Q2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 60, Range = 1700, Speed = 1650, Collision = false}
+	WSpell = {Range = 700}
+	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 225, Range = 1100, Speed = 3000, Collision = false}
+end
+
+function Yuumi:LoadMenu() 
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "R", name = "Combo [R]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "RCount", name = "Combo [R] When X Enemies in Range", value = 2, min = 1, max = 5, step = 1})
+	Menu.Combo:MenuElement({id = "RRange", name = "[R] Range set", value = 1100, min = 500, max = 1100, step = 10})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "QMana", name = "Harass When > X Mana", value = 80, min = 5, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
+	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] Harass(Only No Orb Mode)", toggle = true, value = true})	
+	Menu.Auto:MenuElement({id = "E", name = "Auto [E] Shield", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "R", name = "Auto [R]", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "RCount", name = "Auto [R] When X Enemies in Range", value = 3, min = 1, max = 5, step = 1})
+	
+	Menu:MenuElement({type = MENU, id = "WSet", name = "WSetting"})
+	Menu.WSet:MenuElement({id = "Wsm", name = "W Semi-Manual(attach ally mouse near)", key = string.byte("T")})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "W", name = "Draw [W] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
+end
+
+function Yuumi:IsAttaching()
+	if myHero:GetSpellData(_W).name == "YuumiWEndWrapper" then
+		return true
+	end
+	return false
+end
+
+function Yuumi:OnTick()
+	if myHero.dead or Game.IsChatOpen() or Recalling() then
+		return
+	end
+	
+	if self:IsAttaching() then
+		Orbwalker:SetAttack(false)
+		Orbwalker:SetMovement(false)
+	else
+		if HaveBuff(myHero, "YuumiR") then
+			Orbwalker:SetAttack(false)
+		else
+			Orbwalker:SetAttack(true)
+		end
+		Orbwalker:SetMovement(true) 
+	end
+
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		self:Combo()
+	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	end
+	self:AutoQ()
+	self:AutoE()
+	self:AutoR()
+	
+	if Menu.WSet.Wsm:Value() then
+		self:SemiManualW()
+	end
+end
+
+function Yuumi:Combo()
+	if Menu.Combo.Q:Value() and IsReady(_Q) then
+		if not self:IsAttaching() then
+			local target = TargetSelector:GetTarget(Q1Spell.Range)
+			if IsValid(target) and target.pos2D.onScreen then
+				self:CastGGPred(HK_Q, target)
+			end
+		elseif self:IsAttaching() then
+			self:CastQ2()
+		end
+	end
+	
+	if Menu.Combo.R:Value() and IsReady(_R) then
+		local target = TargetSelector:GetTarget(Menu.Combo.RRange:Value())
+		if IsValid(target) and target.pos2D.onScreen then
+			if GetEnemyCount(RSpell.Radius, target.pos) >= Menu.Combo.RCount:Value() then
+				if self:IsAttaching() then
+					local castPos = myHero.pos:Extended(target.pos, myHero.range)
+					Control.SetCursorPos(castPos)
+					Control.CastSpell(HK_R)
+					DelayAction(function() Control.SetCursorPos(mousePos) end, 3.5)
+				else
+					if lastR + 3600 < GetTickCount() then
+						Control.CastSpell(HK_R, target)
+						lastR = GetTickCount()
+					end
+				end
+			end
+		end
+	end
+end
+
+function Yuumi:Harass()
+	if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.mana/myHero.maxMana >= Menu.Harass.QMana:Value()/100 then
+		if not self:IsAttaching() then
+			local target = TargetSelector:GetTarget(Q1Spell.Range)
+			if IsValid(target) and target.pos2D.onScreen then
+				self:CastGGPred(HK_Q, target)
+			end
+		elseif self:IsAttaching() then
+			self:CastQ2()
+		end
+	end
+end
+
+function Yuumi:AutoQ()
+	if Menu.Auto.Q:Value() and not (Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] or Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS]) then
+		self:Harass()
+	end
+end
+
+function Yuumi:AutoE()
+	if not (Menu.Auto.E:Value() and IsReady(_E)) then return end
+
+	local allies = ObjectManager:GetAllyHeroes(myHero.range)
+	for _, ally in ipairs(allies) do
+		if IsValid(ally) and (not self:IsAttaching() and ally.isMe or HaveBuff(ally, "YuumiWAlly")) then
+			local enemies = ObjectManager:GetEnemyHeroes(2500)
+			for _, enemy in ipairs(enemies) do
+				if IsValid(enemy) then
+					local canUseE = false
+					
+					if enemy.isChanneling and enemy.activeSpell.target == ally.handle then
+						canUseE = true
+					elseif enemy.activeSpell.isAutoAttack and enemy.activeSpell.target == ally.handle then
+						canUseE = true
+					elseif enemy.isChanneling then
+						local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(ally.pos, enemy.activeSpell.placementPos, enemy.pos)
+						local width = ally.boundingRadius + (enemy.activeSpell.width > 0 and enemy.activeSpell.width or 0)
+						if isOnSegment and GGPrediction:IsInRange(point, ally.pos, width) then
+							canUseE = true
+						end
+					end
+					
+					if canUseE then
+						Control.CastSpell(HK_E)
+						return
+					end
+				end
+			end
+		end
+	end
+end
+
+function Yuumi:AutoR()
+	if Menu.Auto.R:Value() and IsReady(_R) then
+		if self:IsAttaching() then
+			local target = TargetSelector:GetTarget(Menu.Combo.RRange:Value())
+			if IsValid(target) and target.pos2D.onScreen then
+				if GetEnemyCount(RSpell.Radius, target.pos) >= Menu.Auto.RCount:Value() then
+					local castPos = myHero.pos:Extended(target.pos, myHero.range)
+					Control.SetCursorPos(castPos)
+					Control.CastSpell(HK_R)
+					DelayAction(function() Control.SetCursorPos(mousePos) end, 3.5)
+				end
+			end
+		end
+	end
+end
+
+function Yuumi:SemiManualW()
+	if IsReady(_W) then
+		local allies = ObjectManager:GetAllyHeroes(WSpell.Range)
+		for j, ally in ipairs(allies) do
+			if IsValid(ally) and not ally.isMe and not HaveBuff(ally, "YuumiWAlly") then
+				if ally.pos:DistanceTo(mousePos) < 350 then
+					Control.CastSpell(HK_W, ally.pos)
+				end
+			end
+		end
+	end
+end
+
+function Yuumi:CastGGPred(spell, unit)
+	if spell == HK_Q then
+		local QPrediction = GGPrediction:SpellPrediction(Q1Spell)
+		QPrediction:GetPrediction(unit, myHero)
+		if QPrediction:CanHit(3) then
+			Control.CastSpell(HK_Q, QPrediction.CastPosition)
+		end
+	end
+end
+
+function Yuumi:CastQ2()
+	local target = TargetSelector:GetTarget(1700)
+	if IsValid(target) and target.pos2D.onScreen then
+		local points = self:AimQ(target.pos)
+		for i = 1,#points do
+			local point = points[i]
+			--Draw.Circle(point, 50, 1, Draw.Color(255, 244, 66, 104))
+			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+			if collisionCount == 0 then
+				Control.SetCursorPos(target.pos)
+				Control.CastSpell(HK_Q)
+				DelayAction(function() Control.SetCursorPos(mousePos) end, 1.4)
+				return
+			else
+				local _, _, collisionCount1 = GGPrediction:GetCollision(myHero.pos, point, 850, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+				local _, _, collisionCount2 = GGPrediction:GetCollision(point, target.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+				if collisionCount1 == 0 and collisionCount2 == 0 then
+					if myHero.pos:DistanceTo(point) + target.pos:DistanceTo(point) < 1700 and  myHero.pos:DistanceTo(target.pos) > 1000 then
+						Control.SetCursorPos(point)
+						Control.CastSpell(HK_Q)
+						DelayAction(function() Control.SetCursorPos(target.pos) end, 1)
+						DelayAction(function() Control.SetCursorPos(mousePos) end, 0.4)
+						return
+					end
+				end
+			end
+		end
+	end
+end
+
+function Yuumi:AimQ(finalPos)
+	local startPos = Vector(myHero.pos)
+	local points = {}
+
+	for j = 10, 360, 10 do 
+		local rotatedVector = Vector(0, 0, 800):Rotated(0, j * math.pi / 180, 0)
+		local endPos = startPos + rotatedVector
+
+		if endPos:DistanceTo(myHero.pos:Extended(finalPos, 800)) < 400 then
+			TableInsert(points, endPos)
+		end
+	end
+
+	table.sort(points, function(a, b)
+		return a:DistanceTo(finalPos) < b:DistanceTo(finalPos)
+	end)
+
+	TableRemove(points, 1)
+	TableRemove(points, 1)
+
+	return points
+end
+
+function Yuumi:Draw()
+	if Menu.Draw.Q:Value() and IsReady(_Q) then
+		if not self:IsAttaching() then
+			Draw.Circle(myHero.pos, Q1Spell.Range, 1, Draw.Color(255, 66, 244, 113))
+		else
+			Draw.Circle(myHero.pos, Q2Spell.Range, 1, Draw.Color(255, 66, 244, 113))
+		end
+	end
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.R:Value() and IsReady(_R) then
+		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 end
 
