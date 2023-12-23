@@ -2369,7 +2369,7 @@ function Yuumi:OnTick()
 end
 
 function Yuumi:Combo()
-	if Menu.Combo.Q:Value() and IsReady(_Q) then
+	if Menu.Combo.Q:Value() then
 		if not self:IsAttaching() then
 			local target = TargetSelector:GetTarget(Q1Spell.Range)
 			if IsValid(target) and target.pos2D.onScreen then
@@ -2401,7 +2401,7 @@ function Yuumi:Combo()
 end
 
 function Yuumi:Harass()
-	if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.mana/myHero.maxMana >= Menu.Harass.QMana:Value()/100 then
+	if Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana >= Menu.Harass.QMana:Value()/100 then
 		if not self:IsAttaching() then
 			local target = TargetSelector:GetTarget(Q1Spell.Range)
 			if IsValid(target) and target.pos2D.onScreen then
@@ -2423,13 +2423,14 @@ function Yuumi:AutoE()
 	if not (Menu.Auto.E:Value() and IsReady(_E)) then return end
 
 	local allies = ObjectManager:GetAllyHeroes(myHero.range)
+	local enemies = ObjectManager:GetEnemyHeroes(2500)
+	local turrets = ObjectManager:GetEnemyTurrets(1500)
+	
 	for _, ally in ipairs(allies) do
 		if IsValid(ally) and (not self:IsAttaching() and ally.isMe or HaveBuff(ally, "YuumiWAlly")) then
-			local enemies = ObjectManager:GetEnemyHeroes(2500)
 			for _, enemy in ipairs(enemies) do
 				if IsValid(enemy) then
 					local canUseE = false
-					
 					if enemy.isChanneling and enemy.activeSpell.target == ally.handle then
 						canUseE = true
 					elseif enemy.activeSpell.isAutoAttack and enemy.activeSpell.target == ally.handle then
@@ -2443,6 +2444,15 @@ function Yuumi:AutoE()
 					end
 					
 					if canUseE then
+						Control.CastSpell(HK_E)
+						return
+					end
+				end
+			end
+			
+			for _, turret in ipairs(turrets) do
+				if turret and turret.targetID then
+					if turret.targetID == ally.networkID then
 						Control.CastSpell(HK_E)
 						return
 					end
@@ -2485,7 +2495,7 @@ function Yuumi:CastGGPred(spell, unit)
 	if spell == HK_Q then
 		local QPrediction = GGPrediction:SpellPrediction(Q1Spell)
 		QPrediction:GetPrediction(unit, myHero)
-		if QPrediction:CanHit(3) then
+		if QPrediction:CanHit(3) and IsReady(_Q) then
 			Control.CastSpell(HK_Q, QPrediction.CastPosition)
 		end
 	end
@@ -2494,26 +2504,31 @@ end
 function Yuumi:CastQ2()
 	local target = TargetSelector:GetTarget(1700)
 	if IsValid(target) and target.pos2D.onScreen then
-		local points = self:AimQ(target.pos)
-		for i = 1,#points do
-			local point = points[i]
-			--Draw.Circle(point, 50, 1, Draw.Color(255, 244, 66, 104))
-			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
-			if collisionCount == 0 then
+		local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+		if collisionCount == 0 then
+			if IsReady(_Q) then
 				Control.SetCursorPos(target.pos)
 				Control.CastSpell(HK_Q)
-				DelayAction(function() Control.SetCursorPos(mousePos) end, 1.4)
-				return
-			else
+			elseif Game.CanUseSpell(_Q) == 8 then
+				Control.SetCursorPos(target.pos)
+				DelayAction(function() Control.SetCursorPos(mousePos) end, 1.2)
+			end
+		else
+			local points = self:AimQ(target.pos)
+			for i = 1,#points do
+				local point = points[i]
 				local _, _, collisionCount1 = GGPrediction:GetCollision(myHero.pos, point, 850, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 				local _, _, collisionCount2 = GGPrediction:GetCollision(point, target.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 				if collisionCount1 == 0 and collisionCount2 == 0 then
-					if myHero.pos:DistanceTo(point) + target.pos:DistanceTo(point) < 1700 and  myHero.pos:DistanceTo(target.pos) > 1000 then
-						Control.SetCursorPos(point)
-						Control.CastSpell(HK_Q)
-						DelayAction(function() Control.SetCursorPos(target.pos) end, 1)
-						DelayAction(function() Control.SetCursorPos(mousePos) end, 0.4)
-						return
+					if myHero.pos:DistanceTo(point) + target.pos:DistanceTo(point) < 1700 and myHero.pos:DistanceTo(target.pos) > 1000 then
+						if IsReady(_Q) then
+							Control.SetCursorPos(point)
+							Control.CastSpell(HK_Q)
+						elseif Game.CanUseSpell(_Q) == 8 then
+							Control.SetCursorPos(point)
+							DelayAction(function() Control.SetCursorPos(target.pos) end, 0.8)
+							DelayAction(function() Control.SetCursorPos(mousePos) end, 0.4)
+						end
 					end
 				end
 			end
