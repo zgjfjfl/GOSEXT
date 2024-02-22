@@ -81,7 +81,7 @@ function Zeri:__init()
    
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)
-    qData = {Type = GGPrediction.SPELLTYPE_LINE, Range = 750, Speed = 2600, Delay = 0, Radius = 40, Collision = false}
+    qData = {Type = GGPrediction.SPELLTYPE_LINE, Range = 775, Speed = 2600, Delay = 0, Radius = 40, Collision = false}
     wData = {Type = GGPrediction.SPELLTYPE_LINE, Range= 1200, Speed = 2500, Delay = 0.55, Radius = 40, Collision = false}
     w2Data = {Type = GGPrediction.SPELLTYPE_LINE, Range= 2700, Speed = 2500, Delay = 0.55, Radius = 100, Collision = false}
     lastW = 0
@@ -218,16 +218,16 @@ end
 
 function Zeri:Combo()
 
-    local executeDmg = self:AAexecuteDmg()
-    if self.Menu.BlockAA.enabled:Value() and not hasQPassive and not myHero.isChanneling then
-        local targets = ObjectManager:GetEnemyHeroes(Data:GetAutoAttackRange(myHero))
-        for i, target in ipairs(targets) do
-            if target and target.health <= executeDmg then
-                Control.Attack(target)
-                return
-            end
-        end
-    end
+    -- local executeDmg = self:AAexecuteDmg()
+    -- if self.Menu.BlockAA.enabled:Value() and not hasQPassive and not myHero.isChanneling then
+        -- local targets = ObjectManager:GetEnemyHeroes(Data:GetAutoAttackRange(myHero))
+        -- for i, target in ipairs(targets) do
+            -- if target and target.health <= executeDmg then
+                -- Control.Attack(target)
+                -- return
+            -- end
+        -- end
+    -- end
 
     local Qtarget = TargetSelector:GetTarget(qData.Range)
     if Qtarget and isSpellReady(_Q) and self.Menu.QSpell.QEnabled:Value() then
