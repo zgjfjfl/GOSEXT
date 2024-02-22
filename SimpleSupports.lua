@@ -130,7 +130,7 @@ local function IsUnderTurret(unit)
 end
 
 local function HaveBuff(unit, buffName)
-	for i = 1, unit.buffCount do
+	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff.name == buffName and buff.count > 0 then 
 			return true
@@ -140,7 +140,7 @@ local function HaveBuff(unit, buffName)
 end
 
 local function GetBuffData(unit, buffname)
-	for i = 1, unit.buffCount do
+	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff.name == buffname and buff.count > 0 then 
 			return buff
@@ -184,7 +184,7 @@ local function GetAllyCount(range, unit)
 end
 
 local function IsImmobile(unit)
-	for i = 1, unit.buffCount do
+	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
 			return true
@@ -195,7 +195,7 @@ end
 
 local function GetImmobileDuration(unit)
 	local MaxDuration = 0
-	for i = 1, unit.buffCount do
+	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
 			local BuffDuration = buff.duration
@@ -208,7 +208,7 @@ local function GetImmobileDuration(unit)
 end
 
 local function IsInvulnerable(unit)
-	for i = 1, unit.buffCount do
+	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff and buff.type == 18 and buff.count > 0 then
 			return true
@@ -218,7 +218,7 @@ local function IsInvulnerable(unit)
 end
 
 local function IsSlow(unit)
-	for i = 1, unit.buffCount do
+	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff and buff.type == 11 and buff.count > 0 then
 			return true
@@ -1093,13 +1093,13 @@ function Brand:CastWAoE(target)
 end
 
 function Brand:GetPDmg(target)
-	local PDmg = target.maxHealth * 0.025
+	local PDmg = target.maxHealth * 0.02
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, PDmg)
 end
 
 function Brand:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
-	local QDmg = ({80, 110, 140, 170, 200})[level] + 0.65 * myHero.ap
+	local QDmg = ({70, 100, 130, 160, 190})[level] + 0.65 * myHero.ap
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
 end
 
@@ -2574,7 +2574,3 @@ function Yuumi:Draw()
 		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 end
-
-
-
-
