@@ -81,7 +81,7 @@ function Zeri:__init()
    
     Callback.Add("Draw", function() self:Draw() end)
     Callback.Add("Tick", function() self:onTickEvent() end)
-    qData = {Type = GGPrediction.SPELLTYPE_LINE, Range = 775, Speed = 2600, Delay = 0, Radius = 40, Collision = false}
+    qData = {Type = GGPrediction.SPELLTYPE_LINE, Range = 750, Speed = 2600, Delay = 0, Radius = 40, Collision = false}
     wData = {Type = GGPrediction.SPELLTYPE_LINE, Range= 1200, Speed = 2500, Delay = 0.55, Radius = 40, Collision = false}
     w2Data = {Type = GGPrediction.SPELLTYPE_LINE, Range= 2700, Speed = 2500, Delay = 0.55, Radius = 100, Collision = false}
     lastW = 0
