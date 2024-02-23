@@ -1301,7 +1301,8 @@ function Trundle:Combo()
             lastQ = GetTickCount()
         end
         if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) > 300 and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
-	local castPos = Vector(myHero.pos) + Vector(Vector(target.pos) - Vector(myHero.pos)):Normalized() * (myHero.pos:DistanceTo(target.pos) + 100)
+            local offset = IsFacing(target) and 100 or 200
+            local castPos = Vector(myHero.pos) + Vector(Vector(target.pos) - Vector(myHero.pos)):Normalized() * (myHero.pos:DistanceTo(target.pos) + offset)
             Control.CastSpell(HK_E, castPos)
             lastE = GetTickCount()
         end
