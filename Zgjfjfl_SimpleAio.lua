@@ -1300,11 +1300,13 @@ function Trundle:Combo()
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
         end
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) > 300 and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) > 300 then
             local offset = IsFacing(target) and 100 or 200
             local castPos = Vector(myHero.pos) + Vector(Vector(target.pos) - Vector(myHero.pos)):Normalized() * (myHero.pos:DistanceTo(target.pos) + offset)
-            Control.CastSpell(HK_E, castPos)
-            lastE = GetTickCount()
+            if myHero.pos:DistanceTo(castPos) <= self.eSpell.Range then
+                Control.CastSpell(HK_E, castPos)
+                lastE = GetTickCount()
+			end
         end
 
         if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 350 < GetTickCount() and (myHero.health/myHero.maxHealth <= self.Menu.Combo.RHP:Value() / 100) then
