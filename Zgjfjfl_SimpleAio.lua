@@ -418,6 +418,11 @@ end
 
 ------------------------------------
 
+Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Zgjfjfl "..myHero.charName})
+	-- Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
+
+------------------------------------
+
 class "Ornn"
         
 function Ornn:__init()	     
@@ -435,32 +440,31 @@ function Ornn:__init()
     self.qTimer = nil
   end
 
-function Ornn:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgOrnn", name = "Zgjfjfl Ornn"})
+function Ornn:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-		self.Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo(when spell ready)", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "EQ", name = "[E] to Q", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "EWall", name = "[E] to Wall", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "ED", name = "E KnockUp Range", min = 0, max = 360, value = 300, step = 10})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = false})
-        self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR1 when hit X enemies inrange", min = 1, max = 5, value = 2, step = 1})
-        self.Menu.Combo:MenuElement({id = "R2", name = "[R2]", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+		Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo(when spell ready)", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "EQ", name = "[E] to Q", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "EWall", name = "[E] to Wall", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "ED", name = "E KnockUp Range", min = 0, max = 360, value = 300, step = 10})
+        Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = false})
+        Menu.Combo:MenuElement({id = "Rcount", name = "UseR1 when hit X enemies inrange", min = 1, max = 5, value = 2, step = 1})
+        Menu.Combo:MenuElement({id = "R2", name = "[R2]", toggle = true, value = false})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Harass:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Harass:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 
 end
 
@@ -524,24 +528,24 @@ function Ornn:Combo()
     local target = TargetSelector:GetTarget(800)
     if target and isValid(target) and target.pos2D.onScreen then
 
-        local objpos = target.pos:Extended(myHero.pos, -self.Menu.Combo.ED:Value())
+        local objpos = target.pos:Extended(myHero.pos, -Menu.Combo.ED:Value())
 
         if (not MapPosition:intersectsWall(target.pos, objpos) or not isSpellReady(_E)) and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
-            if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+            if Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
                 castSpellHigh(self.qSpell, HK_Q, target)
                 lastQ = GetTickCount()
             end
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and myHero:GetSpellData(_R).name ~= "OrnnRCharge"then
+        if Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and myHero:GetSpellData(_R).name ~= "OrnnRCharge"then
             castSpellHigh(self.wSpell, HK_W, target)
             lastW = GetTickCount()
         end
 
-        if self.Menu.Combo.EQ:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
+        if Menu.Combo.EQ:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
             local castPos = nil
             for _, qPos in pairs(self.qPos) do
-                if not MapPosition:intersectsWall(myHero.pos, qPos.pos) and getEnemyCount(self.Menu.Combo.ED:Value(), qPos.pos) >= 1 and myHero.pos:DistanceTo(qPos.pos) <= self.eSpell.Range then
+                if not MapPosition:intersectsWall(myHero.pos, qPos.pos) and getEnemyCount(Menu.Combo.ED:Value(), qPos.pos) >= 1 and myHero.pos:DistanceTo(qPos.pos) <= self.eSpell.Range then
                     castPos = qPos.pos
                     break
                 end
@@ -553,7 +557,7 @@ function Ornn:Combo()
             end
         end
 
-        if self.Menu.Combo.EWall:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
+        if Menu.Combo.EWall:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
             if not MapPosition:intersectsWall(myHero.pos, target.pos) then
                 if MapPosition:intersectsWall(target.pos, objpos) then
                     local ECastPos = MapPosition:getIntersectionPoint3D(target.pos, objpos)
@@ -564,7 +568,7 @@ function Ornn:Combo()
                 end
             else
                 local ECastPos2 = MapPosition:getIntersectionPoint3D(myHero.pos, target.pos)
-                if target.pos:DistanceTo(ECastPos2) < self.Menu.Combo.ED:Value() and myHero.pos:DistanceTo(ECastPos2) < self.eSpell.Range then
+                if target.pos:DistanceTo(ECastPos2) < Menu.Combo.ED:Value() and myHero.pos:DistanceTo(ECastPos2) < self.eSpell.Range then
                     Control.CastSpell(HK_E, ECastPos2)
                     lastE = GetTickCount()
                 end
@@ -574,7 +578,7 @@ function Ornn:Combo()
 	
     local Rtarget = TargetSelector:GetTarget(2500)
     if Rtarget and isValid(Rtarget) and Rtarget.pos2D.onScreen then
-        if self.Menu.Combo.R2:Value() and isSpellReady(_R) and myHero:GetSpellData(_R).name == "OrnnRCharge" then
+        if Menu.Combo.R2:Value() and isSpellReady(_R) and myHero:GetSpellData(_R).name == "OrnnRCharge" then
             for i = GameParticleCount(), 1, -1 do
             local particle = GameParticle(i)
                 if particle and particle.name:find("Ornn") and particle.name:find("R_Wave_Mis") then
@@ -587,10 +591,10 @@ function Ornn:Combo()
         end
     end
 
-    if self.Menu.Combo.R:Value() and isSpellReady(_R) and myHero:GetSpellData(_R).name == "OrnnR" and lastR + 600 < GetTickCount() then
+    if Menu.Combo.R:Value() and isSpellReady(_R) and myHero:GetSpellData(_R).name == "OrnnR" and lastR + 600 < GetTickCount() then
         local enemies = ObjectManager:GetEnemyHeroes(self.r1Spell.Range)
         for i, enemy in ipairs(enemies) do
-            if getEnemyCount(170, enemy.pos) >= self.Menu.Combo.Rcount:Value() then
+            if getEnemyCount(170, enemy.pos) >= Menu.Combo.Rcount:Value() then
                 castSpellHigh(self.r1Spell, HK_R, enemy)
                 lastR = GetTickCount()
             end
@@ -604,7 +608,7 @@ function Ornn:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target and isValid(target) then
-        if self.Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+        if Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
             bestPosition, bestCount = getAOEMinion(self.wSpell.Range, self.wSpell.Radius)
             if bestCount > 0 then 
                 Control.CastSpell(HK_W, bestPosition)
@@ -621,11 +625,11 @@ function Ornn:Harass()
     local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) and target.pos2D.onScreen then
             
-        if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+        if Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
-        if self.Menu.Harass.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
+        if Menu.Harass.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
             castSpellHigh(self.wSpell, HK_W, target)
             lastW = GetTickCount()
         end
@@ -633,16 +637,16 @@ function Ornn:Harass()
 end
 
 function Ornn:Draw()
-   if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+   if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+    if Menu.Draw.R:Value() and isSpellReady(_R) then
             Draw.Circle(myHero.pos, self.r1Spell.Range, Draw.Color(192, 255, 255, 255))
     end
 end
@@ -662,37 +666,36 @@ function JarvanIV:__init()
     self.rSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 350, Range = 650, Speed = math.huge, Collision = false}
   end
 
-function JarvanIV:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgJarvanIV", name = "Zgjfjfl JarvanIV"})
+function JarvanIV:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "EQ", name = "[EQ]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "WHp", name = "use W when self HP %", value =  40, min=5, max = 100, step = 5})
-        self.Menu.Combo:MenuElement({id = "WCount", name = "or use W when can hit >= X enemies", value=2, min = 1, max = 5})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RHp", name = "use R when target HP %", value =  40, min=5, max = 100, step = 5})
-        self.Menu.Combo:MenuElement({id = "RCount", name = "or use R when can hit >= X enemies", value=2, min = 1, max = 5})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "EQ", name = "[EQ]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "WHp", name = "use W when self HP %", value =  40, min=5, max = 100, step = 5})
+        Menu.Combo:MenuElement({id = "WCount", name = "or use W when can hit >= X enemies", value=2, min = 1, max = 5})
+        Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RHp", name = "use R when target HP %", value =  40, min=5, max = 100, step = 5})
+        Menu.Combo:MenuElement({id = "RCount", name = "or use R when can hit >= X enemies", value=2, min = 1, max = 5})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
-        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.KS:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.KS:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-        self.Menu.Flee:MenuElement({id = "EQ", name = "[EQ] to mouse", toggle = true, value = true})
-        self.Menu.Flee:MenuElement({id = "W", name = "[W] slow enemy", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        Menu.Flee:MenuElement({id = "EQ", name = "[EQ] to mouse", toggle = true, value = true})
+        Menu.Flee:MenuElement({id = "W", name = "[W] slow enemy", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 end
 
 function JarvanIV:OnPreMovement(args)
@@ -742,7 +745,7 @@ function JarvanIV:Combo()
         if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
             local offset = IsFacing(target) and -100 or -200
             local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), offset)
-            if self.Menu.Combo.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
+            if Menu.Combo.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
                 if myHero.pos:DistanceTo(castPos) <= self.eSpell.Range then
                     Control.CastSpell(HK_E, castPos)
                     Orbwalker:SetMovement(false)
@@ -754,17 +757,17 @@ function JarvanIV:Combo()
             end
         end
 		        
-        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and not isSpellReady(_E) and myHero:GetSpellData(_E).currentCd > 2 and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+        if Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and not isSpellReady(_E) and myHero:GetSpellData(_E).currentCd > 2 and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and ((myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and myHero.health/myHero.maxHealth <= self.Menu.Combo.WHp:Value()/100) or getEnemyCount(self.wSpell.Range, myHero.pos) >= self.Menu.Combo.WCount:Value()) then
+        if Menu.Combo.W:Value() and isSpellReady(_W) and ((myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and myHero.health/myHero.maxHealth <= Menu.Combo.WHp:Value()/100) or getEnemyCount(self.wSpell.Range, myHero.pos) >= Menu.Combo.WCount:Value()) then
             Control.CastSpell(HK_W)
         end
 
-        if self.Menu.Combo.R:Value() and isSpellReady(_R) and not CastingQ and not isDash and not haveBuff(myHero, "JarvanIVCataclysm") then
-            if myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and (target.health/target.maxHealth <= self.Menu.Combo.RHp:Value()/100 or getEnemyCount(self.rSpell.Radius, target.pos) >= self.Menu.Combo.RCount:Value()) then
+        if Menu.Combo.R:Value() and isSpellReady(_R) and not CastingQ and not isDash and not haveBuff(myHero, "JarvanIVCataclysm") then
+            if myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and (target.health/target.maxHealth <= Menu.Combo.RHp:Value()/100 or getEnemyCount(self.rSpell.Radius, target.pos) >= Menu.Combo.RCount:Value()) then
                 Control.CastSpell(HK_R, target)
             end
         end
@@ -778,7 +781,7 @@ function JarvanIV:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target and isValid(target) then
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() then
+        if Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() then
             bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
             if bestCount > 0 then 
                 Control.CastSpell(HK_Q, bestPosition)
@@ -795,7 +798,7 @@ function JarvanIV:Harass()
 
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then       
-        if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+        if Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
@@ -808,20 +811,20 @@ function JarvanIV:KillSteal()
 
     local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
-        if isSpellReady(_Q) and lastQ + 500 < GetTickCount() and self.Menu.KS.Q:Value() then
+        if isSpellReady(_Q) and lastQ + 500 < GetTickCount() and Menu.KS.Q:Value() then
             if self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
                 castSpellHigh(self.qSpell, HK_Q, target)
                 lastQ = GetTickCount()
             end	
         end
 
-        if isSpellReady(_E) and self.Menu.KS.E:Value() then
+        if isSpellReady(_E) and Menu.KS.E:Value() then
             if self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
                 castSpellHigh(self.eSpell, HK_E, target)
             end	
         end
 
-        if isSpellReady(_R) and self.Menu.KS.R:Value() and not haveBuff(myHero, "JarvanIVCataclysm") and not CastingQ and not isDash then
+        if isSpellReady(_R) and Menu.KS.R:Value() and not haveBuff(myHero, "JarvanIVCataclysm") and not CastingQ and not isDash then
             if self:getrDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range then
                 Control.CastSpell(HK_R, target)
             end	
@@ -855,7 +858,7 @@ function JarvanIV:getrDmg(target)
 end
 
 function JarvanIV:Flee()
-    if self.Menu.Flee.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
+    if Menu.Flee.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
         local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.eSpell.Range
         Control.CastSpell(HK_E, pos)
         DelayAction(function() Control.CastSpell(HK_Q, pos) end, 0.1)
@@ -863,7 +866,7 @@ function JarvanIV:Flee()
 
     local target = TargetSelector:GetTarget(self.wSpell.Range)
     if target and isValid(target) then
-        if isSpellReady(_W) and not isSpellReady(_Q) and self.Menu.Flee.W:Value() then
+        if isSpellReady(_W) and not isSpellReady(_Q) and Menu.Flee.W:Value() then
             if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
                 Control.CastSpell(HK_W)
             end	
@@ -872,10 +875,10 @@ function JarvanIV:Flee()
 end
 
 function JarvanIV:Draw()
-   if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+   if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 end
@@ -895,36 +898,35 @@ function Poppy:__init()
     self.r2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 100, Range = 1200, Speed = 2500, Collision = false}
   end
 
-function Poppy:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgPoppy", name = "Zgjfjfl Poppy"})
+function Poppy:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "ED", name = "[E] X distance enemy from wall", min = 50, max = 400, value = 400, step = 50})
-        self.Menu.Combo:MenuElement({id = "RF", name = "[R] Fast", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RFHP", name = "[R] Fastcast on target HP %", value = 30, min = 0, max = 100, step = 5})
-        self.Menu.Combo:MenuElement({id = "RM", name = "[R] Slowcast Semi-Manual Key", key = string.byte("T")})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "ED", name = "[E] X distance enemy from wall", min = 50, max = 400, value = 400, step = 50})
+        Menu.Combo:MenuElement({id = "RF", name = "[R] Fast", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RFHP", name = "[R] Fastcast on target HP %", value = 30, min = 0, max = 100, step = 5})
+        Menu.Combo:MenuElement({id = "RM", name = "[R] Slowcast Semi-Manual Key", key = string.byte("T")})
 		
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 		
-    self.Menu:MenuElement({type = MENU, id = "Antidash", name = "W Setting "})
-        self.Menu.Antidash:MenuElement({id = "W", name = "[W] Anti-Dash", toggle = true, value = true})
-        self.Menu.Antidash:MenuElement({type = MENU, id = "Wtarget", name = "Use On"})
+    Menu:MenuElement({type = MENU, id = "Antidash", name = "W Setting "})
+        Menu.Antidash:MenuElement({id = "W", name = "[W] Anti-Dash", toggle = true, value = true})
+        Menu.Antidash:MenuElement({type = MENU, id = "Wtarget", name = "Use On"})
             DelayAction(function()
                 for i, Hero in pairs(getEnemyHeroes()) do
-                    self.Menu.Antidash.Wtarget:MenuElement({id = Hero.charName, name = Hero.charName, value = false})		
+                    Menu.Antidash.Wtarget:MenuElement({id = Hero.charName, name = Hero.charName, value = false})		
                 end		
             end,0.2)
 	
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 end
 
 function Poppy:onTick()
@@ -947,10 +949,10 @@ function Poppy:onTick()
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
         self:LaneClear()
     end
-    if self.Menu.Antidash.W:Value() then
+    if Menu.Antidash.W:Value() then
         self:AutoW()
     end
-    if self.Menu.Combo.RM:Value() then
+    if Menu.Combo.RM:Value() then
         self:RSemiManual()
     end
 
@@ -963,9 +965,9 @@ function Poppy:Combo()
     local target = TargetSelector:GetTarget(500)
     if target and isValid(target) then
 	
-	for dis = 20, self.Menu.Combo.ED:Value(), 20 do
+	for dis = 20, Menu.Combo.ED:Value(), 20 do
             local endPos = target.pos:Extended(myHero.pos, -dis)
-            if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
+            if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
                 if MapPosition:inWall(endPos) then
                     Control.CastSpell(HK_E, target)
                     lastE = GetTickCount()
@@ -973,12 +975,12 @@ function Poppy:Combo()
             end
         end
 				        
-        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+        if Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
 		
-        if self.Menu.Combo.RF:Value() and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and target.health/target.maxHealth <= self.Menu.Combo.RFHP:Value()/100 then
+        if Menu.Combo.RF:Value() and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and target.health/target.maxHealth <= Menu.Combo.RFHP:Value()/100 then
             Control.KeyDown(HK_R)
             DelayAction(function()
                 castSpellHigh(self.rSpell, HK_R, target)
@@ -994,7 +996,7 @@ function Poppy:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target and isValid(target) then
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
+        if Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
             bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
             if bestCount > 0 then 
                 Control.CastSpell(HK_Q, bestPosition)
@@ -1011,7 +1013,7 @@ function Poppy:Harass()
     local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
             
-        if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+        if Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
@@ -1023,7 +1025,7 @@ function Poppy:AutoW()
     local enemies = ObjectManager:GetEnemyHeroes(1000)
     for i, enemy in ipairs(enemies) do
         if isValid(enemy) then
-            local blockobj = self.Menu.Antidash.Wtarget[enemy.charName] and self.Menu.Antidash.Wtarget[enemy.charName]:Value()
+            local blockobj = Menu.Antidash.Wtarget[enemy.charName] and Menu.Antidash.Wtarget[enemy.charName]:Value()
             if blockobj and enemy.pathing.isDashing then
                 local vct = Vector(enemy.pathing.endPos.x, enemy.pathing.endPos.y, enemy.pathing.endPos.z)
                 if vct:DistanceTo(myHero.pos) < 400 then
@@ -1051,13 +1053,13 @@ function Poppy:RSemiManual()
 end
 
 function Poppy:Draw()
-   if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+   if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+    if Menu.Draw.R:Value() and isSpellReady(_R) then
             Draw.Circle(myHero.pos, self.r2Spell.Range, Draw.Color(192, 255, 255, 255))
     end
 
@@ -1076,32 +1078,31 @@ function Shyvana:__init()
     self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 160, Range = 850, Speed = 700, Collision = false}
 end
 
-function Shyvana:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgShyvana", name = "Zgjfjfl Shyvana"})
+function Shyvana:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RHP", name = "[R] Use on target HP %", value = 50, min=0, max = 100 })
-        self.Menu.Combo:MenuElement({id = "RC", name = "[R] Use X enemies in range", value = 1, min = 1, max = 5})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RHP", name = "[R] Use on target HP %", value = 50, min=0, max = 100 })
+        Menu.Combo:MenuElement({id = "RC", name = "[R] Use X enemies in range", value = 1, min = 1, max = 5})
 		
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-        self.Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Flee:MenuElement({id = "R", name = "[R] to mouse", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Flee:MenuElement({id = "R", name = "[R] to mouse", toggle = true, value = true})
 	
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 end
 
 function Shyvana:onTick()
@@ -1130,30 +1131,30 @@ function Shyvana:Combo()
 
     local target = TargetSelector:GetTarget(1300)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < 400 and self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount()then
+        if myHero.pos:DistanceTo(target.pos) < 400 and Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount()then
             Control.CastSpell(HK_W)
             lastW = GetTickCount()
         end
-        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
             castSpellHigh(self.eSpell, HK_E, target)
             lastE = GetTickCount()
         end
-        if myHero.pos:DistanceTo(target.pos) <= 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount()then
+        if myHero.pos:DistanceTo(target.pos) <= 300 and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount()then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
         end
 
         local DragonForm = doesMyChampionHaveBuff("ShyvanaTransform")
         if DragonForm then
-            if myHero.pos:DistanceTo(target.pos) < self.e2Spell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 500 < GetTickCount() then
+            if myHero.pos:DistanceTo(target.pos) < self.e2Spell.Range and Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 500 < GetTickCount() then
                 castSpellHigh(self.e2Spell, HK_E, target)
                 lastE = GetTickCount()
             end
         end
 
-        if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 350 < GetTickCount() and (target.health/target.maxHealth <= self.Menu.Combo.RHP:Value() / 100) then
+        if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 350 < GetTickCount() and (target.health/target.maxHealth <= Menu.Combo.RHP:Value() / 100) then
         local numEnemies = getEnemyHeroesWithinDistance(self.rSpell.Range)
-            if #numEnemies >= self.Menu.Combo.RC:Value() then
+            if #numEnemies >= Menu.Combo.RC:Value() then
                 castSpellHigh(self.rSpell, HK_R, target)
                 lastR = GetTickCount()
             end
@@ -1167,15 +1168,15 @@ function Shyvana:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < 400 and self.Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < 400 and Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
             Control.CastSpell(HK_W)
             lastW = GetTickCount()
         end
-        if myHero.pos:DistanceTo(target.pos) <= 300 and self.Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) <= 300 and Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
         end
-        if self.Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
             bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
             if bestCount > 0 then 
                 Control.CastSpell(HK_E, bestPosition)
@@ -1194,13 +1195,13 @@ function Shyvana:Harass()
 
         local DragonForm = doesMyChampionHaveBuff("ShyvanaTransform")
         if DragonForm then
-            if myHero.pos:DistanceTo(target.pos) < self.e2Spell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 500 < GetTickCount() then
+            if myHero.pos:DistanceTo(target.pos) < self.e2Spell.Range and Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 500 < GetTickCount() then
                 castSpellHigh(self.e2Spell, HK_E, target)
                 lastE = GetTickCount()
             end
         end
             
-        if self.Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+        if Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
             castSpellHigh(self.eSpell, HK_E, target)
             lastE = GetTickCount()
         end
@@ -1208,19 +1209,19 @@ function Shyvana:Harass()
     end
 end
 function Shyvana:Flee()
-    if self.Menu.Flee.W:Value() and isSpellReady(_W) then
+    if Menu.Flee.W:Value() and isSpellReady(_W) then
         Control.CastSpell(HK_W)
     end
-    if self.Menu.Flee.R:Value() and isSpellReady(_R) then
+    if Menu.Flee.R:Value() and isSpellReady(_R) then
         Control.CastSpell(HK_R, mousePos)
     end
 end
 
 function Shyvana:Draw()
-    if self.Menu.Draw.E:Value() and isSpellReady(_E)then
+    if Menu.Draw.E:Value() and isSpellReady(_E)then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R)then
+    if Menu.Draw.R:Value() and isSpellReady(_R)then
             Draw.Circle(myHero.pos, self.rSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 
@@ -1239,31 +1240,30 @@ function Trundle:__init()
     self.rSpell = { Range = 650 }
 end
 
-function Trundle:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgTrundle", name = "Zgjfjfl Trundle"})
+function Trundle:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RHP", name = "[R] Use when self HP %", value = 60, min=0, max = 100, step=5})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RHP", name = "[R] Use when self HP %", value = 60, min=0, max = 100, step=5})
 		
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-        self.Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Flee:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Flee:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 	
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 end
 
 function Trundle:onTick()
@@ -1292,24 +1292,24 @@ function Trundle:Combo()
 
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
             Control.CastSpell(HK_W, target)
             lastW = GetTickCount()
         end
-        if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < 300 and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
         end
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) > 300 then
+        if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) > 300 then
             local offset = IsFacing(target) and 100 or 200
             local castPos = Vector(myHero.pos) + Vector(Vector(target.pos) - Vector(myHero.pos)):Normalized() * (myHero.pos:DistanceTo(target.pos) + offset)
             if myHero.pos:DistanceTo(castPos) <= self.eSpell.Range then
                 Control.CastSpell(HK_E, castPos)
                 lastE = GetTickCount()
-			end
+            end
         end
 
-        if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 350 < GetTickCount() and (myHero.health/myHero.maxHealth <= self.Menu.Combo.RHP:Value() / 100) then
+        if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 350 < GetTickCount() and (myHero.health/myHero.maxHealth <= Menu.Combo.RHP:Value() / 100) then
             Control.CastSpell(HK_R, target)
             lastR = GetTickCount()
         end
@@ -1322,11 +1322,11 @@ function Trundle:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount()then
+        if myHero.pos:DistanceTo(target.pos) < 300 and Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount()then
             Control.CastSpell(HK_W, myHero)
             lastW = GetTickCount()
         end
-        if myHero.pos:DistanceTo(target.pos) <= 300 and self.Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount()then
+        if myHero.pos:DistanceTo(target.pos) <= 300 and Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount()then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
         end
@@ -1341,7 +1341,7 @@ function Trundle:Harass()
     local target = TargetSelector:GetTarget(500)
     if target and isValid(target) then
 
-        if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= 300 then
+        if Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= 300 then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
         end
@@ -1349,13 +1349,13 @@ function Trundle:Harass()
     end
 end
 function Trundle:Flee()   
-    if self.Menu.Flee.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+    if Menu.Flee.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
         Control.CastSpell(HK_W, mousePos)
         lastW = GetTickCount()
     end
     local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
-        if self.Menu.Flee.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+        if Menu.Flee.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
 	local castPos = Vector(myHero.pos) + Vector(Vector(target.pos) - Vector(myHero.pos)):Normalized() * (myHero.pos:DistanceTo(target.pos) - 100)
             Control.CastSpell(HK_E, castPos)
             lastE = GetTickCount()
@@ -1364,13 +1364,13 @@ function Trundle:Flee()
 end
 
 function Trundle:Draw()   
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+    if Menu.Draw.R:Value() and isSpellReady(_R) then
             Draw.Circle(myHero.pos, self.rSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 
@@ -1388,27 +1388,26 @@ function Rakan:__init()
     self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 250, Range = 725, Speed = 1700, Collision = false}
 end
 
-function Rakan:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgRakan", name = "Zgjfjfl Rakan"})
+function Rakan:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E2", name = "[E] on allies taking damage", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R] when enemies>=2 within Wrange", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E2", name = "[E] on allies taking damage", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "R", name = "[R] when enemies>=2 within Wrange", toggle = true, value = true})
 		
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-        self.Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Flee:MenuElement({id = "E", name = "[E] to Ally", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Flee:MenuElement({id = "E", name = "[E] to Ally", toggle = true, value = true})
 	
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
 end
 
 function Rakan:onTick()
@@ -1435,23 +1434,23 @@ function Rakan:Combo()
 
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
              lastQ = GetTickCount()
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
+        if Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
              castSpellHigh(self.wSpell, HK_W, target)
              lastW = GetTickCount()
         end
     end
 
-    if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 600 < GetTickCount() and getEnemyCount(self.wSpell.Range, myHero.pos) >= 2 then
+    if Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 600 < GetTickCount() and getEnemyCount(self.wSpell.Range, myHero.pos) >= 2 then
          Control.CastSpell(HK_R)
          lastR = GetTickCount()
     end
 
-    if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
+    if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
         local allies = ObjectManager:GetAllyHeroes(1000)
         for i, ally in ipairs(allies) do
             if not ally.isMe then
@@ -1465,7 +1464,7 @@ function Rakan:Combo()
         end
     end
 
-    if self.Menu.Combo.E2:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
+    if Menu.Combo.E2:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
         local enemies = ObjectManager:GetEnemyHeroes(2500)
         local allies = ObjectManager:GetAllyHeroes(1000)
         for i, enemy in ipairs(enemies) do
@@ -1490,7 +1489,7 @@ function Rakan:Harass()
     local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
 
-        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
@@ -1524,13 +1523,13 @@ function Rakan:attackedcheck(enemy, ally)
 end
 
 function Rakan:Flee()   
-    if self.Menu.Flee.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+    if Menu.Flee.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
         local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.wSpell.Range
             Control.CastSpell(HK_W, pos)
             lastW = GetTickCount()
     end
 
-    if self.Menu.Flee.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and not isSpellReady(_W) then
+    if Menu.Flee.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and not isSpellReady(_W) then
         for i = 1, GameHeroCount() do
             local hero = GameHero(i)
             if hero and not hero.dead and hero.isAlly and not hero.isMe then
@@ -1546,13 +1545,13 @@ function Rakan:Flee()
 end
 
 function Rakan:Draw()
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 
@@ -1571,32 +1570,31 @@ function Belveth:__init()
     self.eSpell = {Range = 500}
 end
 
-function Belveth:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgBelveth", name = "Zgjfjfl Belveth"})
+function Belveth:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "EHP", name = "[E] Use when self HP %", value = 30, min=0, max = 100 })
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "EHP", name = "[E] Use when self HP %", value = 30, min=0, max = 100 })
 		
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
-        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-        self.Menu.Flee:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        Menu.Flee:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 	
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
 end
 
 function Belveth:onTick()
@@ -1639,17 +1637,17 @@ function Belveth:Combo()
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
     local castingE = doesMyChampionHaveBuff("BelvethE")
-        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and not castingE then
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and not castingE then
              castSpellHigh(self.qSpell, HK_Q, target)
              lastQ = GetTickCount()
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 600 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and not castingE then
+        if Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 600 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and not castingE then
              castSpellHigh(self.wSpell, HK_W, target)
              lastW = GetTickCount()
         end
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and getEnemyCount(self.eSpell.Range, myHero.pos) > 0 and myHero.health/myHero.maxHealth < self.Menu.Combo.EHP:Value()/100 then
+        if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and getEnemyCount(self.eSpell.Range, myHero.pos) > 0 and myHero.health/myHero.maxHealth < Menu.Combo.EHP:Value()/100 then
              Control.CastSpell(HK_E)
              lastE = GetTickCount()
         end
@@ -1663,7 +1661,7 @@ function Belveth:Harass()
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
 
-        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and self.Menu.Harass.W:Value() and isSpellReady(_W) and lastW + 600 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and Menu.Harass.W:Value() and isSpellReady(_W) and lastW + 600 < GetTickCount() then
              castSpellHigh(self.wSpell, HK_W, target)
              lastW = GetTickCount()
         end
@@ -1676,14 +1674,14 @@ function Belveth:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target and isValid(target) then
-        if self.Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 600 < GetTickCount() then
+        if Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 600 < GetTickCount() then
             bestPosition, bestCount = getAOEMinion(self.wSpell.Range, self.wSpell.Radius)
             if bestCount > 0 then 
                 Control.CastSpell(HK_W, bestPosition)
                 lastW = GetTickCount()
             end
         end
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+        if Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
             Control.CastSpell(HK_Q, target)
             lastQ = GetTickCount()
         end
@@ -1691,7 +1689,7 @@ function Belveth:LaneClear()
 end
 
 function Belveth:Flee()   
-    if self.Menu.Flee.Q:Value() and isSpellReady(_Q) then
+    if Menu.Flee.Q:Value() and isSpellReady(_Q) then
         Control.CastSpell(HK_Q, mousePos)
     end
 end
@@ -1702,7 +1700,7 @@ function Belveth:KillSteal()
     local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
 
-        if isSpellReady(_E) and lastE + 250 < GetTickCount() and self.Menu.KS.E:Value() then
+        if isSpellReady(_E) and lastE + 250 < GetTickCount() and Menu.KS.E:Value() then
             if self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and not doesMyChampionHaveBuff("BelvethE") then
                 Control.CastSpell(HK_E)
                 lastE = GetTickCount()
@@ -1723,13 +1721,13 @@ end
 
 function Belveth:Draw()
 
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 
@@ -1747,35 +1745,34 @@ function Nasus:__init()
     self.eSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 400, Range = 650, Speed = math.huge, Collision =false}
 end
 
-function Nasus:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgNasus", name = "Zgjfjfl Nasus"})
+function Nasus:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R] ", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RHP", name = "[R] Use when self HP %", value=30, min=10, max=100})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "R", name = "[R] ", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RHP", name = "[R] Use when self HP %", value=30, min=10, max=100})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "EH", name = "E hits x minions", value = 3, min = 1, max = 6})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "EH", name = "E hits x minions", value = 3, min = 1, max = 6})
 
-    self.Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
-        self.Menu.LastHit:MenuElement({id = "Q", name = "Q", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
+        Menu.LastHit:MenuElement({id = "Q", name = "Q", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
-        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 end
 
 function Nasus:onTick()
@@ -1784,7 +1781,7 @@ function Nasus:onTick()
         return
     end
     local numEnemies = getEnemyHeroesWithinDistance(700)
-    if #numEnemies >= 1 and myHero.health/myHero.maxHealth <= self.Menu.Combo.RHP:Value()/100 and self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 300 < GetTickCount() then
+    if #numEnemies >= 1 and myHero.health/myHero.maxHealth <= Menu.Combo.RHP:Value()/100 and Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 300 < GetTickCount() then
         Control.CastSpell(HK_R)
         lastR = GetTickCount()
    end
@@ -1811,17 +1808,17 @@ function Nasus:Combo()
 
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < 300 and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
              Control.CastSpell(HK_Q)
              lastQ = GetTickCount()
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+        if Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
              Control.CastSpell(HK_W, target)
              lastW = GetTickCount()
         end
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+        if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
              castSpellHigh(self.eSpell, HK_E, target)
              lastE = GetTickCount()
         end
@@ -1835,12 +1832,12 @@ function Nasus:Harass()
 
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < 300 and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < 300 and Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
              Control.CastSpell(HK_Q)
              lastQ = GetTickCount()
         end
 
-        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
              castSpellHigh(self.eSpell, HK_E, target)
              lastE = GetTickCount()
         end
@@ -1853,14 +1850,14 @@ function Nasus:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target and isValid(target) then
-        if self.Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
             bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
-            if bestCount >= self.Menu.Clear.EH:Value() then 
+            if bestCount >= Menu.Clear.EH:Value() then 
                 Control.CastSpell(HK_E, bestPosition)
                 lastE = GetTickCount()
             end
         end
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < 300 and self:getqDmg(target) >= target.health then
+        if Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < 300 and self:getqDmg(target) >= target.health then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
             Control.Attack(target)
@@ -1875,7 +1872,7 @@ function Nasus:LastHit()
     end
     if target and isValid(target) then
     
-        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < 300 and self:getqDmg(target) >= target.health then
+        if Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < 300 and self:getqDmg(target) >= target.health then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
             Control.Attack(target)
@@ -1889,12 +1886,12 @@ function Nasus:KillSteal()
     local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
 
-        if isSpellReady(_E) and lastE + 350 < GetTickCount() and self.Menu.KS.E:Value() and self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+        if isSpellReady(_E) and lastE + 350 < GetTickCount() and Menu.KS.E:Value() and self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
             Control.CastSpell(HK_E, target)
             lastE = GetTickCount()
         end
 
-        if isSpellReady(_Q) and lastQ + 250 < GetTickCount() and self.Menu.KS.Q:Value() and self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < 300 then
+        if isSpellReady(_Q) and lastQ + 250 < GetTickCount() and Menu.KS.Q:Value() and self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < 300 then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
             Control.Attack(target)
@@ -1920,10 +1917,10 @@ end
 
 
 function Nasus:Draw()
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 end
@@ -1939,18 +1936,17 @@ function Singed:__init()
     self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 265, Range = 1000, Speed = 700, Collision =false}
 end
 
-function Singed:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgSinged", name = "Zgjfjfl Singed"})
+function Singed:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R] ", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR when X enemies inWrange ", value = 2, min = 1, max = 5, step = 1})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "R", name = "[R] ", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Rcount", name = "UseR when X enemies inWrange ", value = 2, min = 1, max = 5, step = 1})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
 
 end
 
@@ -1978,22 +1974,22 @@ function Singed:Combo()
 
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
-        if self.Menu.Combo.Q:Value() and myHero.pos:DistanceTo(target.pos) <= 500 then
+        if Menu.Combo.Q:Value() and myHero.pos:DistanceTo(target.pos) <= 500 then
             if isSpellReady(_Q) and lastQ +250 < GetTickCount() and myHero:GetSpellData(_Q).toggleState == 1 then
                 Control.CastSpell(HK_Q)
                 lastQ = GetTickCount()
             end
         end
-        if self.Menu.Combo.W:Value() and myHero.pos:DistanceTo(target.pos) < 1000 then
+        if Menu.Combo.W:Value() and myHero.pos:DistanceTo(target.pos) < 1000 then
             self:CastW(target)
         end
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE +350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= 300 then
+        if Menu.Combo.E:Value() and isSpellReady(_E) and lastE +350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= 300 then
             Control.CastSpell(HK_E, target)
             lastE = GetTickCount()
         end
     end
-    if #enemies >= self.Menu.Combo.Rcount:Value() then
-        if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR +250 < GetTickCount() then
+    if #enemies >= Menu.Combo.Rcount:Value() then
+        if Menu.Combo.R:Value() and isSpellReady(_R) and lastR +250 < GetTickCount() then
             Control.CastSpell(HK_R)
             lastR = GetTickCount()
         end
@@ -2014,7 +2010,7 @@ function Singed:CastW(target)
 end
 
 function Singed:Draw()
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
     end
 end
@@ -2029,26 +2025,25 @@ function Udyr:__init()
 
   end
 
-function Udyr:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgUdyr", name = "Zgjfjfl Udyr"})
+function Udyr:LoadMenu()
 
-    self.Menu:MenuElement({type = MENU, id = "Style", name = "Playstyle Set"})
-        self.Menu.Style:MenuElement({id = "MainR", name = "Main R Playstyle", value = true})
-        self.Menu.Style:MenuElement({id = "MainQ", name = "Main Q Playstyle", value = false})
+    Menu:MenuElement({type = MENU, id = "Style", name = "Playstyle Set"})
+        Menu.Style:MenuElement({id = "MainR", name = "Main R Playstyle", value = true})
+        Menu.Style:MenuElement({id = "MainQ", name = "Main Q Playstyle", value = false})
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Whp", name = "[W] use when X% hp ", value = 50, min = 0, max = 100})
-        self.Menu.Combo:MenuElement({id = "W2hp", name = "use AwakenedW when self X% hp ", value = 30, min = 0, max = 100})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Whp", name = "[W] use when X% hp ", value = 50, min = 0, max = 100})
+        Menu.Combo:MenuElement({id = "W2hp", name = "use AwakenedW when self X% hp ", value = 30, min = 0, max = 100})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Jungle Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "Whp", name = "[W] use when self X% hp", value = 30, min = 0, max = 100})
-        self.Menu.Clear:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Jungle Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "Whp", name = "[W] use when self X% hp", value = 30, min = 0, max = 100})
+        Menu.Clear:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
 
 end
 
@@ -2079,38 +2074,38 @@ function Udyr:Combo()
     local R1 = getBuffData(myHero, "UdyrRActivation")
     local haspassiveAA = doesMyChampionHaveBuff("UdyrPAttackReady")
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and not hasAwakenedE and not hasAwakenedR then
+        if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and not hasAwakenedE and not hasAwakenedR then
             Control.CastSpell(HK_E)
             lastE = GetTickCount()
         end
 
-        if self.Menu.Style.MainR:Value() then
-            if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() and (not isSpellReady(_E) or hasAwakenedE or hasAwakenedR) and R1.duration < 1.5 and myHero.pos:DistanceTo(target.pos) < 450 then
+        if Menu.Style.MainR:Value() then
+            if Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() and (not isSpellReady(_E) or hasAwakenedE or hasAwakenedR) and R1.duration < 1.5 and myHero.pos:DistanceTo(target.pos) < 450 then
                 Control.CastSpell(HK_R)
                 lastR = GetTickCount()
             end
-            if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_R) or not hasAwakenedR) and not hasAwakenedQ and myHero.pos:DistanceTo(target.pos) < 300 then
+            if Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_R) or not hasAwakenedR) and not hasAwakenedQ and myHero.pos:DistanceTo(target.pos) < 300 then
                 Control.CastSpell(HK_Q)
                 lastQ = GetTickCount()
             end
         end
 
-        if self.Menu.Style.MainQ:Value() then
-            if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and (not isSpellReady(_E) or hasAwakenedE or (hasAwakenedQ and not haspassiveAA)) and myHero.pos:DistanceTo(target.pos) < 300 then
+        if Menu.Style.MainQ:Value() then
+            if Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and (not isSpellReady(_E) or hasAwakenedE or (hasAwakenedQ and not haspassiveAA)) and myHero.pos:DistanceTo(target.pos) < 300 then
                 Control.CastSpell(HK_Q)
                 lastQ = GetTickCount()
             end
-            if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_Q) or not hasAwakenedQ) and not hasAwakenedR and myHero.pos:DistanceTo(target.pos) < 450 then
+            if Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() and (not isSpellReady(_E) or hasAwakenedE) and (not isSpellReady(_Q) or not hasAwakenedQ) and not hasAwakenedR and myHero.pos:DistanceTo(target.pos) < 450 then
                 Control.CastSpell(HK_R)
                 lastR = GetTickCount()
             end
         end
 
-        if myHero.health/myHero.maxHealth <= self.Menu.Combo.Whp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and getEnemyCount(600, myHero.pos) >= 1 then
+        if myHero.health/myHero.maxHealth <= Menu.Combo.Whp:Value()/100 and Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and getEnemyCount(600, myHero.pos) >= 1 then
             Control.CastSpell(HK_W)
             lastW = GetTickCount()
         end
-        if myHero.health/myHero.maxHealth <= self.Menu.Combo.W2hp:Value()/100 and self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and hasAwakenedW and getEnemyCount(600, myHero.pos) >= 1 then
+        if myHero.health/myHero.maxHealth <= Menu.Combo.W2hp:Value()/100 and Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and hasAwakenedW and getEnemyCount(600, myHero.pos) >= 1 then
             Control.CastSpell(HK_W)
             lastW = GetTickCount()
         end
@@ -2125,7 +2120,7 @@ function Udyr:JungleClear()
     local R1 = getBuffData(myHero, "UdyrRActivation")
     local target = HealthPrediction:GetJungleTarget()
     if target and not haspassiveAA then
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and c == 1 then
+        if Menu.Clear.Q:Value() and isSpellReady(_Q) and c == 1 then
             Control.CastSpell(HK_Q)
                 if hasAwakenedQ then
                     Control.CastSpell(HK_Q)
@@ -2133,7 +2128,7 @@ function Udyr:JungleClear()
         elseif not hasAwakenedR and isSpellReady(_R) and not isSpellReady(_Q) then
                 Control.CastSpell(HK_R)
         end
-        if self.Menu.Clear.R:Value() and isSpellReady(_R) and c > 1 then
+        if Menu.Clear.R:Value() and isSpellReady(_R) and c > 1 then
             Control.CastSpell(HK_R)
                 if hasAwakenedR and R1.duration < 0.5 then
                     Control.CastSpell(HK_R)
@@ -2141,7 +2136,7 @@ function Udyr:JungleClear()
         elseif not hasAwakenedQ and isSpellReady(_Q) and not isSpellReady(_R) then
                 Control.CastSpell(HK_Q)
         end
-        if myHero.health/myHero.maxHealth <= self.Menu.Clear.Whp:Value()/100 and self.Menu.Clear.W:Value() and isSpellReady(_W) then
+        if myHero.health/myHero.maxHealth <= Menu.Clear.Whp:Value()/100 and Menu.Clear.W:Value() and isSpellReady(_W) then
             Control.CastSpell(HK_W)
         end
     end
@@ -2161,40 +2156,39 @@ function Galio:__init()
     self.wSpell = {Range = 480}
 end
 
-function Galio:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgGalio", name = "Zgjfjfl Galio"})
+function Galio:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Wtime", name = "W Channel Time(s)", value = 2, min = 0 , max = 2 , step = 0.25})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Wtime", name = "W Channel Time(s)", value = 2, min = 0 , max = 2 , step = 0.25})
+        Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
 		
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Auto", name = "Auto W"})
-        self.Menu.Auto:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Auto:MenuElement({id = "Wtime", name = "W Channel Time(s)", value = 2, min = 0 , max = 2 , step = 0.25})
-        self.Menu.Auto:MenuElement({id = "WHP", name = "Auto W self HP%&enemies inwrange", value = 30, min=0, max = 100 })
-        self.Menu.Auto:MenuElement({type = MENU, id = "WB", name = "Auto W If Enemy dash on ME"})
+    Menu:MenuElement({type = MENU, id = "Auto", name = "Auto W"})
+        Menu.Auto:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Auto:MenuElement({id = "Wtime", name = "W Channel Time(s)", value = 2, min = 0 , max = 2 , step = 0.25})
+        Menu.Auto:MenuElement({id = "WHP", name = "Auto W self HP%&enemies inwrange", value = 30, min=0, max = 100 })
+        Menu.Auto:MenuElement({type = MENU, id = "WB", name = "Auto W If Enemy dash on ME"})
             DelayAction(function()
                 for i, Hero in pairs(getEnemyHeroes()) do
-                    self.Menu.Auto.WB:MenuElement({id = Hero.charName, name =Hero.charName, value = false})		
+                    Menu.Auto.WB:MenuElement({id = Hero.charName, name =Hero.charName, value = false})		
                 end		
             end,0.2)
 
-    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
-        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-        self.Menu.Flee:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        Menu.Flee:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 	
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range in minimap", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "[R] Range in minimap", toggle = true, value = true})
 end
 
 function Galio:onTick()
@@ -2228,7 +2222,7 @@ function Galio:Combo()
 
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
              lastQ = GetTickCount()
         end
@@ -2238,15 +2232,15 @@ function Galio:Combo()
             if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
             local lineE = LineSegment(myHero.pos, pred.CastPosition)
                 if not MapPosition:intersectsWall(lineE) then
-                    if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 500 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
+                    if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 500 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
                          castSpellHigh(self.eSpell, HK_E, target)
                          lastE = GetTickCount()
                     end
                 end
             end
 
-        if self.Menu.Combo.W:Value() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
-             self:CastW(self.Menu.Combo.Wtime:Value())
+        if Menu.Combo.W:Value() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+             self:CastW(Menu.Combo.Wtime:Value())
         end
     end
 end	
@@ -2258,7 +2252,7 @@ function Galio:Harass()
     local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
 
-        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
              lastQ = GetTickCount()
         end
@@ -2267,18 +2261,18 @@ end
 
 function Galio:AutoW()
 
-    if self.Menu.Auto.W:Value() and getEnemyCount(self.wSpell.Range, myHero.pos) > 0 and myHero.health/myHero.maxHealth < self.Menu.Auto.WHP:Value()/100 then
-        self:CastW(self.Menu.Auto.Wtime:Value())
+    if Menu.Auto.W:Value() and getEnemyCount(self.wSpell.Range, myHero.pos) > 0 and myHero.health/myHero.maxHealth < Menu.Auto.WHP:Value()/100 then
+        self:CastW(Menu.Auto.Wtime:Value())
     end
 
     local enemies = ObjectManager:GetEnemyHeroes(1000)
     for i, enemy in ipairs(enemies) do
         if isValid(enemy) then
-            local obj = self.Menu.Auto.WB[enemy.charName] and self.Menu.Auto.WB[enemy.charName]:Value()
+            local obj = Menu.Auto.WB[enemy.charName] and Menu.Auto.WB[enemy.charName]:Value()
             if obj and enemy.pathing.isDashing then
                 local vct = Vector(enemy.pathing.endPos.x, enemy.pathing.endPos.y, enemy.pathing.endPos.z)
                 if vct:DistanceTo(myHero.pos) < self.wSpell.Range then
-                    self:CastW(self.Menu.Auto.Wtime:Value())
+                    self:CastW(Menu.Auto.Wtime:Value())
                 end
             end
         end
@@ -2294,7 +2288,7 @@ function Galio:CastW(time)
 end
 
 function Galio:Flee()   
-    if self.Menu.Flee.E:Value() and isSpellReady(_E) then
+    if Menu.Flee.E:Value() and isSpellReady(_E) then
         local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.eSpell.Range
             Control.CastSpell(HK_E, pos)
     end
@@ -2306,7 +2300,7 @@ function Galio:KillSteal()
     local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
 
-        if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and self.Menu.KS.Q:Value() then
+        if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and Menu.KS.Q:Value() then
             if self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
                 castSpellHigh(self.qSpell, HK_Q, target)
                 lastQ = GetTickCount()
@@ -2325,16 +2319,16 @@ end
 
 
 function Galio:Draw()
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(225, 225, 125, 10))
     end
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(225, 225, 0, 10))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+    if Menu.Draw.R:Value() and isSpellReady(_R) then
             Draw.CircleMinimap(myHero.pos, 3250 + 750*myHero:GetSpellData(_R).level, 1, Draw.Color(200,50,180,230))
     end
 end
@@ -2352,41 +2346,40 @@ function Yorick:__init()
     self.rSpell = {Range = 600}
 end
 
-function Yorick:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgYorick", name = "Zgjfjfl Yorick"})
+function Yorick:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "R1", name = "[R1] ", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "R1", name = "[R1] ", toggle = true, value = true})
 		
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "Q2", name = "[Q2] activate Mist Walker", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "Q2", name = "[Q2] activate Mist Walker", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
 	
-    self.Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
-        self.Menu.LastHit:MenuElement({id = "Q", name = "Q", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
+        Menu.LastHit:MenuElement({id = "Q", name = "Q", toggle = true, value = true})
 	
-    self.Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
-        self.Menu.Auto:MenuElement({id = "W", name = "AutoW on Immobile Target", value = true})
+    Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
+        Menu.Auto:MenuElement({id = "W", name = "AutoW on Immobile Target", value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
-        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-        self.Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 	
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 end
 
 function Yorick:onTick()
@@ -2419,22 +2412,22 @@ function Yorick:Combo()
 
     local target = TargetSelector:GetTarget(1100)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) <= 300 and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) <= 300 and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
              Control.CastSpell(HK_Q)
              lastQ = GetTickCount()
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+        if Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
              castSpellHigh(self.wSpell, HK_W, target)
              lastW = GetTickCount()
         end
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+        if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
              castSpellHigh(self.eSpell, HK_E, target)
              lastE = GetTickCount()
         end
 
-        if self.Menu.Combo.R1:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() and myHero:GetSpellData(_R).name == "YorickR" and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range then
+        if Menu.Combo.R1:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() and myHero:GetSpellData(_R).name == "YorickR" and myHero.pos:DistanceTo(target.pos) < self.rSpell.Range then
              Control.CastSpell(HK_R, target)
              lastR = GetTickCount()
         end
@@ -2449,7 +2442,7 @@ function Yorick:Harass()
     local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
 
-        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() then
              castSpellHigh(self.eSpell, HK_E, target)
              lastE = GetTickCount()
         end
@@ -2462,17 +2455,17 @@ function Yorick:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target and isValid(target) then
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 300 < GetTickCount() and myHero:GetSpellData(_Q).name == "YorickQ" and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
+        if Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 300 < GetTickCount() and myHero:GetSpellData(_Q).name == "YorickQ" and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
             Control.Attack(target)
         end
 
-        if self.Menu.Clear.Q2:Value() and myHero:GetSpellData(_Q).name == "YorickQ2" then
+        if Menu.Clear.Q2:Value() and myHero:GetSpellData(_Q).name == "YorickQ2" then
             Control.CastSpell(HK_Q)
         end
 
-        if self.Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() then
+        if Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 450 < GetTickCount() then
             bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
             if bestCount > 0 then 
                 Control.CastSpell(HK_E, bestPosition)
@@ -2488,7 +2481,7 @@ function Yorick:LastHit()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target and isValid(target) then
-        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 300 < GetTickCount() and myHero:GetSpellData(_Q).name == "YorickQ" and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
+        if Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 300 < GetTickCount() and myHero:GetSpellData(_Q).name == "YorickQ" and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
             Control.Attack(target)
@@ -2500,7 +2493,7 @@ function Yorick:Flee()
     local target = TargetSelector:GetTarget(self.wSpell.Range)
     if target and isValid(target) then
 
-        if self.Menu.Flee.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+        if Menu.Flee.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
             if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
                  castSpellHigh(self.wSpell, HK_W, target)
                  lastW = GetTickCount()
@@ -2515,7 +2508,7 @@ function Yorick:KillSteal()
     local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
 
-        if isSpellReady(_Q) and lastQ + 250 < GetTickCount() and self.Menu.KS.Q:Value() then
+        if isSpellReady(_Q) and lastQ + 250 < GetTickCount() and Menu.KS.Q:Value() then
             if self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= 300 then
                 Control.CastSpell(HK_Q)
                 lastQ = GetTickCount()
@@ -2523,7 +2516,7 @@ function Yorick:KillSteal()
             end	
         end
 
-        if isSpellReady(_E) and lastE + 450 < GetTickCount() and self.Menu.KS.E:Value() then
+        if isSpellReady(_E) and lastE + 450 < GetTickCount() and Menu.KS.E:Value() then
             if self:geteDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
                 castSpellHigh(self.eSpell, HK_E, target)
                 lastE = GetTickCount()
@@ -2551,7 +2544,7 @@ end
 function Yorick:AutoW()
     if Attack:IsActive() then return end
     for i, target in pairs(getEnemyHeroes()) do
-        if self.Menu.Auto.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and isInvulnerable(target) and myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
+        if Menu.Auto.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and isInvulnerable(target) and myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
             Control.CastSpell(HK_W, target)
             lastW = GetTickCount()
         end
@@ -2559,7 +2552,7 @@ function Yorick:AutoW()
 			
     local target = TargetSelector:GetTarget(self.wSpell.Range)
     if target and isValid(target) then
-        if self.Menu.Auto.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and isImmobile(target) then
+        if Menu.Auto.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and isImmobile(target) then
             if myHero.pos:DistanceTo(target.pos) <= self.wSpell.Range then
                 castSpellHigh(self.wSpell, HK_W, target)
                 lastW = GetTickCount()
@@ -2569,10 +2562,10 @@ function Yorick:AutoW()
 end
 
 function Yorick:Draw()
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(225, 225, 125, 10))
     end
 
@@ -2592,36 +2585,35 @@ function Ivern:__init()
     self.rSpell = { Range = 800 }
 end
 
-function Ivern:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgIvern", name = "Zgjfjfl Ivern"})
+function Ivern:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q1]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R1]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q1]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "R", name = "[R1]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q1]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q1]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "AutoE", name = "AutoE"})
-        self.Menu.AutoE:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.AutoE:MenuElement({type = MENU,id = "Etarget", name = "Use On"})
+    Menu:MenuElement({type = MENU, id = "AutoE", name = "AutoE"})
+        Menu.AutoE:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.AutoE:MenuElement({type = MENU,id = "Etarget", name = "Use On"})
             DelayAction(function()
                 for i, Hero in pairs(getAllyHeroes()) do
-                    self.Menu.AutoE.Etarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
+                    Menu.AutoE.Etarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
                 end		
             end,0.2)
 
-    self.Menu:MenuElement({type = MENU, id = "Daisy", name = "Daisy Setting"})
-        self.Menu.Daisy:MenuElement({id = "R1", name = "Control 'Daisy' attack target", key = string.byte("T")})
-        self.Menu.Daisy:MenuElement({id = "R2", name = "Control 'Daisy' follow self", key = string.byte("Z")})
+    Menu:MenuElement({type = MENU, id = "Daisy", name = "Daisy Setting"})
+        Menu.Daisy:MenuElement({id = "R1", name = "Control 'Daisy' attack target", key = string.byte("T")})
+        Menu.Daisy:MenuElement({id = "R2", name = "Control 'Daisy' follow self", key = string.byte("Z")})
 
-    self.Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
-        self.Menu.Misc:MenuElement({id = "disableAA", name = "Disable AA", toggle = true, value = true})
-        self.Menu.Misc:MenuElement({id = "count", name = "DisableAA when >= X enemies inQrange", value = 3, min = 1 , max = 5 , step = 1})
+    Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+        Menu.Misc:MenuElement({id = "disableAA", name = "Disable AA", toggle = true, value = true})
+        Menu.Misc:MenuElement({id = "count", name = "DisableAA when >= X enemies inQrange", value = 3, min = 1 , max = 5 , step = 1})
 	
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 end
 
 function Ivern:onTick()
@@ -2638,7 +2630,7 @@ function Ivern:onTick()
         self:Harass()
     end
 
-    if self.Menu.AutoE.E:Value() then
+    if Menu.AutoE.E:Value() then
         self:AutoE()
     end
 
@@ -2646,7 +2638,7 @@ function Ivern:onTick()
         self:DaisyControl()
     end
 
-    if self.Menu.Misc.disableAA:Value() and getEnemyCount(self.qSpell.Range, myHero.pos) >= self.Menu.Misc.count:Value() then
+    if Menu.Misc.disableAA:Value() and getEnemyCount(self.qSpell.Range, myHero.pos) >= Menu.Misc.count:Value() then
         Orbwalker:SetAttack(false)
     else
         Orbwalker:SetAttack(true)
@@ -2668,10 +2660,10 @@ function Ivern:Combo()
 
     local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and Menu.Combo.Q:Value() then
             self:CastQ(target)
         end
-        if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and myHero:GetSpellData(_R).name == "IvernR" and self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.rSpell.Range and myHero:GetSpellData(_R).name == "IvernR" and Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() then
              Control.CastSpell(HK_R, target)
             lastR = GetTickCount()
         end
@@ -2685,14 +2677,14 @@ function Ivern:AutoE()
             if isValid(enemy) then
                 local allies = ObjectManager:GetAllyHeroes(self.eSpell.Range)
                 for i, ally in ipairs(allies) do
-                    if #allies == 1 and ally.isMe and self.Menu.AutoE.Etarget[ally.charName]:Value() then
+                    if #allies == 1 and ally.isMe and Menu.AutoE.Etarget[ally.charName]:Value() then
                         if ally.pos:DistanceTo(enemy.pos) < self.eSpell.Radius then 
                             Control.CastSpell(HK_E, ally)
                             lastE = GetTickCount()
                         end
-                    elseif #allies > 1 and not ally.isMe and self.Menu.AutoE.Etarget[ally.charName]:Value() then
+                    elseif #allies > 1 and not ally.isMe and Menu.AutoE.Etarget[ally.charName]:Value() then
                         if ally.pos:DistanceTo(enemy.pos) < self.eSpell.Radius then
-                            if ally.pos:DistanceTo(enemy.pos) < myHero.pos:DistanceTo(enemy.pos) or (self.Menu.AutoE.Etarget[myHero.charName]:Value() == false) then
+                            if ally.pos:DistanceTo(enemy.pos) < myHero.pos:DistanceTo(enemy.pos) or (Menu.AutoE.Etarget[myHero.charName]:Value() == false) then
                                 Control.CastSpell(HK_E, ally)
                                 lastE = GetTickCount()
                             else
@@ -2711,11 +2703,11 @@ function Ivern:DaisyControl()
 
     local target = TargetSelector:GetTarget(2500)
     if target and isValid(target) then
-        if self.Menu.Daisy.R1:Value() then
+        if Menu.Daisy.R1:Value() then
             Control.CastSpell(HK_R, target)
         end
     end
-    if self.Menu.Daisy.R2:Value() then
+    if Menu.Daisy.R2:Value() then
          Control.CastSpell(HK_R, myHero)
     end
 end
@@ -2723,7 +2715,7 @@ end
 function Ivern:Harass()
     local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and myHero:GetSpellData(_Q).name == "IvernQ" and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and myHero:GetSpellData(_Q).name == "IvernQ" and Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
@@ -2731,10 +2723,10 @@ function Ivern:Harass()
 end
 
 function Ivern:Draw()
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(255, 225, 255, 10))
     end
 end
@@ -2752,20 +2744,19 @@ function Bard:__init()
     self.wSpell = { Range = 800 }
 end
 
-function Bard:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgBard", name = "Zgjfjfl Bard"})
+function Bard:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q] Single", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Q2", name = "[Q] Stun with minion or enemyteam", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Q3", name = "[Q] Stun with wall", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q] Single", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Q2", name = "[Q] Stun with minion or enemyteam", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Q3", name = "[Q] Stun with wall", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Auto", name = "Auto W"})
-        self.Menu.Auto:MenuElement({id = "W", name = "[W] Auto", toggle = true, value = true})
-        self.Menu.Auto:MenuElement({id = "Whp", name = "[W] auto on ally or self X hp%", value = 30, min = 0, max = 100, step = 5})
+    Menu:MenuElement({type = MENU, id = "Auto", name = "Auto W"})
+        Menu.Auto:MenuElement({id = "W", name = "[W] Auto", toggle = true, value = true})
+        Menu.Auto:MenuElement({id = "Whp", name = "[W] auto on ally or self X hp%", value = 30, min = 0, max = 100, step = 5})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
 end
 
 function Bard:onTick()
@@ -2786,13 +2777,13 @@ function Bard:Combo()
     local target = TargetSelector:GetTarget(self.qextSpell.Range)
     if target and isValid(target) then
 		if isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
-			if self.Menu.Combo.Q:Value() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+			if Menu.Combo.Q:Value() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
 				castSpellHigh(self.qSpell, HK_Q, target)
 				lastQ = GetTickCount()
 				return
 			end
 
-			if self.Menu.Combo.Q3:Value() then
+			if Menu.Combo.Q3:Value() then
 				local pred = GGPrediction:SpellPrediction(self.qSpell)
 				pred:GetPrediction(target, myHero)
 				if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
@@ -2806,7 +2797,7 @@ function Bard:Combo()
 				end
 			end
 
-			if self.Menu.Combo.Q2:Value() then
+			if Menu.Combo.Q2:Value() then
 				local pred2 = GGPrediction:SpellPrediction(self.qextSpell)
 				pred2:GetPrediction(target, myHero)
 				if pred2:CanHit(GGPrediction.HITCHANCE_HIGH) then
@@ -2829,7 +2820,7 @@ function Bard:AutoW()
     for i = 1, GameHeroCount() do
         local hero = GameHero(i)
         if hero and not hero.dead and hero.isAlly then
-            if getDistance(myHero.pos, hero.pos) <= self.wSpell.Range and self.Menu.Auto.W:Value() and hero.health/hero.maxHealth <= self.Menu.Auto.Whp:Value()/100 and isSpellReady(_W) and lastW + 350 < GetTickCount() then
+            if getDistance(myHero.pos, hero.pos) <= self.wSpell.Range and Menu.Auto.W:Value() and hero.health/hero.maxHealth <= Menu.Auto.Whp:Value()/100 and isSpellReady(_W) and lastW + 350 < GetTickCount() then
                 Control.CastSpell(HK_W, hero)
                 lastW = GetTickCount()  
             end
@@ -2838,7 +2829,7 @@ function Bard:AutoW()
 end
 
 function Bard:Draw()
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(255, 225, 255, 10))
     end
 end
@@ -2857,23 +2848,22 @@ function Taliyah:__init()
     self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 200, Range = 950, Speed = 1700, Collision = false}
 end
 
-function Taliyah:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgTaliyah", name = "Zgjfjfl Taliyah"})
+function Taliyah:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Wpush", name = "[W] push range", value = 400, min = 100, max = 600, step = 50})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Erange", name = "[E] cast range", value = 900, min = 100, max = 950, step = 50})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Wpush", name = "[W] push range", value = 400, min = 100, max = 600, step = 50})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Erange", name = "[E] cast range", value = 900, min = 100, max = 950, step = 50})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 	
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 end
 
 local vectorCast = {}
@@ -2939,22 +2929,22 @@ function Taliyah:Combo()
 
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
              lastQ = GetTickCount()
         end
 
-        if myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.Erange:Value() and self.Menu.Combo.E:Value() and isSpellReady(_E) and not isSpellReady(_W) and lastE + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < Menu.Combo.Erange:Value() and Menu.Combo.E:Value() and isSpellReady(_E) and not isSpellReady(_W) and lastE + 350 < GetTickCount() then
              Control.CastSpell(HK_E, target)
              lastE = GetTickCount()
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) then
+        if Menu.Combo.W:Value() and isSpellReady(_W) then
             local predPos = target:GetPrediction(self.wSpell.Speed, self.wSpell.Delay)
             local d = myHero.pos:DistanceTo(predPos)
             if d < self.wSpell.Range then
                 local endPos = predPos + (myHero.pos - predPos):Normalized() * 225
-                if d <= self.Menu.Combo.Wpush:Value() then
+                if d <= Menu.Combo.Wpush:Value() then
                     endPos = predPos + (predPos - myHero.pos):Normalized() * 225
                 end
                 self:CastVectorSpell(HK_W, predPos, endPos)
@@ -2970,7 +2960,7 @@ function Taliyah:Harass()
 
     local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
              lastQ = GetTickCount()
         end
@@ -2978,13 +2968,13 @@ function Taliyah:Harass()
 end
 
 function Taliyah:Draw()
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(255, 225, 255, 10))
     end
 end
@@ -3005,37 +2995,36 @@ function Lissandra:__init()
     self.rSpell = { Range = 550 }
 end
 
-function Lissandra:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgLissandra", name = "Zgjfjfl Lissandra"})
+function Lissandra:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E1", name = "[E1]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E2", name = "[E2]", toggle = true, value = true})
-	self.Menu.Combo:MenuElement({name = " ", drop = {"if enemy isUnderTurret wont E2 "}})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "healthy", name = "Define self healthy%", value = 50, min = 1, max = 100, step = 5})
-	self.Menu.Combo:MenuElement({name = " ", drop = {"greater than healthy to do:"}})
-        self.Menu.Combo:MenuElement({id = "ecountW", name = "Enemies count for E2 (W)", value = 2, min = 1, max = 5, step = 1})
-        self.Menu.Combo:MenuElement({id = "ecountR", name = "Enemies count for E2 (R)", value = 2, min = 1, max = 5, step = 1})
-        self.Menu.Combo:MenuElement({id = "R1count", name = "Enemies count for Ult them", value = 2, min = 1, max = 5, step = 1})
-	self.Menu.Combo:MenuElement({name = " ", drop = {"less than healthy to do:"}})
-        self.Menu.Combo:MenuElement({id = "R2count", name = "Enemies count for self Ult", value = 2, min = 1, max = 5, step = 1})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E1", name = "[E1]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E2", name = "[E2]", toggle = true, value = true})
+	Menu.Combo:MenuElement({name = " ", drop = {"if enemy isUnderTurret wont E2 "}})
+        Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "healthy", name = "Define self healthy%", value = 50, min = 1, max = 100, step = 5})
+	Menu.Combo:MenuElement({name = " ", drop = {"greater than healthy to do:"}})
+        Menu.Combo:MenuElement({id = "ecountW", name = "Enemies count for E2 (W)", value = 2, min = 1, max = 5, step = 1})
+        Menu.Combo:MenuElement({id = "ecountR", name = "Enemies count for E2 (R)", value = 2, min = 1, max = 5, step = 1})
+        Menu.Combo:MenuElement({id = "R1count", name = "Enemies count for Ult them", value = 2, min = 1, max = 5, step = 1})
+	Menu.Combo:MenuElement({name = " ", drop = {"less than healthy to do:"}})
+        Menu.Combo:MenuElement({id = "R2count", name = "Enemies count for self Ult", value = 2, min = 1, max = 5, step = 1})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Harass:MenuElement({id = "Mana", name = "Harass min Mana", value = 50, min = 1, max = 100, step = 5})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Harass:MenuElement({id = "Mana", name = "Harass min Mana", value = 50, min = 1, max = 100, step = 5})
 
-    self.Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-        self.Menu.Flee:MenuElement({id = "E", name = "[E] to mouse", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+        Menu.Flee:MenuElement({id = "E", name = "[E] to mouse", toggle = true, value = true})
 	
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "Q2", name = "[Q2] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-       self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-       self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "Q2", name = "[Q2] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+       Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+       Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 end
 
 function Lissandra:onTick()
@@ -3070,20 +3059,20 @@ function Lissandra:Combo()
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
 
-	if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() then
+	if Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() then
 		if myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range then
-			if getEnemyCount(self.rSpell.Range, target.pos) >= self.Menu.Combo.R1count:Value() and self:IsHealthy() then
+			if getEnemyCount(self.rSpell.Range, target.pos) >= Menu.Combo.R1count:Value() and self:IsHealthy() then
 				Control.CastSpell(HK_R, target)
 				lastR = GetTickCount()
 			end
 		end
 	end
 
-	if self.Menu.Combo.Q:Value() then
+	if Menu.Combo.Q:Value() then
 		self:CastQ(target)
 	end
 
-	if self.Menu.Combo.E1:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+	if Menu.Combo.E1:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
 		if not self:E2Ready() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range-100 then
 			castSpellHigh(self.eSpell, HK_E, target)
 			lastE = GetTickCount()
@@ -3092,14 +3081,14 @@ function Lissandra:Combo()
         self:CastE2(target)
     end
 
-	if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() then
-		if getEnemyCount(self.rSpell.Range, myHero.pos) >= self.Menu.Combo.R2count:Value() and not self:IsHealthy() then
+	if Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() then
+		if getEnemyCount(self.rSpell.Range, myHero.pos) >= Menu.Combo.R2count:Value() and not self:IsHealthy() then
 			Control.CastSpell(HK_R, myHero)
 			lastR = GetTickCount()
 		end
 	end
 
-    if getEnemyCount(self.wSpell.Range, myHero.pos) >= 1 and self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+    if getEnemyCount(self.wSpell.Range, myHero.pos) >= 1 and Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
         Control.CastSpell(HK_W)
         lastW = GetTickCount()
     end
@@ -3111,7 +3100,7 @@ function Lissandra:Harass()
 
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
-        if self.Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana > self.Menu.Harass.Mana:Value()/100 then
+        if Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana > Menu.Harass.Mana:Value()/100 then
             self:CastQ(target)
         end
     end
@@ -3119,7 +3108,7 @@ end
 
 function Lissandra:Flee()
     if not self:E2Ready() then
-        if self.Menu.Flee.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if Menu.Flee.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
              Control.CastSpell(HK_E, mousePos)
              lastE = GetTickCount()
              DelayAction(function() Control.CastSpell(HK_E) end, 1.3)
@@ -3182,11 +3171,11 @@ function Lissandra:CastE2(target)
 		local dis1 = myHero.pos:DistanceTo(target.pos)
 		if EmissilePos ~= nil then
 			local dis2 = EmissilePos.pos:DistanceTo(target.pos)
-			if self.Menu.Combo.E2:Value() and self:IsHealthy() and self:E2Ready() and isSpellReady(_E) then
+			if Menu.Combo.E2:Value() and self:IsHealthy() and self:E2Ready() and isSpellReady(_E) then
 				if dis1 > dis2 and not isUnderTurret(EmissilePos) then
-					if getEnemyCount(self.rSpell.Range-100, EmissilePos.pos) >= self.Menu.Combo.ecountR:Value() and isSpellReady(_R) then
+					if getEnemyCount(self.rSpell.Range-100, EmissilePos.pos) >= Menu.Combo.ecountR:Value() and isSpellReady(_R) then
 						Control.CastSpell(HK_E)
-					elseif getEnemyCount(self.wSpell.Range-100, EmissilePos.pos) >= self.Menu.Combo.ecountW:Value() and isSpellReady(_W) then
+					elseif getEnemyCount(self.wSpell.Range-100, EmissilePos.pos) >= Menu.Combo.ecountW:Value() and isSpellReady(_W) then
 						Control.CastSpell(HK_E)
 					end
 				end 
@@ -3196,7 +3185,7 @@ function Lissandra:CastE2(target)
 end
 
 function Lissandra:IsHealthy()
-	return myHero.health / myHero.maxHealth > self.Menu.Combo.healthy:Value()/100
+	return myHero.health / myHero.maxHealth > Menu.Combo.healthy:Value()/100
 end
 
 function Lissandra:E2Ready()
@@ -3204,19 +3193,19 @@ function Lissandra:E2Ready()
 end
 
 function Lissandra:Draw()
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.Q2:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q2:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.q2Spell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+    if Menu.Draw.R:Value() and isSpellReady(_R) then
             Draw.Circle(myHero.pos, self.rSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
 end
@@ -3235,21 +3224,20 @@ function Sejuani:__init()
     self.eSpell = { Range = 600 }
 end
 
-function Sejuani:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgSejuani", name = "Zgjfjfl Sejuani"})
+function Sejuani:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RM", name = "[R] Semi-Manual Key", key = string.byte("T")})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RM", name = "[R] Semi-Manual Key", key = string.byte("T")})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 end
 
 function Sejuani:onTick()
@@ -3263,7 +3251,7 @@ function Sejuani:onTick()
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if self.Menu.Combo.RM:Value() then
+    if Menu.Combo.RM:Value() then
         self:RSemiManual()
     end
 end
@@ -3274,15 +3262,15 @@ function Sejuani:Combo()
 
     local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
              lastQ = GetTickCount()
         end
-        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 1000 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 1000 < GetTickCount() then
              castSpellHigh(self.wSpell, HK_W, target)
              lastW = GetTickCount()
         end
-        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
              Control.CastSpell(HK_E)
              lastE = GetTickCount()
         end
@@ -3295,7 +3283,7 @@ function Sejuani:Harass()
 
     local target = TargetSelector:GetTarget(self.wSpell.Range)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and self.Menu.Harass.W:Value() and isSpellReady(_W) and lastW + 1000 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range and Menu.Harass.W:Value() and isSpellReady(_W) and lastW + 1000 < GetTickCount() then
              castSpellHigh(self.wSpell, HK_W, target)
              lastW = GetTickCount()
         end
@@ -3313,10 +3301,10 @@ function Sejuani:RSemiManual()
 end
 
 function Sejuani:Draw()
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+    if Menu.Draw.R:Value() and isSpellReady(_R) then
             Draw.Circle(myHero.pos, self.rSpell.Range, Draw.Color(255, 225, 255, 10))
     end
 end
@@ -3337,38 +3325,37 @@ function KSante:__init()
 end
 
 function KSante:LoadMenu()
-    self.Menu = MenuElement({type = MENU, id = "zgKSante", name = "Zgjfjfl KSante"})
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W1", name = "Use W1 push target to tower/ally", toggle = true, value = false})
-        self.Menu.Combo:MenuElement({id = "W1Time", name = "W1 Channel time(s)", value = 0.75, min = 0.75, max = 1.5, step = 0.05})
-        self.Menu.Combo:MenuElement({id = "W2", name = "[W] AllOut W", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W2Time", name = "AllOut W Channel time(s)", value = 0.75, min = 0.75, max = 1.5, step = 0.05})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "EA", name = "use E close to enemy AApassive", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "ET", name = "use E close to enemy useQ", toggle = true, value = true})
-        --self.Menu.Combo:MenuElement({id = "EM", name = "use E allyminion close to enemy", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "EH", name = "use E allyhero close to enemy", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RT", name = "[R] enemy close to allyturret (not near wall)", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RM", name = "[R] Manual R when enemy near wall ", key = string.byte("T")})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W1", name = "Use W1 push target to tower/ally", toggle = true, value = false})
+        Menu.Combo:MenuElement({id = "W1Time", name = "W1 Channel time(s)", value = 0.75, min = 0.75, max = 1.5, step = 0.05})
+        Menu.Combo:MenuElement({id = "W2", name = "[W] AllOut W", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W2Time", name = "AllOut W Channel time(s)", value = 0.75, min = 0.75, max = 1.5, step = 0.05})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "EA", name = "use E close to enemy AApassive", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "ET", name = "use E close to enemy useQ", toggle = true, value = true})
+        --Menu.Combo:MenuElement({id = "EM", name = "use E allyminion close to enemy", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "EH", name = "use E allyhero close to enemy", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RT", name = "[R] enemy close to allyturret (not near wall)", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RM", name = "[R] Manual R when enemy near wall ", key = string.byte("T")})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear1", name = "Lane Clear"})
-        self.Menu.Clear1:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Clear1:MenuElement({id = "QCount", name = "hit >=x minions", value = 2, min = 1, max = 6})
+    Menu:MenuElement({type = MENU, id = "Clear1", name = "Lane Clear"})
+        Menu.Clear1:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Clear1:MenuElement({id = "QCount", name = "hit >=x minions", value = 2, min = 1, max = 6})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear2", name = "Jungle Clear"})
-        self.Menu.Clear2:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Clear2", name = "Jungle Clear"})
+        Menu.Clear2:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
-        self.Menu.LastHit:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
+        Menu.LastHit:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = true})
 end
 
 function KSante:onTick()
@@ -3415,7 +3402,7 @@ function KSante:onTick()
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
         self:LastHit()
     end
-    if self.Menu.Combo.RM:Value() then
+    if Menu.Combo.RM:Value() then
         self:RSemiManual()
     end
 end
@@ -3426,8 +3413,8 @@ function KSante:Combo()
 
     local target = TargetSelector:GetTarget(self.qSpell.Range + self.eSpell.Range)
     if target and isValid(target) then
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and isSpellReady(_Q) then
-            if self.Menu.Combo.EH:Value() then
+        if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and isSpellReady(_Q) then
+            if Menu.Combo.EH:Value() then
                 local allies = ObjectManager:GetAllyHeroes(550)
                 for i, ally in ipairs(allies) do
                     if not ally.isMe and getEnemyCount(self.qSpell.Range, myHero.pos) == 0 and getEnemyCount(self.qSpell.Range, ally.pos) >= 1 then
@@ -3436,13 +3423,13 @@ function KSante:Combo()
                     end
                 end
             end
-            if self.Menu.Combo.ET:Value() then
+            if Menu.Combo.ET:Value() then
                 if myHero.pos:DistanceTo(target.pos) > self.qSpell.Range and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range + self.eSpell.Range then
                     Control.CastSpell(HK_E, target)
                     lastE = GetTickCount()
                 end
             end
-            --[[if self.Menu.Combo.EM:Value() then
+            --[[if Menu.Combo.EM:Value() then
                 local Minions = ObjectManager:GetAllyMinions(550)
                 for i = 1, #Minions do
                     local minion = Minions[i]
@@ -3454,33 +3441,33 @@ function KSante:Combo()
             end]]
         end
 
-        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+        if Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
              castSpellHigh(self.qSpell, HK_Q, target)
              lastQ = GetTickCount()
         end
 
-        if self.Menu.Combo.W:Value() and self.Menu.Combo.W2:Value() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+        if Menu.Combo.W:Value() and Menu.Combo.W2:Value() and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
             if doesMyChampionHaveBuff("KSanteRTransform") then
-                 self:CastW(target,self.Menu.Combo.W2Time:Value())
+                 self:CastW(target,Menu.Combo.W2Time:Value())
             end
         end
 
-        if self.Menu.Combo.W:Value() and self.Menu.Combo.W1:Value() and myHero.pos:DistanceTo(target.pos) < 450 then
+        if Menu.Combo.W:Value() and Menu.Combo.W1:Value() and myHero.pos:DistanceTo(target.pos) < 450 then
             local turrets = ObjectManager:GetAllyTurrets(2000)
             for i, turret in ipairs(turrets) do
                 if turret.pos:DistanceTo(target.pos) < 1200 and turret.pos:DistanceTo(target.pos) < turret.pos:DistanceTo(myHero.pos) then
-                    self:CastW(target,self.Menu.Combo.W1Time:Value())
+                    self:CastW(target,Menu.Combo.W1Time:Value())
                 end
             end
             local allies = ObjectManager:GetAllyHeroes(2000)
             for k, ally in ipairs(allies) do
                 if not ally.isMe and ally.pos:DistanceTo(target.pos) < 1000 and ally.pos:DistanceTo(target.pos) < ally.pos:DistanceTo(myHero.pos) then
-                    self:CastW(target,self.Menu.Combo.W1Time:Value())
+                    self:CastW(target,Menu.Combo.W1Time:Value())
                 end
             end
         end
 
-        if self.Menu.Combo.RT:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() and myHero:GetSpellData(_R).name == "KSanteR" then
+        if Menu.Combo.RT:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() and myHero:GetSpellData(_R).name == "KSanteR" then
             local turrets = ObjectManager:GetAllyTurrets(2000)
             for i, turret in ipairs(turrets) do
                 local Pos = target.pos:Extended(myHero.pos, -300)
@@ -3493,7 +3480,7 @@ function KSante:Combo()
         if haveBuff(target, "KSantePMark") then
             local AARange = myHero.range + myHero.boundingRadius + target.boundingRadius + 25
             if myHero.pos:DistanceTo(target.pos) > AARange and myHero.pos:DistanceTo(target.pos) <= AARange + self.eSpell.Range then
-                if self.Menu.Combo.E:Value() and self.Menu.Combo.EA:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
+                if Menu.Combo.E:Value() and Menu.Combo.EA:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
                     Control.CastSpell(HK_E, target)
                     lastE = GetTickCount()
                 end
@@ -3508,7 +3495,7 @@ function KSante:Harass()
 
     local target = TargetSelector:GetTarget(self.qSpell.Range)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, target)
              lastQ = GetTickCount()
         end
@@ -3539,13 +3526,13 @@ end
 
 function KSante:LaneClear()
     if Attack:IsActive() then return end
-    if self.Menu.Clear1.Q:Value() then
+    if Menu.Clear1.Q:Value() then
         local minions = ObjectManager:GetEnemyMinions(self.qSpell.Range)
         for i = 1, #minions do
             local minion = minions[i]
             if isValid(minion) and minion.team ~= 300 then
                 local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
-                if collisionCount >= self.Menu.Clear1.QCount:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+                if collisionCount >= Menu.Clear1.QCount:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
                     Control.CastSpell(HK_Q, minion)
                     lastQ = GetTickCount()
                 end
@@ -3556,7 +3543,7 @@ end
 
 function KSante:JungleClear()
     if Attack:IsActive() then return end
-    if self.Menu.Clear1.Q:Value() then
+    if Menu.Clear1.Q:Value() then
         local minions = ObjectManager:GetEnemyMinions(self.qSpell.Range)
         for i = 1, #minions do
             local minion = minions[i]
@@ -3574,7 +3561,7 @@ function KSante:LastHit()
     if next(minionInRange) == nil then return end
     for i = 1, #minionInRange do
         local minion = minionInRange[i]
-        if self.Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+        if Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
             if self:getqDmg(minion) >= minion.health and not minion.dead then
                 Control.CastSpell(HK_Q, minion)
                 lastQ = GetTickCount()
@@ -3598,7 +3585,7 @@ function KSante:Draw()
     else
         self.qSpell = self.q1Spell
     end
-    if self.Menu.Draw.Q:Value() then
+    if Menu.Draw.Q:Value() then
             Draw.Circle(myHero.pos, self.qSpell.Range, 0.5, Draw.Color(255, 225, 255, 10))
     end
 end
@@ -3615,19 +3602,18 @@ function Skarner:__init()
     self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 950, Speed = 1200, Collision = false}
 end
 
-function Skarner:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgSkarner", name = "Zgjfjfl Skarner"})
+function Skarner:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 end
 
 function Skarner:onTick()
@@ -3655,11 +3641,11 @@ function Skarner:Combo()
 
     local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
         end
-        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
             castSpellHigh(self.eSpell, HK_E, target)
             lastE = GetTickCount()
         end
@@ -3680,12 +3666,12 @@ function Skarner:LaneClear()
         target = HealthPrediction:GetLaneClearTarget()
     end
     if target and isValid(target) then
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+        if Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
             Control.CastSpell(HK_Q)
             lastQ = GetTickCount()
         end
 
-        if self.Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
             bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
             if bestCount > 0 then 
                 Control.CastSpell(HK_E, bestPosition)
@@ -3696,7 +3682,7 @@ function Skarner:LaneClear()
 end
 
 function Skarner:Draw()
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
 end
@@ -3717,29 +3703,28 @@ function Maokai:__init()
     Qtoward = nil
 end
 
-function Maokai:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgMaokai", name = "Zgjfjfl Maokai"})
+function Maokai:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "InsecQ", name = "InsecQ to ally", value = false, key = string.byte("T"), toggle = true})
-        self.Menu.Combo:MenuElement({id = "InsecRange", name = "allies in x range use insecQ", value = 1500, min = 500, max = 3000, step = 100 })
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E] only on target", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Rcount", name = "R hit x enemies", value = 2, min = 1, max = 5 })
-        self.Menu.Combo:MenuElement({id = "Rrange", name = "R max range", value = 2000, min = 500, max = 3000, step = 100 })
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "InsecQ", name = "InsecQ to ally", value = false, key = string.byte("T"), toggle = true})
+        Menu.Combo:MenuElement({id = "InsecRange", name = "allies in x range use insecQ", value = 1500, min = 500, max = 3000, step = 100 })
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E] only on target", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Rcount", name = "R hit x enemies", value = 2, min = 1, max = 5 })
+        Menu.Combo:MenuElement({id = "Rrange", name = "R max range", value = 2000, min = 500, max = 3000, step = 100 })
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Harass:MenuElement({id = "E", name = "[E] only on target", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Harass:MenuElement({id = "E", name = "[E] only on target", toggle = true, value = false})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "InsecQ", name = "InsecQ", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "InsecQ", name = "InsecQ", toggle = true, value = true})
 end
 
 function Maokai:onTick()
@@ -3747,8 +3732,8 @@ function Maokai:onTick()
     if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
         return
     end    
-    if self.Menu.Combo.InsecQ:Value() then
-        local allies = ObjectManager:GetAllyHeroes(self.Menu.Combo.InsecRange:Value())
+    if Menu.Combo.InsecQ:Value() then
+        local allies = ObjectManager:GetAllyHeroes(Menu.Combo.InsecRange:Value())
         for i, ally in ipairs(allies) do
             if not ally.isMe then
                 Qtoward = ally.pos
@@ -3771,13 +3756,13 @@ function Maokai:Combo()
 
     local Qtarget = TargetSelector:GetTarget(self.qSpell.Range)
     if Qtarget and isValid(Qtarget) then
-        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and not isSpellReady(_W) then
-            if (not self.Menu.Combo.InsecQ:Value()) or (self.Menu.Combo.InsecQ:Value() and Qtoward == nil) then
+        if Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() and not isSpellReady(_W) then
+            if (not Menu.Combo.InsecQ:Value()) or (Menu.Combo.InsecQ:Value() and Qtoward == nil) then
                 castSpellHigh(self.qSpell, HK_Q, Qtarget)
                 lastQ = GetTickCount()
             end
 
-            if self.Menu.Combo.InsecQ:Value() and Qtoward ~= nil then
+            if Menu.Combo.InsecQ:Value() and Qtoward ~= nil then
                 local Pos =  Qtarget.pos + (Qtarget.pos - Qtoward):Normalized() * 250
                 if MapPosition:inWall(Pos) then
                     castSpellHigh(self.qSpell, HK_Q, Qtarget)
@@ -3794,7 +3779,7 @@ function Maokai:Combo()
 
     local Wtarget = TargetSelector:GetTarget(self.wSpell.Range)
     if Wtarget and isValid(Wtarget) then
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+        if Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
             Control.CastSpell(HK_W, Wtarget)
             lastW = GetTickCount()
         end
@@ -3802,16 +3787,16 @@ function Maokai:Combo()
 
     local Etarget = TargetSelector:GetTarget(self.eSpell.Range)
     if Etarget and isValid(Etarget) then
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
             Control.CastSpell(HK_E, Etarget)
             lastE = GetTickCount()
         end
 	end
 
-	local Rtarget = TargetSelector:GetTarget(self.Menu.Combo.Rrange:Value())
+	local Rtarget = TargetSelector:GetTarget(Menu.Combo.Rrange:Value())
 	if Rtarget and isValid(Rtarget) then
-        if isSpellReady(_R) and lastR + 600 < GetTickCount() and self.Menu.Combo.R:Value() then
-            if getEnemyCount(self.rSpell.Radius, Rtarget.pos) >= self.Menu.Combo.Rcount:Value() then
+        if isSpellReady(_R) and lastR + 600 < GetTickCount() and Menu.Combo.R:Value() then
+            if getEnemyCount(self.rSpell.Radius, Rtarget.pos) >= Menu.Combo.Rcount:Value() then
                 castSpellHigh(self.rSpell, HK_R, Rtarget)
                 lastR = GetTickCount()
             end
@@ -3824,7 +3809,7 @@ function Maokai:Harass()
     if Attack:IsActive() then return end
     local Qtarget = TargetSelector:GetTarget(self.qSpell.Range)
     if Qtarget and isValid(Qtarget) then
-        if self.Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() then
+        if Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() then
              castSpellHigh(self.qSpell, HK_Q, Qtarget)
              lastQ = GetTickCount()
         end
@@ -3832,7 +3817,7 @@ function Maokai:Harass()
 		
     local Etarget = TargetSelector:GetTarget(self.eSpell.Range)
     if Etarget and isValid(Etarget) then
-        if self.Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+        if Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
              Control.CastSpell(HK_E, Etarget)
              lastE = GetTickCount()
         end
@@ -3840,21 +3825,21 @@ function Maokai:Harass()
 end
 
 function Maokai:Draw()
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
             Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
             Draw.Circle(myHero.pos, self.wSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
             Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
-            Draw.Circle(myHero.pos, self.Menu.Combo.Rrange:Value(), 1, Draw.Color(255, 225, 255, 10))
+    if Menu.Draw.R:Value() and isSpellReady(_R) then
+            Draw.Circle(myHero.pos, Menu.Combo.Rrange:Value(), 1, Draw.Color(255, 225, 255, 10))
     end
 
-    if self.Menu.Draw.InsecQ:Value() then
-        if self.Menu.Combo.InsecQ:Value() then
+    if Menu.Draw.InsecQ:Value() then
+        if Menu.Combo.InsecQ:Value() then
             Draw.Text("InsecQ:ON", 15, myHero.pos2D.x -30, myHero.pos2D.y, Draw.Color(255, 000, 255, 000))
         else
             Draw.Text("InsecQ:OFF", 15, myHero.pos2D.x -30, myHero.pos2D.y, Draw.Color(255, 255, 000, 000))
@@ -3876,36 +3861,35 @@ function Gragas:__init()
     self.rSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 400, Range = 1000, Speed = math.huge, Collision = false}
 end
 
-function Gragas:LoadMenu() 
-    self.Menu = MenuElement({type = MENU, id = "zgGragas", name = "Zgjfjfl Gragas"})
+function Gragas:LoadMenu()
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Insec", name = "InsecR Setting"})
-        self.Menu.Insec:MenuElement({id = "R1", name = "Semi-Manual InsecR Target to Self", key = string.byte("T")})
-        self.Menu.Insec:MenuElement({id = "R2", name = "Auto InsecR on Immobile Target", value = true})
+    Menu:MenuElement({type = MENU, id = "Insec", name = "InsecR Setting"})
+        Menu.Insec:MenuElement({id = "R1", name = "Semi-Manual InsecR Target to Self", key = string.byte("T")})
+        Menu.Insec:MenuElement({id = "R2", name = "Auto InsecR on Immobile Target", value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Jungle Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Jungle Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
-        self.Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.KS:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
+        Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.KS:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 end
 
 function Gragas:onTick()
@@ -3929,11 +3913,11 @@ function Gragas:onTick()
         self:CastQ2()
     end
 
-    if self.Menu.Insec.R1:Value() then
+    if Menu.Insec.R1:Value() then
         self:InsecR()
     end
 
-    if self.Menu.Insec.R2:Value() then
+    if Menu.Insec.R2:Value() then
         self:AutoR()
     end
 
@@ -3946,19 +3930,19 @@ function Gragas:Combo()
 
     local target = TargetSelector:GetTarget(1000)
     if target and isValid(target) then
-        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and not isSpellReady(_E) then
+        if Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and not isSpellReady(_E) then
             if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
                 castSpellHigh(self.qSpell, HK_Q, target)
                 lastQ = GetTickCount()
             end
         end
 
-        if self.Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+        if Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
             Control.CastSpell(HK_W)
             lastW = GetTickCount()
         end
 
-        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
             castSpellHigh(self.eSpell, HK_E, target)
             lastE = GetTickCount()
         end
@@ -3971,11 +3955,11 @@ function Gragas:Harass()
     if Attack:IsActive() then return end
     local target = TargetSelector:GetTarget(self.eSpell.Range)
     if target and isValid(target) then
-        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and self.Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range and Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() then
             castSpellHigh(self.qSpell, HK_Q, target)
             lastQ = GetTickCount()
         end
-        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and self.Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
+        if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and Menu.Harass.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() then
             castSpellHigh(self.eSpell, HK_E, target)
             lastE = GetTickCount()
         end
@@ -4011,18 +3995,18 @@ function Gragas:JungleClear()
     if Attack:IsActive() then return end
     local target = HealthPrediction:GetJungleTarget()
     if target and isValid(target) then
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+        if Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
             Control.CastSpell(HK_Q, target)
             lastQ = GetTickCount()
         end
         if isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQToggle" and getBuffData(myHero, "GragasQ").duration < 2 then
             Control.CastSpell(HK_Q)
         end
-        if self.Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+        if Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
             Control.CastSpell(HK_W)
             lastW = GetTickCount()
         end
-        if self.Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+        if Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
             Control.CastSpell(HK_E, target)
             lastE = GetTickCount()
         end
@@ -4045,21 +4029,21 @@ function Gragas:KillSteal()
     local target = TargetSelector:GetTarget(self.rSpell.Range)
     if target and isValid(target) then
 
-        if isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and self.Menu.KS.Q:Value() then
+        if isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and Menu.KS.Q:Value() then
             if self:getQDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
                 castSpellHigh(self.qSpell, HK_Q, target)
                 lastQ = GetTickCount()
             end	
         end
 
-        if isSpellReady(_E) and lastE + 250 < GetTickCount() and self.Menu.KS.E:Value() then
+        if isSpellReady(_E) and lastE + 250 < GetTickCount() and Menu.KS.E:Value() then
             if self:getEDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
                 castSpellHigh(self.eSpell, HK_E, target)
                 lastE = GetTickCount()
             end	
         end
 
-        if isSpellReady(_R) and lastR + 350 < GetTickCount() and self.Menu.KS.R:Value() then
+        if isSpellReady(_R) and lastR + 350 < GetTickCount() and Menu.KS.R:Value() then
             if self:getRDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range then
                 castSpellHigh(self.rSpell, HK_R, target)
                 lastR = GetTickCount()
@@ -4094,13 +4078,13 @@ end
 
 
 function Gragas:Draw()
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
         Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
         Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+    if Menu.Draw.R:Value() and isSpellReady(_R) then
         Draw.Circle(myHero.pos, self.rSpell.Range, 1, Draw.Color(255, 225, 255, 10))
     end
 end
@@ -4125,76 +4109,75 @@ function Milio:__init()
 end
 
 function Milio:LoadMenu()
-    self.Menu = MenuElement({type = MENU, id = "zgMilio", name = "Zgjfjfl Milio"})
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "QBD", name = "[Q] ball collision minion bounces distance", value = 400, min = 100, max = 500, step = 50})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = false})
-        self.Menu.Combo:MenuElement({id = "RHP", name = "UseR when ally or self <= X hp%", value = 20, min = 0, max = 100, step = 5})
-        self.Menu.Combo:MenuElement({type = MENU,id = "Rhealtarget", name = "UseR On"})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "QBD", name = "[Q] ball collision minion bounces distance", value = 400, min = 100, max = 500, step = 50})
+        Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = false})
+        Menu.Combo:MenuElement({id = "RHP", name = "UseR when ally or self <= X hp%", value = 20, min = 0, max = 100, step = 5})
+        Menu.Combo:MenuElement({type = MENU,id = "Rhealtarget", name = "UseR On"})
             DelayAction(function()
                 for i, Hero in pairs(getAllyHeroes()) do
-                    self.Menu.Combo.Rhealtarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
+                    Menu.Combo.Rhealtarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
                 end		
             end,0.2)
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Harass:MenuElement({id = "Mana", name = "Min Mana to Harass", value = 30, min = 0, max = 100})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Harass:MenuElement({id = "Mana", name = "Min Mana to Harass", value = 30, min = 0, max = 100})
 
-    self.Menu:MenuElement({type = MENU, id = "AutoW", name = "AutoW"})
-        self.Menu.AutoW:MenuElement({id = "W", name = "[W]Auto heal", toggle = true, value = true})
-        self.Menu.AutoW:MenuElement({id = "WHP", name = "When ally or self <= X hp%", value = 50, min = 0, max = 100, step = 5})
-        self.Menu.AutoW:MenuElement({type = MENU,id = "Wtarget", name = "Use On"})
+    Menu:MenuElement({type = MENU, id = "AutoW", name = "AutoW"})
+        Menu.AutoW:MenuElement({id = "W", name = "[W]Auto heal", toggle = true, value = true})
+        Menu.AutoW:MenuElement({id = "WHP", name = "When ally or self <= X hp%", value = 50, min = 0, max = 100, step = 5})
+        Menu.AutoW:MenuElement({type = MENU,id = "Wtarget", name = "Use On"})
             DelayAction(function()
                 for i, Hero in pairs(getAllyHeroes()) do
-                    self.Menu.AutoW.Wtarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
+                    Menu.AutoW.Wtarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
                 end		
             end,0.2)
 
-    self.Menu:MenuElement({type = MENU, id = "AutoE", name = "AutoE"})
-        self.Menu.AutoE:MenuElement({id = "E", name = "[E]Auto shield", toggle = true, value = true})
-        self.Menu.AutoE:MenuElement({type = MENU,id = "Etarget", name = "Use On"})
+    Menu:MenuElement({type = MENU, id = "AutoE", name = "AutoE"})
+        Menu.AutoE:MenuElement({id = "E", name = "[E]Auto shield", toggle = true, value = true})
+        Menu.AutoE:MenuElement({type = MENU,id = "Etarget", name = "Use On"})
             DelayAction(function()
                 for i, Hero in pairs(getAllyHeroes()) do
-                    self.Menu.AutoE.Etarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
+                    Menu.AutoE.Etarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
                 end		
             end,0.2)
 
-    self.Menu:MenuElement({type = MENU, id = "AutoR", name = "AutoR"})
-        self.Menu.AutoR:MenuElement({id = "R", name = "[R]Auto clears ally CC", toggle = true, value = true})
-            self.Menu.AutoR:MenuElement({type = MENU, id = "CC", name = "CC Types"})			
-            self.Menu.AutoR.CC:MenuElement({ id = "Stun", name = "Use on Stun", value = true})
-            self.Menu.AutoR.CC:MenuElement({ id = "Taunt", name = "Use on Taunt", value = true})
-            self.Menu.AutoR.CC:MenuElement({ id = "Berserk", name = "Use on Berserk", value = true})
-            self.Menu.AutoR.CC:MenuElement({ id = "Snare", name = "Use on Snare", value = true})
-            self.Menu.AutoR.CC:MenuElement({ id = "Fear", name = "Use on Fear", value = true})
-            self.Menu.AutoR.CC:MenuElement({ id = "Charm", name = "Use on Charm", value = true})
-            self.Menu.AutoR.CC:MenuElement({ id = "Suppression", name = "Use on Suppression", value = true})
-            self.Menu.AutoR.CC:MenuElement({ id = "Disarm", name = "Use on Disarm", value = true})
-            self.Menu.AutoR.CC:MenuElement({ id = "Asleep", name = "Use on Asleep", value = true})
-        self.Menu.AutoR:MenuElement({type = MENU,id = "Rclearstarget", name = "Clears target"})
+    Menu:MenuElement({type = MENU, id = "AutoR", name = "AutoR"})
+        Menu.AutoR:MenuElement({id = "R", name = "[R]Auto clears ally CC", toggle = true, value = true})
+            Menu.AutoR:MenuElement({type = MENU, id = "CC", name = "CC Types"})			
+            Menu.AutoR.CC:MenuElement({ id = "Stun", name = "Use on Stun", value = true})
+            Menu.AutoR.CC:MenuElement({ id = "Taunt", name = "Use on Taunt", value = true})
+            Menu.AutoR.CC:MenuElement({ id = "Berserk", name = "Use on Berserk", value = true})
+            Menu.AutoR.CC:MenuElement({ id = "Snare", name = "Use on Snare", value = true})
+            Menu.AutoR.CC:MenuElement({ id = "Fear", name = "Use on Fear", value = true})
+            Menu.AutoR.CC:MenuElement({ id = "Charm", name = "Use on Charm", value = true})
+            Menu.AutoR.CC:MenuElement({ id = "Suppression", name = "Use on Suppression", value = true})
+            Menu.AutoR.CC:MenuElement({ id = "Disarm", name = "Use on Disarm", value = true})
+            Menu.AutoR.CC:MenuElement({ id = "Asleep", name = "Use on Asleep", value = true})
+        Menu.AutoR:MenuElement({type = MENU,id = "Rclearstarget", name = "Clears target"})
             DelayAction(function()
                 for i, Hero in pairs(getAllyHeroes()) do
-                    self.Menu.AutoR.Rclearstarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
+                    Menu.AutoR.Rclearstarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
                 end		
             end,0.2)
 
-    self.Menu:MenuElement({type = MENU, id = "AutoQ", name = "AutoQ"})
-        self.Menu.AutoQ:MenuElement({id = "AntiDash", name = "AutoQ Anti-Dash",toggle = true, value = true})
-        self.Menu.AutoQ:MenuElement({type = MENU,id = "AntiTarget", name = "Use On"})
+    Menu:MenuElement({type = MENU, id = "AutoQ", name = "AutoQ"})
+        Menu.AutoQ:MenuElement({id = "AntiDash", name = "AutoQ Anti-Dash",toggle = true, value = true})
+        Menu.AutoQ:MenuElement({type = MENU,id = "AntiTarget", name = "Use On"})
             DelayAction(function()
                 for i, Hero in pairs(getEnemyHeroes()) do
-                    self.Menu.AutoQ.AntiTarget:MenuElement({id = Hero.charName, name = Hero.charName, value = false})		
+                    Menu.AutoQ.AntiTarget:MenuElement({id = Hero.charName, name = Hero.charName, value = false})		
                 end		
             end,0.2)
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 
 end
 
@@ -4210,16 +4193,16 @@ function Milio:onTick()
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
         self:Harass()
     end
-    if self.Menu.AutoW.W:Value() then
+    if Menu.AutoW.W:Value() then
         self:AutoW()
     end
-    if self.Menu.AutoE.E:Value() then
+    if Menu.AutoE.E:Value() then
         self:AutoE()
     end
-    if self.Menu.AutoR.R:Value() then
+    if Menu.AutoR.R:Value() then
         self:AutoR()
     end
-    if self.Menu.AutoQ.AntiDash:Value() then
+    if Menu.AutoQ.AntiDash:Value() then
         self:AutoQAntiDash()
     end    
 end
@@ -4229,16 +4212,16 @@ function Milio:Combo()
     local target = TargetSelector:GetTarget(1500)
     if isValid(target) and target.pos2D.onScreen then
 
-        if self.Menu.Combo.Q:Value() then
+        if Menu.Combo.Q:Value() then
             self:CastQ(target)
         end
     end
 
-    if self.Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() then
+    if Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() then
     local heroes = ObjectManager:GetAllyHeroes(self.rSpell.Range)
         for i, hero in ipairs(heroes) do
-            if self.Menu.Combo.Rhealtarget[hero.charName] and self.Menu.Combo.Rhealtarget[hero.charName]:Value() then 
-                if hero.health/hero.maxHealth <= self.Menu.Combo.RHP:Value()/100 and getEnemyCount(1200, hero.pos) > 0 then
+            if Menu.Combo.Rhealtarget[hero.charName] and Menu.Combo.Rhealtarget[hero.charName]:Value() then 
+                if hero.health/hero.maxHealth <= Menu.Combo.RHP:Value()/100 and getEnemyCount(1200, hero.pos) > 0 then
                     Control.CastSpell(HK_R)
                     lastR = GetTickCount()
                 end
@@ -4252,7 +4235,7 @@ function Milio:Harass()
     local target = TargetSelector:GetTarget(1500)
     if isValid(target) and target.pos2D.onScreen then
             
-        if self.Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana >= self.Menu.Harass.Mana:Value() / 100 then
+        if Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value() / 100 then
             self:CastQ(target)
         end
     end
@@ -4261,7 +4244,7 @@ end
 function Milio:CastQ(target)
     if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and Orbwalker:CanMove() then
         local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, self.qSpell.CollisionTypes, target.networkID)
-        if collisionCount >= 1 and myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.QBD:Value() + 1000 then
+        if collisionCount >= 1 and myHero.pos:DistanceTo(target.pos) < Menu.Combo.QBD:Value() + 1000 then
             local minion = collisionObjects[1]
             if isValid(minion) and minion.pos:DistanceTo(target.pos) < 400 and minion.pos:DistanceTo(myHero.pos) < 1000 then
                 if myHero.pos:DistanceTo(target.pos) < 1000 then
@@ -4295,8 +4278,8 @@ function Milio:AutoW()
     if isSpellReady(_W) and myHero:GetSpellData(_W).name == "MilioW" and lastW + 350 < GetTickCount() then
     local heroes = ObjectManager:GetAllyHeroes(self.wSpell.Range)
         for i, hero in ipairs(heroes) do
-            if self.Menu.AutoW.Wtarget[hero.charName] and self.Menu.AutoW.Wtarget[hero.charName]:Value() then
-                if hero.health/hero.maxHealth <= self.Menu.AutoW.WHP:Value()/100 and getEnemyCount(1200, hero.pos) > 0 then
+            if Menu.AutoW.Wtarget[hero.charName] and Menu.AutoW.Wtarget[hero.charName]:Value() then
+                if hero.health/hero.maxHealth <= Menu.AutoW.WHP:Value()/100 and getEnemyCount(1200, hero.pos) > 0 then
                     Control.CastSpell(HK_W, hero)
                     lastW = GetTickCount()
                 end
@@ -4312,7 +4295,7 @@ function Milio:AutoE()
         for i, enemy in ipairs(enemies) do
             if isValid(enemy) then
                 for j, ally in ipairs(allies) do
-                    if self.Menu.AutoE.Etarget[ally.charName] and self.Menu.AutoE.Etarget[ally.charName]:Value() then
+                    if Menu.AutoE.Etarget[ally.charName] and Menu.AutoE.Etarget[ally.charName]:Value() then
                         local canuse = false
                         if enemy.isChanneling then 
                             if enemy.activeSpell.target == ally.handle then
@@ -4345,7 +4328,7 @@ function Milio:AutoR()
     if isSpellReady(_R) and lastR + 250 < GetTickCount() then
         local heroes = ObjectManager:GetAllyHeroes(self.rSpell.Range)
         for i, hero in ipairs(heroes) do
-            if self.Menu.AutoR.Rclearstarget[hero.charName] and self.Menu.AutoR.Rclearstarget[hero.charName]:Value() and self:RCleans(hero) then
+            if Menu.AutoR.Rclearstarget[hero.charName] and Menu.AutoR.Rclearstarget[hero.charName]:Value() and self:RCleans(hero) then
                 Control.CastSpell(HK_R)
                 lastR = GetTickCount()
             end  
@@ -4355,15 +4338,15 @@ end
 
 function Milio:RCleans(unit)
     local CleanBuffs = {
-        [5]  = self.Menu.AutoR.CC.Stun:Value(),
-        [8]  = self.Menu.AutoR.CC.Taunt:Value(),
-        [9]  = self.Menu.AutoR.CC.Berserk:Value(),
-        [12] = self.Menu.AutoR.CC.Snare:Value(),
-        [22] = self.Menu.AutoR.CC.Fear:Value(),
-        [23] = self.Menu.AutoR.CC.Charm:Value(),
-        [25] = self.Menu.AutoR.CC.Suppression:Value(),
-        [32] = self.Menu.AutoR.CC.Disarm:Value(),
-        [35] = self.Menu.AutoR.CC.Asleep:Value()
+        [5]  = Menu.AutoR.CC.Stun:Value(),
+        [8]  = Menu.AutoR.CC.Taunt:Value(),
+        [9]  = Menu.AutoR.CC.Berserk:Value(),
+        [12] = Menu.AutoR.CC.Snare:Value(),
+        [22] = Menu.AutoR.CC.Fear:Value(),
+        [23] = Menu.AutoR.CC.Charm:Value(),
+        [25] = Menu.AutoR.CC.Suppression:Value(),
+        [32] = Menu.AutoR.CC.Disarm:Value(),
+        [35] = Menu.AutoR.CC.Asleep:Value()
     }    
 	
     for i = 0, unit.buffCount do
@@ -4380,7 +4363,7 @@ end
 function Milio:AutoQAntiDash()
     local enemies = ObjectManager:GetEnemyHeroes(self.qSpell.Range)
     for i, enemy in ipairs(enemies) do
-        if isValid(enemy) and self.Menu.AutoQ.AntiTarget[enemy.charName] and self.Menu.AutoQ.AntiTarget[enemy.charName]:Value()then
+        if isValid(enemy) and Menu.AutoQ.AntiTarget[enemy.charName] and Menu.AutoQ.AntiTarget[enemy.charName]:Value()then
             if enemy.pathing.isDashing and enemy.pathing.hasMovePath and enemy.pathing.dashSpeed > 0 then
                 if myHero.pos:DistanceTo(enemy.pathing.startPos) > myHero.pos:DistanceTo(enemy.pathing.endPos) then
                     if isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
@@ -4398,16 +4381,16 @@ function Milio:AutoQAntiDash()
 end
 
 function Milio:Draw()
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
         Draw.Circle(myHero.pos, 1000, 1, Draw.Color(255, 255, 255, 255))
     end
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
         Draw.Circle(myHero.pos, self.wSpell.Range, 1, Draw.Color(255, 0, 0, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
         Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 0, 0, 0))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+    if Menu.Draw.R:Value() and isSpellReady(_R) then
         Draw.Circle(myHero.pos, self.rSpell.Range, 1, Draw.Color(255, 255, 0, 0))
     end
 end
@@ -4430,25 +4413,24 @@ function AurelionSol:__init()
 end
 
 function AurelionSol:LoadMenu()
-    self.Menu = MenuElement({type = MENU, id = "zgAurelionSol", name = "Zgjfjfl AurelionSol"})
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "Rcount", name = "UseR when hit X enemies", value = 3, min = 1, max = 5})
-        self.Menu.Combo:MenuElement({id = "Rsm", name = "R Semi-Manual Key", key = string.byte("T")})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "Rcount", name = "UseR when hit X enemies", value = 3, min = 1, max = 5})
+        Menu.Combo:MenuElement({id = "Rsm", name = "R Semi-Manual Key", key = string.byte("T")})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "W2", name = "[W] Range in minimap", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W2", name = "[W] Range in minimap", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 
 end
 
@@ -4475,7 +4457,7 @@ function AurelionSol:onTick()
         self:Harass()
     end
 
-    if self.Menu.Combo.Rsm:Value() then
+    if Menu.Combo.Rsm:Value() then
         self:SemiManualR()
     end
 
@@ -4498,7 +4480,7 @@ end
 
 function AurelionSol:OnPreAttack(args)
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
-        if self.Menu.Combo.DisableAA:Value() then
+        if Menu.Combo.DisableAA:Value() then
             args.Process = false
         end
     end
@@ -4506,15 +4488,15 @@ end
 
 function AurelionSol:Combo()
     if isValid(Rtarget) then
-        if self.Menu.Combo.R:Value() and myHero.activeSpell.isCharging == false then 
+        if Menu.Combo.R:Value() and myHero.activeSpell.isCharging == false then 
             self:CastRAoE(Rtarget)
         end
     end
     if isValid(Etarget) then
-        if self.Menu.Combo.Q:Value() and not isSpellReady(_E) then
+        if Menu.Combo.Q:Value() and not isSpellReady(_E) then
             self:CastQ(Etarget)
         end
-        if self.Menu.Combo.E:Value() and myHero.activeSpell.isCharging == false then
+        if Menu.Combo.E:Value() and myHero.activeSpell.isCharging == false then
             self:CastEAoE(Etarget)
         end
     end
@@ -4522,7 +4504,7 @@ end
 
 function AurelionSol:Harass()
     if isValid(Etarget) then
-        if self.Menu.Harass.E:Value() then
+        if Menu.Harass.E:Value() then
             self:CastEAoE(Etarget)
         end
     end
@@ -4561,7 +4543,7 @@ end
 function AurelionSol:CastRAoE(target)
     if isSpellReady(_R) and lastR + 250 < GetTickCount() then
         local enemies = GetEnemiesAtPos(self.rSpell.Range + self.rSpell.Radius/2, self.rSpell.Radius, target.pos,target)
-        local Rcount = self.Menu.Combo.Rcount:Value()
+        local Rcount = Menu.Combo.Rcount:Value()
         if Rcount > 1 and #enemies >= Rcount then
             local AoEPos = CalculateBestCirclePosition(enemies, self.rSpell.Radius/2, true, self.rSpell.Range, self.rSpell.Speed, self.rSpell.Delay)
             Control.CastSpell(HK_R, AoEPos)
@@ -4584,19 +4566,19 @@ function AurelionSol:CastQ(target)
 end
 
 function AurelionSol:Draw()
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
         Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 255, 255, 255))
     end
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
         Draw.Circle(myHero.pos, self.wSpell.Range, 1, Draw.Color(255, 0, 255, 255))
     end
-    if self.Menu.Draw.W2:Value() and isSpellReady(_W) then
+    if Menu.Draw.W2:Value() and isSpellReady(_W) then
         Draw.CircleMinimap(myHero.pos, self.wSpell.Range, 1, Draw.Color(200, 0, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
         Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 0, 0, 0))
     end
-    if self.Menu.Draw.R:Value() and isSpellReady(_R) then
+    if Menu.Draw.R:Value() and isSpellReady(_R) then
         Draw.Circle(myHero.pos, self.rSpell.Range, 1, Draw.Color(255, 255, 0, 0))
     end
 end
@@ -4618,36 +4600,35 @@ function Heimerdinger:__init()
 end
 
 function Heimerdinger:LoadMenu()
-    self.Menu = MenuElement({type = MENU, id = "zgHeimerdinger", name = "Zgjfjfl Heimerdinger"})
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "QRange1", name = "QTurret distance self", value = 300, min = 100, max = 350, step = 10})
-        self.Menu.Combo:MenuElement({id = "QRange2", name = "Cast[Q] distance target ", value = 700, min = 500, max = 1000, step = 50})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RQ", name = "[RQ]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RQCount", name = "UseRQ when X enemies near", value = 2, min = 1, max = 5})
-        self.Menu.Combo:MenuElement({id = "RW", name = "[RW] UseRW if can kill target", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RE", name = "[RE]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "RECount", name = "UseRE when X enemies near", value = 3, min = 1, max = 5})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "QRange1", name = "QTurret distance self", value = 300, min = 100, max = 350, step = 10})
+        Menu.Combo:MenuElement({id = "QRange2", name = "Cast[Q] distance target ", value = 700, min = 500, max = 1000, step = 50})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RQ", name = "[RQ]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RQCount", name = "UseRQ when X enemies near", value = 2, min = 1, max = 5})
+        Menu.Combo:MenuElement({id = "RW", name = "[RW] UseRW if can kill target", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RE", name = "[RE]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "RECount", name = "UseRE when X enemies near", value = 3, min = 1, max = 5})
 
-    self.Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-        self.Menu.Harass:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-        self.Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+    Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+        Menu.Harass:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+        Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 
-    self.Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
-        self.Menu.Misc:MenuElement({id = "QAmmo", name = "Save 1 QTurret in Combo", toggle = true, value = false})
-        self.Menu.Misc:MenuElement({id = "QAHp", name = "When target <=HP% use last QTurret", value = 20, min = 0, max = 100, step = 5})
-        self.Menu.Misc:MenuElement({id = "Flee", name = "Flee [RE] or [E]", toggle = true, value = false})
-        self.Menu.Misc:MenuElement({id = "RW", name = "Semi-Manual [RW] Key", key = string.byte("Z")})
-        self.Menu.Misc:MenuElement({id = "RE", name = "Semi-Manual [RE] Key", key = string.byte("T")})
+    Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+        Menu.Misc:MenuElement({id = "QAmmo", name = "Save 1 QTurret in Combo", toggle = true, value = false})
+        Menu.Misc:MenuElement({id = "QAHp", name = "When target <=HP% use last QTurret", value = 20, min = 0, max = 100, step = 5})
+        Menu.Misc:MenuElement({id = "Flee", name = "Flee [RE] or [E]", toggle = true, value = false})
+        Menu.Misc:MenuElement({id = "RW", name = "Semi-Manual [RW] Key", key = string.byte("Z")})
+        Menu.Misc:MenuElement({id = "RE", name = "Semi-Manual [RE] Key", key = string.byte("T")})
 
-    self.Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-        self.Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
-        self.Menu.Draw:MenuElement({id = "E2", name = "[E2] Range", toggle = true, value = false})
+    Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+        Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+        Menu.Draw:MenuElement({id = "E2", name = "[E2] Range", toggle = true, value = false})
 end
 
 function Heimerdinger:onTick()
@@ -4664,10 +4645,10 @@ function Heimerdinger:onTick()
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
         self:Flee()
     end
-    if self.Menu.Misc.RW:Value() then
+    if Menu.Misc.RW:Value() then
         self:SemiManualRW()
     end
-    if self.Menu.Misc.RE:Value() then
+    if Menu.Misc.RE:Value() then
         self:SemiManualRE()
     end
 end
@@ -4676,14 +4657,14 @@ function Heimerdinger:Combo()
     if Attack:IsActive() then return end
     local target = TargetSelector:GetTarget(1500)
     if isValid(target) then
-        if self.Menu.Combo.RQ:Value() and isSpellReady(_Q) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.QRange2:Value() and getEnemyCount(self.Menu.Combo.QRange2:Value(), myHero.pos) >= self.Menu.Combo.RQCount:Value() then
+        if Menu.Combo.RQ:Value() and isSpellReady(_Q) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.QRange2:Value() and getEnemyCount(Menu.Combo.QRange2:Value(), myHero.pos) >= Menu.Combo.RQCount:Value() then
             self:CastR()
             self:CastQ(target)
-        elseif self.Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < self.Menu.Combo.QRange2:Value() and getEnemyCount(self.Menu.Combo.QRange2:Value(), myHero.pos) >= 1 then
-            if not self.Menu.Misc.QAmmo:Value() then
+        elseif Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.QRange2:Value() and getEnemyCount(Menu.Combo.QRange2:Value(), myHero.pos) >= 1 then
+            if not Menu.Misc.QAmmo:Value() then
                 self:CastQ(target)
             else
-                if target.health/target.maxHealth >= self.Menu.Misc.QAHp:Value()/100 then
+                if target.health/target.maxHealth >= Menu.Misc.QAHp:Value()/100 then
                     if myHero:GetSpellData(_Q).ammo > 1 then
                         self:CastQ(target)
                     end
@@ -4693,10 +4674,10 @@ function Heimerdinger:Combo()
             end
         end
 
-        if self.Menu.Combo.RE:Value() and isSpellReady(_E) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < E2.Range and getEnemyCount(275, target.pos) >= self.Menu.Combo.RECount:Value() then
+        if Menu.Combo.RE:Value() and isSpellReady(_E) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < E2.Range and getEnemyCount(275, target.pos) >= Menu.Combo.RECount:Value() then
             self:CastR()
             self:CastE2(target)
-        elseif self.Menu.Combo.E:Value() and isSpellReady(_E) then
+        elseif Menu.Combo.E:Value() and isSpellReady(_E) then
             if haveBuff(myHero, "HeimerdingerR") then
                 if myHero.pos:DistanceTo(target.pos) < E2.Range then
                     self:CastE2(target)
@@ -4708,10 +4689,10 @@ function Heimerdinger:Combo()
             end
         end
 
-        if self.Menu.Combo.RW:Value() and isSpellReady(_W) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < W.Range and self:getRWDmg(target) >= target.health then
+        if Menu.Combo.RW:Value() and isSpellReady(_W) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < W.Range and self:getRWDmg(target) >= target.health then
             self:CastR()
             self:CastW(target)
-        elseif self.Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < W.Range then
+        elseif Menu.Combo.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < W.Range then
             self:CastW(target)
         end
     end
@@ -4722,10 +4703,10 @@ function Heimerdinger:Harass()
 
     local target = TargetSelector:GetTarget(1500)
     if isValid(target) then
-        if self.Menu.Harass.E:Value() and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) < E.Range then
+        if Menu.Harass.E:Value() and isSpellReady(_E) and myHero.pos:DistanceTo(target.pos) < E.Range then
             self:CastE(target)
         end
-        if self.Menu.Harass.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < W.Range then
+        if Menu.Harass.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < W.Range then
             self:CastW(target)
         end
     end
@@ -4753,7 +4734,7 @@ end
 
 function Heimerdinger:Flee()
     local target = TargetSelector:GetTarget(1500)
-    if isValid(target) and self.Menu.Misc.Flee:Value() then
+    if isValid(target) and Menu.Misc.Flee:Value() then
         if isSpellReady(_E) and isSpellReady(_R) and myHero.pos:DistanceTo(target.pos) < E2.Range then
             self:CastR()
             self:CastE2(target)
@@ -4766,7 +4747,7 @@ function Heimerdinger:Flee()
 end
 
 function Heimerdinger:CastQ(target)
-    local Castpos = myHero.pos:Extended(target.pos, self.Menu.Combo.QRange1:Value())
+    local Castpos = myHero.pos:Extended(target.pos, Menu.Combo.QRange1:Value())
     if lastQ + 350 < GetTickCount() then
         Control.CastSpell(HK_Q, Castpos)
         lastQ = GetTickCount()
@@ -4821,16 +4802,16 @@ function Heimerdinger:getRWDmg(target)
 end
 
 function Heimerdinger:Draw()
-    if self.Menu.Draw.Q:Value() and isSpellReady(_Q) then
+    if Menu.Draw.Q:Value() and isSpellReady(_Q) then
         Draw.Circle(myHero.pos, Q.Range, 1, Draw.Color(255, 255, 255, 255))
     end
-    if self.Menu.Draw.W:Value() and isSpellReady(_W) then
+    if Menu.Draw.W:Value() and isSpellReady(_W) then
         Draw.Circle(myHero.pos, W.Range, 1, Draw.Color(255, 0, 255, 255))
     end
-    if self.Menu.Draw.E:Value() and isSpellReady(_E) then
+    if Menu.Draw.E:Value() and isSpellReady(_E) then
         Draw.Circle(myHero.pos, E.Range, 1, Draw.Color(255, 0, 0, 0))
     end
-    if self.Menu.Draw.E2:Value() and isSpellReady(_E) then
+    if Menu.Draw.E2:Value() and isSpellReady(_E) then
         Draw.Circle(myHero.pos, E2.Range, 1, Draw.Color(255, 255, 0, 0))
     end
 end
@@ -4850,25 +4831,24 @@ function Briar:__init()
 end
 
 function Briar:LoadMenu()
-    self.Menu = MenuElement({type = MENU, id = "zgBriar", name = "Zgjfjfl Briar"})
             
-    self.Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-        self.Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = false})
-        self.Menu.Combo:MenuElement({id = "W2", name = "[W2] in Combo", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "W2Kill", name = "Auto [W2] can kills", toggle = true, value = true})
-        self.Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
-        self.Menu.Combo:MenuElement({id = "EHP", name = "Use E when self <= HP%", value = 30, min = 0, max = 100, step = 5})
-        self.Menu.Combo:MenuElement({id = "EWall", name = "[E] to wall when target isImmobile", toggle = true, value = false})
-        self.Menu.Combo:MenuElement({id = "RM", name = "[R] Semi-Manual Key", key = string.byte("T")})
+    Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+        Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = false})
+        Menu.Combo:MenuElement({id = "W2", name = "[W2] in Combo", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "W2Kill", name = "Auto [W2] can kills", toggle = true, value = true})
+        Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
+        Menu.Combo:MenuElement({id = "EHP", name = "Use E when self <= HP%", value = 30, min = 0, max = 100, step = 5})
+        Menu.Combo:MenuElement({id = "EWall", name = "[E] to wall when target isImmobile", toggle = true, value = false})
+        Menu.Combo:MenuElement({id = "RM", name = "[R] Semi-Manual Key", key = string.byte("T")})
 
 
-    self.Menu:MenuElement({type = MENU, id = "Clear", name = "Jungle Clear"})
-        self.Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = false})
-        self.Menu.Clear:MenuElement({id = "W2", name = "[W2]", toggle = true, value = true})
-        self.Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
-        self.Menu.Clear:MenuElement({id = "EHP", name = "Use E when self <= HP%", value = 30, min = 0, max = 100, step = 5})
+    Menu:MenuElement({type = MENU, id = "Clear", name = "Jungle Clear"})
+        Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = false})
+        Menu.Clear:MenuElement({id = "W2", name = "[W2]", toggle = true, value = true})
+        Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
+        Menu.Clear:MenuElement({id = "EHP", name = "Use E when self <= HP%", value = 30, min = 0, max = 100, step = 5})
 end
 
 function Briar:onTick()
@@ -4886,10 +4866,10 @@ function Briar:onTick()
     if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_JUNGLECLEAR] then
         self:JungleClear()
     end
-    if self.Menu.Combo.RM:Value() then
+    if Menu.Combo.RM:Value() then
         self:RSemiManual()
     end
-    if self.Menu.Combo.W2Kill:Value() then
+    if Menu.Combo.W2Kill:Value() then
         self:AutoW2()
     end
 end
@@ -4901,19 +4881,19 @@ function Briar:Combo()
     local target = TargetSelector:GetTarget(1000)
     if isValid(target) then
 
-        if self.Menu.Combo.Q:Value() and isSpellReady(_Q) and getDistance(myHero.pos, target.pos) <= Q.Range and getDistance(myHero.pos, target.pos) > Data:GetAutoAttackRange(myHero) then
+        if Menu.Combo.Q:Value() and isSpellReady(_Q) and getDistance(myHero.pos, target.pos) <= Q.Range and getDistance(myHero.pos, target.pos) > Data:GetAutoAttackRange(myHero) then
             Control.CastSpell(HK_Q, target)
         end
 
-        if self.Menu.Combo.W:Value() and not haveBuff(myHero, "BriarRSelf") and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarW" and getDistance(myHero.pos, target.pos) < W.Range then
+        if Menu.Combo.W:Value() and not haveBuff(myHero, "BriarRSelf") and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarW" and getDistance(myHero.pos, target.pos) < W.Range then
             Control.CastSpell(HK_W, target)
         end 
        
-        if self.Menu.Combo.W2:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and getDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and getBuffData(myHero, "BriarWAttackSpell").duration < 3 then
+        if Menu.Combo.W2:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and getDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and getBuffData(myHero, "BriarWAttackSpell").duration < 3 then
             Control.CastSpell(HK_W)
         end
 
-        if self.Menu.Combo.EWall:Value() and isSpellReady(_E) then
+        if Menu.Combo.EWall:Value() and isSpellReady(_E) then
             local Pos = myHero.pos:Extended(target.pos, E.Range)
             local Pos2 = MapPosition:getIntersectionPoint3D(myHero.pos, Pos)
             if Pos2 and isImmobile(target) and getDistance(myHero.pos, target.pos) < E.Range then
@@ -4921,7 +4901,7 @@ function Briar:Combo()
             end
         end
 
-        if self.Menu.Combo.E:Value() and isSpellReady(_E) and getDistance(myHero.pos, target.pos) < E.Range and myHero.health/myHero.maxHealth <= self.Menu.Combo.EHP:Value()/100 then
+        if Menu.Combo.E:Value() and isSpellReady(_E) and getDistance(myHero.pos, target.pos) < E.Range and myHero.health/myHero.maxHealth <= Menu.Combo.EHP:Value()/100 then
             self:CastE(target)
         end
     end
@@ -4953,19 +4933,19 @@ function Briar:JungleClear()
     local target = HealthPrediction:GetJungleTarget()
     if isValid(target) then
 
-        if self.Menu.Clear.Q:Value() and isSpellReady(_Q) and getDistance(myHero.pos, target.pos) <= Q.Range then
+        if Menu.Clear.Q:Value() and isSpellReady(_Q) and getDistance(myHero.pos, target.pos) <= Q.Range then
             Control.CastSpell(HK_Q, target)
         end
 
-        if self.Menu.Clear.W:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarW" and getDistance(myHero.pos, target.pos) < W.Range then
+        if Menu.Clear.W:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarW" and getDistance(myHero.pos, target.pos) < W.Range then
             Control.CastSpell(HK_W, target)
         end 
        
-        if self.Menu.Clear.W2:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and getDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and getBuffData(myHero, "BriarWAttackSpell").duration < 3 then
+        if Menu.Clear.W2:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and getDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and getBuffData(myHero, "BriarWAttackSpell").duration < 3 then
             Control.CastSpell(HK_W)
         end
 
-        if self.Menu.Clear.E:Value() and isSpellReady(_E) and getDistance(myHero.pos, target.pos) < E.Range and myHero.health/myHero.maxHealth <= self.Menu.Clear.EHP:Value()/100 then
+        if Menu.Clear.E:Value() and isSpellReady(_E) and getDistance(myHero.pos, target.pos) < E.Range and myHero.health/myHero.maxHealth <= Menu.Clear.EHP:Value()/100 then
             self:CastE(target)
         end
     end

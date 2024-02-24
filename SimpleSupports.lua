@@ -373,6 +373,7 @@ end
 --------------------------------------
 
 Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName})
+	-- Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
 	Menu:MenuElement({id = "SupportMode", name = "Support Mode (Disable Harass Lasthit)",value = true})
 
 --------------------------------------
