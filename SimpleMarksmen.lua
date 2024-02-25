@@ -420,7 +420,7 @@ function Nilah:LaneClear()
         MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
         for i, minion in ipairs(minions) do
             if IsValid(minion) and minion.pos2D.onScreen then
-                local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+                local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
                 if collisionCount >= 0 then
                     Control.CastSpell(HK_Q, minion)
                 end
