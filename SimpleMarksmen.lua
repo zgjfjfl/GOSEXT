@@ -622,6 +622,7 @@ function Smolder:LoadMenu()
 	Menu.LastHit:MenuElement({id = "Q", name = "Use Q(Clear/Harass/LastHit Modes)", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "Q", name = "Q priority AA in combat", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Wcc", name = "Auto W on CC", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Rsm", name = "Semi-manual R Key", key = string.byte("T")})
 
@@ -639,6 +640,14 @@ function Smolder:OnPreAttack(args)
 	local target = args.Target 
 	if target.type == Obj_AI_Minion then
 		if (Mode == "LaneClear" or Mode == "Harass" or Mode == "LastHit") and target.health < self:GetQDmg(target) and IsReady(_Q) then
+			args.Process = false
+		else
+			args.Process = true
+		end
+	end
+	
+	if target.type == Obj_AI_Hero then
+		if Menu.Misc.Q:Value() and IsReady(_Q) then
 			args.Process = false
 		else
 			args.Process = true
@@ -677,6 +686,8 @@ function Smolder:OnTick()
 		self:LastHit()
 		self:LaneClear()
 		self:JungleClear()
+	elseif Mode == "LastHit" then
+		self:LastHit()
 	end
 end
 
