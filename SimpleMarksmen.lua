@@ -331,14 +331,14 @@ end
 ---------------------------------
 
 Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName})
-	-- Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
+	Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
 
 ---------------------------------
 
 class "Nilah"
         
 function Nilah:__init()	     
-    print("Zgjfjfl_Nilah Loaded")
+    print("Marksmen Nilah Loaded")
     self:LoadMenu()
 	
     Callback.Add("Draw", function() self:Draw() end)
@@ -623,7 +623,7 @@ end
 class "Smolder"
 
 function Smolder:__init()
-	print("Zgjfjfl Smolder Loaded") 
+	print("Marksmen Smolder Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)

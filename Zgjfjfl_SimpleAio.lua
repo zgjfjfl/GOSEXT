@@ -466,7 +466,7 @@ end
 ------------------------------------
 
 Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Zgjfjfl "..myHero.charName})
-	-- Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
+	Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
 
 ------------------------------------
 
