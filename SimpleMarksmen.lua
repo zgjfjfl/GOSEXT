@@ -5,7 +5,7 @@ if not table.contains(Heroes, myHero.charName) then
 	return 
 end
 
-local Version = 2024.01
+local Version = 2024.02
 
 --[ AutoUpdate ]
 
