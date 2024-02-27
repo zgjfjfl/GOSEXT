@@ -5,6 +5,53 @@ if not table.contains(Heroes, myHero.charName) then
 	return 
 end
 
+local Version = 2024.01
+
+--[ AutoUpdate ]
+
+do
+    
+    local Files = {
+        Lua = {
+            Path = SCRIPT_PATH,
+            Name = "SimpleMarksmen.lua",
+            Url = "https://raw.githubusercontent.com/zgjfjfl/GOSEXT/main/SimpleMarksmen.lua"
+       },
+        Version = {
+            Path = SCRIPT_PATH,
+            Name = "SimpleMarksmen.version",
+            Url = "https://raw.githubusercontent.com/zgjfjfl/GOSEXT/main/SimpleMarksmen.version"
+        }
+    }
+    
+    local function AutoUpdate()
+        
+        local function DownloadFile(url, path, fileName)
+            DownloadFileAsync(url, path .. fileName, function() end)
+            while not FileExist(path .. fileName) do end
+        end
+
+        local function ReadFile(path, fileName)
+            local file = io.open(path .. fileName, "r")
+            local result = file:read()
+            file:close()
+            return result
+        end
+        
+        DownloadFile(Files.Version.Url, Files.Version.Path, Files.Version.Name)
+        local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
+        if NewVersion > Version then
+			print("SimpleMarksmen: Found update! Downloading...")
+            DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name)
+            print("SimpleMarksmen: Successfully updated. Press 2x F6!")
+        end
+
+    end
+    
+    AutoUpdate()
+
+end
+
 require "GGPrediction"
 require "2DGeometry"
 require "MapPositionGOS"
