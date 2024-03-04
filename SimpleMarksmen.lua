@@ -1,11 +1,4 @@
-local Heroes = {"Nilah", "Smolder"}
-
-if not table.contains(Heroes, myHero.charName) then
-	print('SimpleMarksmen not supported ' .. myHero.charName)
-	return 
-end
-
-local Version = 2024.02
+local Version = 2024.03
 
 --[ AutoUpdate ]
 
@@ -50,6 +43,13 @@ do
     
     AutoUpdate()
 
+end
+
+local Heroes = {"Nilah", "Smolder"}
+
+if not table.contains(Heroes, myHero.charName) then
+	print('SimpleMarksmen not supported ' .. myHero.charName)
+	return 
 end
 
 require "GGPrediction"
