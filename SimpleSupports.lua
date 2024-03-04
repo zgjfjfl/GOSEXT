@@ -1,11 +1,4 @@
-local Heroes ={"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko", "Yuumi"}
-
-if not table.contains(Heroes, myHero.charName) then 
-	print('SimpleSupports not supported ' .. myHero.charName)
-	return 
-end
-
-local Version = 2024.01
+local Version = 2024.02
 
 --[ AutoUpdate ]
 
@@ -50,6 +43,13 @@ do
     
     AutoUpdate()
 
+end
+
+local Heroes ={"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko", "Yuumi"}
+
+if not table.contains(Heroes, myHero.charName) then 
+	print('SimpleSupports not supported ' .. myHero.charName)
+	return 
 end
 
 require "GGPrediction"
