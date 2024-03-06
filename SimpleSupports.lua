@@ -1,4 +1,4 @@
-local Version = 2024.02
+local Version = 2024.03
 
 --[ AutoUpdate ]
 
@@ -45,7 +45,7 @@ do
 
 end
 
-local Heroes ={"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko", "Yuumi"}
+local Heroes = {"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko", "Yuumi"}
 
 if not table.contains(Heroes, myHero.charName) then 
 	print('SimpleSupports not supported ' .. myHero.charName)
@@ -2161,14 +2161,15 @@ function Seraphine:CastGGPred(spell, unit)
 end
 
 function Seraphine:GetQDmg(target)
+	local missingHp = string.format("%.2f", (1 - target.health / target.maxHealth))
 	local level = myHero:GetSpellData(_Q).level
-	local QDmg = ({55, 80, 105, 130, 155})[level] + 0.5 * myHero.ap
+	local QDmg = (({60, 85, 110, 135, 165})[level] + 0.5 * myHero.ap) * (1 + 0.06 * (MathMin(missingHp, 0.75) / 0.075))
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
 end
 
 function Seraphine:GetEDmg(target)
 	local level = myHero:GetSpellData(_E).level
-	local EDmg = ({60, 95, 130, 165, 200})[level] + 0.35 * myHero.ap
+	local EDmg = ({70, 100, 130, 160, 190})[level] + 0.5 * myHero.ap
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
 end
 
