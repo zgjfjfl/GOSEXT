@@ -1,4 +1,4 @@
-local Version = 2024.03
+local Version = 2024.04
 
 --[ AutoUpdate ]
 
@@ -714,7 +714,7 @@ function Smolder:OnTick()
 		return
 	end
 
-	if myHero.activeSpell.valid or HaveBuff(myHero, "SmolderE") then return end
+	if myHero.activeSpell.valid then return end
 
 	if Menu.Misc.Rsm:Value() and IsReady(_R) then
 		self:OneKeyCastR()
