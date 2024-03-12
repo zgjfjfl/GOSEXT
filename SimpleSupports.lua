@@ -1,4 +1,4 @@
-local Version = 2024.03
+local Version = 2024.04
 
 --[ AutoUpdate ]
 
@@ -45,7 +45,7 @@ do
 
 end
 
-local Heroes = {"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko", "Yuumi"}
+local Heroes = {"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko"}
 
 if not table.contains(Heroes, myHero.charName) then 
 	print('SimpleSupports not supported ' .. myHero.charName)
@@ -2337,7 +2337,7 @@ end
 
 ---------------------------------
 
-class "Yuumi"
+--[[class "Yuumi"
 
 function Yuumi:__init()
 	print("Support Yuumi Loaded") 
@@ -2622,4 +2622,4 @@ function Yuumi:Draw()
 	if Menu.Draw.R:Value() and IsReady(_R) then
 		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
-end
+end]]
