@@ -1,9 +1,10 @@
-local Version = 2024.04
+local AIOVersion = 2024.05
 
 --[ AutoUpdate ]
 
 do
-    
+    local Version = AIOVersion
+
     local Files = {
         Lua = {
             Path = SCRIPT_PATH,
@@ -420,7 +421,7 @@ end
 --------------------------------------
 
 Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName})
-	Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
+	Menu:MenuElement({name = " ", drop = {"Version: " .. AIOVersion}})
 	Menu:MenuElement({id = "SupportMode", name = "Support Mode (Disable Harass Lasthit)",value = true})
 
 --------------------------------------
