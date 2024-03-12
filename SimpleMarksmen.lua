@@ -1,4 +1,4 @@
-local Version = 2024.04
+local Version = 2024.05
 
 --[ AutoUpdate ]
 
@@ -671,6 +671,7 @@ function Smolder:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "Q", name = "Q priority AA in combat", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Wcc", name = "Auto W on CC", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "E", name = "No cast other spells while E flight", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Rsm", name = "Semi-manual R Key", key = string.byte("T")})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
@@ -701,11 +702,11 @@ function Smolder:OnPreAttack(args)
 		end
 	end
 
-	if HaveBuff(myHero, "SmolderE") then
-		args.Process = false
-	else
-		args.Process = true
-	end
+	-- if HaveBuff(myHero, "SmolderE") then
+		-- args.Process = false
+	-- else
+		-- args.Process = true
+	-- end
 end
 
 function Smolder:OnTick()
@@ -714,11 +715,13 @@ function Smolder:OnTick()
 		return
 	end
 
-	if myHero.activeSpell.valid then return end
-
 	if Menu.Misc.Rsm:Value() and IsReady(_R) then
 		self:OneKeyCastR()
 	end
+	
+	if myHero.activeSpell.valid then return end
+	
+	if Menu.Misc.E:Value() and HaveBuff(myHero, "SmolderE") then return end
 
 	self:Auto()
 
