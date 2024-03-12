@@ -1,4 +1,4 @@
-local Version = 2024.06
+local Version = 2024.07
 
 --[ AutoUpdate ]
 
@@ -32,12 +32,14 @@ do
         end
         
         DownloadFile(Files.Version.Url, Files.Version.Path, Files.Version.Name)
-        local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
-        if NewVersion > Version then
-			print("SimpleSupports: Found update! Downloading...")
-            DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name)
-            print("SimpleSupports: Successfully updated. Press 2x F6!")
-        end
+		DelayAction(function() 
+			local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
+			if NewVersion > Version then
+				print("SimpleSupports: Found update! Downloading...")
+				DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name)
+				print("SimpleSupports: Successfully updated. Press 2x F6!")
+			end
+		end, 1)
 
     end
     
