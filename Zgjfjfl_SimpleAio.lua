@@ -1,9 +1,9 @@
-local Version = 2024.02
+local Version = 2024.03
 
 --[ AutoUpdate ]
 
 do
-	
+
 	local Files = {
 		Lua = {
 			Path = SCRIPT_PATH,
@@ -16,9 +16,9 @@ do
 			Url = "https://raw.githubusercontent.com/zgjfjfl/GOSEXT/main/Zgjfjfl_SimpleAio.version"
 		}
 	}
-	
+
 	local function AutoUpdate()
-		
+
 		local function DownloadFile(url, path, fileName)
 			DownloadFileAsync(url, path .. fileName, function() end)
 			while not FileExist(path .. fileName) do end
@@ -30,17 +30,21 @@ do
 			file:close()
 			return result
 		end
-		
+
 		DownloadFile(Files.Version.Url, Files.Version.Path, Files.Version.Name)
-		local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
-		if NewVersion > Version then
-			print("SimpleAio: Found update! Downloading...")
-			DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name)
-			print("SimpleAio: Successfully updated. Press 2x F6!")
-		end
+		DelayAction(function()
+			local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
+			if NewVersion > Version then
+				print("SimpleAio: Found update! Downloading...")
+				DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name)
+				DelayAction(function()
+					print("SimpleAio: Successfully updated. Press 2x F6!")
+				end, 3)
+			end
+		end, 3)
 
 	end
-	
+
 	AutoUpdate()
 
 end
