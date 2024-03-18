@@ -1,4 +1,4 @@
-local Version = 2024.06
+local Version = 2024.07
 
 --[ AutoUpdate ]
 
@@ -49,7 +49,7 @@ do
 
 end
 
-local Heroes = {"Nilah", "Smolder"}
+local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian"}
 
 if not table.contains(Heroes, myHero.charName) then
 	print('SimpleMarksmen not supported ' .. myHero.charName)
@@ -76,6 +76,7 @@ local GameCampCount = Game.CampCount
 local GameCamp = Game.Camp
 local GameWardCount = Game.WardCount
 local GameWard = Game.Ward
+local GameIsWall = Game.isWall
 
 local TableInsert = table.insert
 local TableRemove = table.remove
@@ -85,6 +86,8 @@ local MathMax = math.max
 local MathFloor = math.floor
 local MathSqrt = math.sqrt
 local MathSort = table.sort
+local MathDeg = math.deg
+local MathAbs = math.abs
 
 local lastQ = 0
 local lastW = 0
@@ -129,7 +132,7 @@ local function GetDistanceSqr(Pos1, Pos2)
 end
 
 local function GetDistance(Pos1, Pos2)
-	return math.sqrt(GetDistanceSqr(Pos1, Pos2))
+	return MathSqrt(GetDistanceSqr(Pos1, Pos2))
 end
 
 local function GetEnemyHeroes()
@@ -325,16 +328,41 @@ end
 local function IsFacingMe(unit)
 	local V = Vector((unit.pos - myHero.pos))
 	local D = Vector(unit.dir)
-	local Angle = 180 - math.deg(math.acos(V*D/(V:Len()*D:Len())))
-	if math.abs(Angle) < 90 then 
+	local Angle = 180 - MathDeg(math.acos(V*D/(V:Len()*D:Len())))
+	if MathAbs(Angle) < 90 then 
 		return true  
 	end
 	return false
 end
 
+local function CircleCircleIntersection(c1, c2, r1, r2)
+	local D = GetDistance(c1,c2)
+	if D > r1 + r2 or D <= MathAbs(r1 - r2) then return nil end
+	local A = (r1 * r2 - r2 * r1 + D * D) / (2 * D)
+	local H = MathSqrt(r1 * r1 - A * A)
+	local Direction = (c2 - c1):Normalized()
+	local PA = c1 + A * Direction
+	local S1 = PA + H * Direction:Perpendicular()
+	local S2 = PA - H * Direction:Perpendicular()
+	return S1, S2
+end
+
+local function FindFirstWallCollision(startPos, endPos)
+	local direction = (endPos - startPos):Normalized()
+	local distance = startPos:DistanceTo(endPos)
+	local step = 10
+	for i = 0, distance, step do
+		local checkPos = startPos + direction * i
+		if GameIsWall(checkPos) then
+			return checkPos
+		end
+	end
+	return nil
+end
+
 ---------------------------------
 
-Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName})
+Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.5.1/img/champion/"..myHero.charName..".png"})
 	Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
 
 ---------------------------------
@@ -1011,3 +1039,374 @@ function Smolder:Draw()
 	end
 end
 
+-----------------------------------------
+
+class "Zeri"
+
+function Zeri:__init()
+	print("Marksmen Zeri Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
+	-- Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 40, Range = 750, Speed = 2600, Collision = false}
+	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 40, Range = 1200, Speed = 2500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	W2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 100, Range = 2500, Speed = 2500, Collision = false}
+	ESpell = { Range = 300 }
+	RSpell = { Delay = 0.25, Range = 825 }
+end
+
+function Zeri:LoadMenu()
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "QhitChance", name = "Use Q | Combo hitChance", value = 1, drop = {"Normal", "High"}})
+	Menu.Combo:MenuElement({id = "W", name = "Use W | No QRange or Through Wall", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "WhitChance", name = "Use W | Combo hitChance", value = 1, drop = {"Normal", "High"}})
+	Menu.Combo:MenuElement({id = "Wwall", name = "Use W | Only Through Wall", toggle = true, value = false})
+	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = false})
+	Menu.Combo:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "RCount", name = "Use R| Aoe Hit Count >= x", value = 3, min = 1, max = 5, step = 1})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "QhitChance", name = "Use Q | Harass hitChance", value = 1, drop = {"Normal", "High"}})
+
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "QHarass", name = "Use Q Harass(In LaneClear Mode)", toggle = true, value = true})
+	Menu.Clear:MenuElement({id = "QObj", name = "Use Q on Buildings & Wards", toggle = true, value = true})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
+	Menu.LastHit:MenuElement({id = "Q", name = "Use Q(Clear/Harass/LastHit Modes)", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "QRange", name = "Q range manual fine-tuning", value = 0, min = -50, max = 50, step = 5})
+	Menu.Misc:MenuElement({id = "AAkills", name = "Use PassiveAA kills target when no Q", toggle = true, value = false})
+	Menu.Misc:MenuElement({id = "ComboAA", name = "Disable AA when no Qpassive in combo", toggle = true, value = true, key = string.byte("T")})
+	Menu.Misc:MenuElement({id = "ClearAA", name = "Disable AA when in Clear(Mouse Scroll)", toggle = true, value = true, key = 4})	
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "ComboAA", name = "Draw Combo AA Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "ClearAA", name = "Draw Clear AA Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw Q Range", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
+end
+
+function Zeri:OnPreAttack(args)
+	local Mode = GetMode()
+	local target = args.Target 
+	if Mode == "Combo" then
+		if Menu.Misc.ComboAA:Value() and not HaveBuff(myHero, "ZeriQPassiveReady") then
+			args.Process = false
+		else
+			args.Process = true
+		end
+	end
+
+	if Mode == "LaneClear" and target.type == Obj_AI_Minion then
+		local AADamage = Damage:GetAutoAttackDamage(myHero, target)
+		if Menu.Misc.ClearAA:Value() then
+			args.Process = false
+			if IsValid(target) and target.health < AADamage and Data:IsInAutoAttackRange(myHero, target) then
+				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+				if collisionCount > 0 or not IsReady(_Q) then
+					args.Process = true
+				end
+			end
+		else
+			args.Process = true
+		end
+	end
+end
+
+function Zeri:OnTick()
+	if myHero.range == 550 then
+		QSpell.Range = 800 + Menu.Misc.QRange:Value()
+	else
+		QSpell.Range = 750 + Menu.Misc.QRange:Value()
+	end
+
+	if HaveBuff(myHero, "ZeriR") then
+		QSpell.Speed = 3400
+	else
+		QSpell.Speed = 2600
+	end
+
+	WSpell.Delay = MathMax(MathFloor((0.55 - 0.09 * (myHero.attackSpeed - 1)) * 100) / 100, 0.3)
+	W2Spell.Delay = WSpell.Delay
+	
+	if myHero.dead or Game.IsChatOpen() or Recalling() then
+		return
+	end
+
+	local Mode = GetMode()
+	if Mode == "Combo" then
+		self:Combo()
+		self:AAkills()
+	elseif Mode == "Harass" then
+		self:LastHit()
+		self:Harass()
+	elseif Mode == "LaneClear" then
+		self:FarmHarass()
+		self:LastHit()
+		self:QObject()
+		self:LaneClear()
+		self:JungleClear()
+	elseif Mode == "LastHit" then
+		self:LastHit()
+	end
+end
+
+function Zeri:AAkills()
+	if not Menu.Misc.AAkills:Value() or myHero.activeSpell.valid then return end
+
+	local targets = ObjectManager:GetEnemyHeroes(Data:GetAutoAttackRange(myHero))
+	for i, target in ipairs(targets) do
+		if IsValid(target) then
+			local AADamage = Damage:GetAutoAttackDamage(myHero, target)
+			if target.health < AADamage and not IsReady(_Q) then
+				_G.Control.Attack(target)
+				return
+            end
+        end
+    end
+end
+
+
+function Zeri:Combo()
+	if Menu.Combo.E:Value() and IsReady(_E) then
+		local target = GetTarget(ESpell.Range + QSpell.Range - 50)
+		if IsValid(target) and target.pos2D.onScreen then
+			Control.CastSpell(HK_E, target)
+		end
+	end
+
+	if Menu.Combo.Q:Value() and IsReady(_Q) then
+		local target = GetTarget(QSpell.Range)
+		if IsValid(target) and target.pos2D.onScreen then
+			local QPrediction = GGPrediction:SpellPrediction(QSpell)
+			QPrediction:GetPrediction(target, myHero)
+			if QPrediction:CanHit(Menu.Combo.QhitChance:Value() + 1) then
+				Control.CastSpell(HK_Q, QPrediction.CastPosition)
+			end
+		end
+	end
+	
+	if Menu.Combo.W:Value() and IsReady(_W) then
+		local target = GetTarget(W2Spell.Range)
+		if IsValid(target) and target.pos2D.onScreen and myHero.pos:DistanceTo(target.pos) > QSpell.Range then
+			self:CastW(target)
+		end
+	end
+
+	if Menu.Combo.R:Value() and IsReady(_R) then
+		local Count = 0
+		for i, enemy in ipairs(GetEnemyHeroes()) do
+			if IsValid(enemy) then
+				local enemyPred = enemy:GetPrediction(MathHuge, RSpell.Delay)
+				if myHero.pos:DistanceTo(enemyPred) < RSpell.Range - 50 then
+					Count = Count + 1
+				end
+			end
+		end
+		
+		if Count >= Menu.Combo.RCount:Value() then
+			Control.CastSpell(HK_R)
+		end
+	end
+end
+
+function Zeri:CastW(target)
+	if myHero.activeSpell.valid then return end
+	
+	local pred = GGPrediction:SpellPrediction(W2Spell)
+	pred:GetPrediction(target, myHero)
+	if pred:CanHit(Menu.Combo.WhitChance:Value() + 1) then
+		local castPos = pred.CastPosition
+		local unitPos = pred.UnitPosition
+
+		local wallColPos
+		if GameIsWall == nil then
+			wallColPos = MapPosition:getIntersectionPoint3D(myHero.pos, unitPos)
+		else
+			wallColPos = FindFirstWallCollision(myHero.pos, unitPos)
+		end
+
+		if wallColPos ~= nil then
+			if myHero.pos:DistanceTo(wallColPos) < WSpell.Range and wallColPos:DistanceTo(unitPos) < 1400 then
+				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, wallColPos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+				if collisionCount == 0 then
+					Control.CastSpell(HK_W, castPos)
+				end
+			end
+		else
+			if not Menu.Combo.Wwall:Value() then
+				local WPrediction = GGPrediction:SpellPrediction(WSpell)
+				WPrediction:GetPrediction(target, myHero)
+				if WPrediction:CanHit(Menu.Combo.WhitChance:Value() + 1) then
+					Control.CastSpell(HK_W, WPrediction.CastPosition)
+				end
+			end
+		end
+	end
+end
+
+function Zeri:Harass()
+	if Menu.Harass.Q:Value() and IsReady(_Q) then
+		local target = GetTarget(QSpell.Range)
+		if IsValid(target) and target.pos2D.onScreen then
+			local QPrediction = GGPrediction:SpellPrediction(QSpell)
+			QPrediction:GetPrediction(target, myHero)
+			if QPrediction:CanHit(Menu.Harass.QhitChance:Value() + 1) then
+				Control.CastSpell(HK_Q, QPrediction.CastPosition)
+			end
+		end
+	end
+end
+
+function Zeri:FarmHarass()
+	if IsUnderTurret(myHero) then return end
+	if Menu.Clear.QHarass:Value() then
+		self:Harass()
+	end
+end
+
+-- function Zeri:GetAADmg(target)
+	-- local level = myHero.levelData.lvl
+	-- local baseDmg, bonusDmg, totalDmg
+	-- if HaveBuff(myHero, "ZeriQPassiveReady") then
+		-- baseDmg = 90 + (110 / 17) * (level - 1) * (0.7025 + 0.0175 * (level - 1)) + myHero.ap * 1.1
+		-- bonusDmg = 0.01 * (1 + (14 / 17) * (level - 1) * (0.7025 + 0.0175 * (level - 1))) * target.maxHealth
+	-- else
+		-- baseDmg = 10 + (15 / 17) * (level - 1) * (0.7025 + 0.0175 * (level - 1)) + myHero.ap * 0.03
+		-- if target.health < 60 + (90 / 17) * (level - 1) + myHero.ap * 0.18 then
+			-- baseDmg = 60 + (90 / 17) * (level - 1) + myHero.ap * 0.18
+		-- end
+	-- end
+	-- if target.team == 300 then
+		-- totalDmg = MathMin(300, baseDmg + (bonusDmg or 0))
+	-- else
+		-- totalDmg = baseDmg + (bonusDmg or 0)
+	-- end
+	-- return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, totalDmg)
+-- end
+
+function Zeri:GetQDmg(target)
+	local level = myHero:GetSpellData(_Q).level
+	local baseDmg = {15, 17, 19, 21, 23}
+	local bonusDmg = {1.04, 1.08, 1.12, 1.16, 1.2}
+	local QDmg = baseDmg[level] + bonusDmg[level] * myHero.totalDamage
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
+end
+
+function Zeri:LastHit()
+	if Menu.LastHit.Q:Value() and IsReady(_Q) then
+		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.pos2D.onScreen then
+				local Hp = HealthPrediction:GetPrediction(minion, myHero.pos:DistanceTo(minion.pos) / QSpell.Speed)
+				local QDmg = self:GetQDmg(minion)
+				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
+				if QDmg > Hp and collisionCount == 0 then
+					Control.CastSpell(HK_Q, minion)
+				end
+			end
+		end
+	end
+end
+
+function Zeri:LaneClear()
+	if IsUnderTurret(myHero) then return end
+	if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
+		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+		MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
+				Control.CastSpell(HK_Q, minion)
+			end
+		end
+	end
+end
+
+function Zeri:JungleClear()
+	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
+		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
+				Control.CastSpell(HK_Q, minion)
+			end
+		end
+	end
+end
+
+function Zeri:QObject()
+    if not IsReady(_Q) or not Menu.Clear.QObj:Value() then return end
+
+    local QRange = QSpell.Range
+    local targets = {}
+    local turrets = ObjectManager:GetEnemyTurrets(QRange)
+    local buildings = ObjectManager:GetEnemyBuildings(QRange + 380)
+    local wards = ObjectManager:GetOtherEnemyMinions(QRange)
+
+    for _, turret in pairs(turrets) do
+        if turret.isTargetable then
+            TableInsert(targets, turret)
+        end
+    end
+
+    for _, building in pairs(buildings) do
+        if building.type == Obj_AI_Nexus or (building.type == Obj_AI_Barracks and building.distance < QRange + 270) then
+            TableInsert(targets, building)
+        end
+    end
+
+    for _, ward in pairs(wards) do
+        TableInsert(targets, ward)
+    end
+
+    if #targets > 0 then
+        Control.CastSpell(HK_Q, targets[1])
+    end
+end
+
+function Zeri:Draw()
+	if myHero.dead then return end
+
+	if Menu.Draw.ComboAA:Value() then
+		if not Menu.Misc.ComboAA:Value() then
+			Draw.Text("Combo AA: On", 16, myHero.pos2D.x-47, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Combo AA: Off", 16, myHero.pos2D.x-47, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.ClearAA:Value() then
+		if not Menu.Misc.ClearAA:Value() then
+			Draw.Text("Clear AA: On", 16, myHero.pos2D.x-37, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Clear AA: Off", 16, myHero.pos2D.x-37, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.Q:Value() then
+		Draw.Circle(myHero.pos, QSpell.Range, 0.5, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+	if Menu.Draw.R:Value() and IsReady(_R) then
+		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+	end
+end
