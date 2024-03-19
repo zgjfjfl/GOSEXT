@@ -1,4 +1,4 @@
-local Version = 2024.08
+local Version = 2024.09
 
 --[ AutoUpdate ]
 
@@ -1062,9 +1062,7 @@ function Zeri:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "QhitChance", name = "Use Q | Combo hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Combo:MenuElement({id = "W", name = "Use W | No QRange or Through Wall", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "WhitChance", name = "Use W | Combo hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Combo:MenuElement({id = "Wwall", name = "Use W | Only Through Wall", toggle = true, value = false})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = false})
 	Menu.Combo:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
@@ -1072,7 +1070,6 @@ function Zeri:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "QhitChance", name = "Use Q | Harass hitChance", value = 1, drop = {"Normal", "High"}})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "QHarass", name = "Use Q Harass(In LaneClear Mode)", toggle = true, value = true})
@@ -1086,6 +1083,8 @@ function Zeri:LoadMenu()
 	Menu.LastHit:MenuElement({id = "Q", name = "Use Q(Clear/Harass/LastHit Modes)", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "QhitChance", name = "Q | hitChance", value = 1, drop = {"Normal", "High"}})
+	Menu.Misc:MenuElement({id = "WhitChance", name = "W | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "QRange", name = "Q range manual fine-tuning", value = 0, min = -50, max = 50, step = 5})
 	Menu.Misc:MenuElement({id = "AAkills", name = "Use PassiveAA kills target when no Q", toggle = true, value = false})
 	Menu.Misc:MenuElement({id = "ComboAA", name = "Disable AA when no Qpassive in combo", toggle = true, value = true, key = string.byte("T")})
@@ -1194,7 +1193,7 @@ function Zeri:Combo()
 		if IsValid(target) and target.pos2D.onScreen then
 			local QPrediction = GGPrediction:SpellPrediction(QSpell)
 			QPrediction:GetPrediction(target, myHero)
-			if QPrediction:CanHit(Menu.Combo.QhitChance:Value() + 1) then
+			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
 				Control.CastSpell(HK_Q, QPrediction.CastPosition)
 			end
 		end
@@ -1229,7 +1228,7 @@ function Zeri:CastW(target)
 	
 	local pred = GGPrediction:SpellPrediction(W2Spell)
 	pred:GetPrediction(target, myHero)
-	if pred:CanHit(Menu.Combo.WhitChance:Value() + 1) then
+	if pred:CanHit(Menu.Misc.WhitChance:Value() + 1) then
 		local castPos = pred.CastPosition
 		local unitPos = pred.UnitPosition
 
@@ -1251,7 +1250,7 @@ function Zeri:CastW(target)
 			if not Menu.Combo.Wwall:Value() then
 				local WPrediction = GGPrediction:SpellPrediction(WSpell)
 				WPrediction:GetPrediction(target, myHero)
-				if WPrediction:CanHit(Menu.Combo.WhitChance:Value() + 1) then
+				if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
 					Control.CastSpell(HK_W, WPrediction.CastPosition)
 				end
 			end
@@ -1265,7 +1264,7 @@ function Zeri:Harass()
 		if IsValid(target) and target.pos2D.onScreen then
 			local QPrediction = GGPrediction:SpellPrediction(QSpell)
 			QPrediction:GetPrediction(target, myHero)
-			if QPrediction:CanHit(Menu.Harass.QhitChance:Value() + 1) then
+			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
 				Control.CastSpell(HK_Q, QPrediction.CastPosition)
 			end
 		end
@@ -1309,7 +1308,7 @@ end
 
 function Zeri:LastHit()
 	if Menu.LastHit.Q:Value() and IsReady(_Q) then
-		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(750)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
 				local Hp = HealthPrediction:GetPrediction(minion, myHero.pos:DistanceTo(minion.pos) / QSpell.Speed)
@@ -1326,7 +1325,7 @@ end
 function Zeri:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
-		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(750)
 		MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
@@ -1338,7 +1337,7 @@ end
 
 function Zeri:JungleClear()
 	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
-		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(750)
 		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -1351,7 +1350,7 @@ end
 function Zeri:QObject()
     if not IsReady(_Q) or not Menu.Clear.QObj:Value() then return end
 
-    local QRange = QSpell.Range
+    local QRange = 750
     local targets = {}
     local turrets = ObjectManager:GetEnemyTurrets(QRange)
     local buildings = ObjectManager:GetEnemyBuildings(QRange + 380)
