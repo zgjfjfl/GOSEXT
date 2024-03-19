@@ -1,4 +1,4 @@
-local Version = 2024.07
+local Version = 2024.08
 
 --[ AutoUpdate ]
 
@@ -1011,17 +1011,17 @@ function Smolder:Draw()
 
 	if Menu.Draw.DrawFarm:Value() then
 		if Menu.Clear.SpellFarm:Value() then
-			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+48, Draw.Color(200, 242, 120, 34))
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
 		else
-			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+48, Draw.Color(200, 242, 120, 34))
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
 		end
 	end
 
 	if Menu.Draw.DrawHarass:Value() then
 		if Menu.Clear.SpellHarass:Value() then
-			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+68, Draw.Color(200, 242, 120, 34))
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
 		else
-			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+68, Draw.Color(200, 242, 120, 34))
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
 		end
 	end
 
@@ -1399,6 +1399,359 @@ function Zeri:Draw()
 
 	if Menu.Draw.Q:Value() then
 		Draw.Circle(myHero.pos, QSpell.Range, 0.5, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+	if Menu.Draw.R:Value() and IsReady(_R) then
+		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+	end
+end
+
+-----------------------------------------
+
+class "Lucian"
+
+function Lucian:__init()
+	print("Marksmen Lucian Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 65, Range = 500, Speed = MathHuge, Collision = false}
+	Q2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 65, Range = 1100, Speed = MathHuge, Collision = false}
+	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 55, Range = 1000, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	ESpell = { Range = 425 }
+	RSpell = { Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 110, Range = 1200, Speed = 2800, Collision = false }
+end
+
+function Lucian:LoadMenu()
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "QExt", name = "Use Extended Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Emode", name = "Use E | Mode", value = 1, drop = {"To Side", "To Mouse", "To Target"}})
+	Menu.Combo:MenuElement({id = "Priority", name = "Combo Abilities Priority",	value = 1, drop = {"Q", "W", "E", "EW"}})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "QExt", name = "Use Extended Q", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
+	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
+	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "Emode", name = "Use E | Mode", value = 1, drop = {"To Side", "To Mouse", "To Target"}})
+	Menu.Clear.JungleClear:MenuElement({id = "Priority", name = "JungleClear Abilities Priority", value = 3, drop = {"Q", "W", "E"}})
+	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "QhitChance", name = "Q | hitChance", value = 1, drop = {"Normal", "High"}})
+	Menu.Misc:MenuElement({id = "WhitChance", name = "W | hitChance", value = 1, drop = {"Normal", "High"}})
+	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw Q Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
+end
+
+
+
+function Lucian:OnTick()
+
+	QSpell.Delay = 0.4 - 0.15 / 17 * (myHero.levelData.lvl - 1)
+	Q2Spell.Delay = QSpell.Delay
+	
+	self:AntiGapcloser()
+
+	target = GetTarget(1200)
+	HavePassive = HaveBuff(myHero, "LucianPassiveBuff")
+	Dashing = myHero.pathing.isDashing
+	CastingR = HaveBuff(myHero, "LucianR")
+	if lastQ + QSpell.Delay * 2 > Game.Timer() then return end
+	if HavePassive or myHero.activeSpell.valid or Dashing or CastingR then return end
+	
+	if myHero.dead or Game.IsChatOpen() or Recalling() then return end
+
+	local Mode = GetMode()
+	if Mode == "Combo" then
+		self:Combo()
+	elseif Mode == "Harass" then
+		self:Harass()
+	elseif Mode == "LaneClear" then
+		self:FarmHarass()
+		self:LaneClear()
+		self:JungleClear()
+	end
+end
+
+function Lucian:Combo()
+	if IsValid(target) then
+		if Menu.Combo.Priority:Value() == 1 then
+			if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+				Control.CastSpell(HK_Q, target)
+				lastQ = Game.Timer()
+			elseif Menu.Combo.W:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+				self:CastW(target)
+			elseif Menu.Combo.E:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < myHero.range + ESpell.Range then
+				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
+			end
+		end
+
+		if Menu.Combo.Priority:Value() == 2 then
+			if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+				self:CastW(target)
+			elseif Menu.Combo.Q:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+				Control.CastSpell(HK_Q, target)
+				lastQ = Game.Timer()
+			elseif Menu.Combo.E:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < myHero.range + ESpell.Range then
+				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
+			end
+		end
+
+		if Menu.Combo.Priority:Value() == 3 then
+			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < myHero.range + ESpell.Range then
+				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
+			elseif Menu.Combo.Q:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+				Control.CastSpell(HK_Q, target)
+				lastQ = Game.Timer()
+			elseif Menu.Combo.W:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+				self:CastW(target)
+			end
+		end
+
+		if Menu.Combo.Priority:Value() == 4 then
+			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < myHero.range + ESpell.Range then
+				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
+			elseif Menu.Combo.W:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+				self:CastW(target)
+			elseif Menu.Combo.Q:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+				Control.CastSpell(HK_Q, target)
+				lastQ = Game.Timer()
+			end
+		end
+		
+		if Menu.Combo.QExt:Value() and IsReady(_Q) then 
+			self:CastQExt(target)
+			lastQ = Game.Timer()
+		end
+	end	
+end
+
+function Lucian:CastERange(target)
+	local range = myHero.pos:DistanceTo(target.pos) < (myHero.range + myHero.boundingRadius) and 200 or 425
+	return range
+end
+
+function Lucian:CastE(target, mode, range)
+	if mode == 1 then 
+		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, target.pos, myHero.range + myHero.boundingRadius, 500)
+		if intPos1 and intPos2 then
+			local closest = GetDistance(intPos1, mousePos) < GetDistance(intPos2, mousePos) and intPos1 or intPos2
+			local castPos = myHero.pos:Extended(closest, range)
+			Control.CastSpell(HK_E, castPos)
+		end
+	elseif mode == 2 then 
+		local castPos = myHero.pos:Extended(mousePos, range)
+		Control.CastSpell(HK_E, castPos) 
+	elseif mode == 3 then 
+		local castPos = myHero.pos:Extended(target.pos, range)
+		Control.CastSpell(HK_E, castPos)
+	end 
+end
+
+function Lucian:CastW(target)
+	local WPrediction = GGPrediction:SpellPrediction(WSpell)
+	WPrediction:GetPrediction(target, myHero)
+	if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
+		Control.CastSpell(HK_W, WPrediction.CastPosition)
+	end
+end
+
+function Lucian:CastQExt(target)
+	local pred = GGPrediction:SpellPrediction(Q2Spell)
+	pred:GetPrediction(target, myHero)
+	if pred:CanHit(Menu.Misc.QhitChance:Value() + 1) then
+		local unitPos = pred.UnitPosition
+		
+		local targetPos = myHero.pos:Extended(unitPos, GetDistance(myHero.pos, unitPos))
+
+		local minions = ObjectManager:GetEnemyMinions(QSpell.Range + myHero.boundingRadius + target.boundingRadius)
+		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range + myHero.boundingRadius + target.boundingRadius)
+		
+		local objTable = {}
+		for i = 1, #minions do
+			local minion = minions[i]
+			TableInsert(objTable, minion)
+		end
+		for i = 1, #enemies do
+			local enemy = enemies[i]
+			TableInsert(objTable, enemy)
+		end
+
+		for i = 1, #objTable do
+			local obj = objTable[i]
+			local objPos = myHero.pos:Extended(obj.pos, GetDistance(myHero.pos, unitPos))
+			if GetDistance(targetPos, objPos) < (Q2Spell.Radius/2 + target.boundingRadius) then
+				Control.CastSpell(HK_Q, obj.pos)
+			end
+		end
+	end
+end
+
+function Lucian:Harass()
+	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+		if IsValid(target) then
+			if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+				Control.CastSpell(HK_Q, target)
+				lastQ = Game.Timer()
+			end
+			if Menu.Harass.QExt:Value() and IsReady(_Q) then 
+				self:CastQExt(target)
+				lastQ = Game.Timer()
+			end
+			if Menu.Harass.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+				self:CastW(target)
+			end
+		end
+	end
+end
+
+function Lucian:FarmHarass()
+	if IsUnderTurret(myHero) then return end
+	if Menu.Clear.SpellHarass:Value() then
+		self:Harass()
+	end
+end
+
+function Lucian:LaneClear()
+	if IsUnderTurret(myHero) then return end
+	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+		local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
+		MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
+				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
+					local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+					if collisionCount >= Menu.Clear.LaneClear.QCount:Value() then
+						local obj = collisionObjects[1]
+						if myHero.pos:DistanceTo(obj.pos) <= (QSpell.Range + myHero.boundingRadius + obj.boundingRadius) then
+							Control.CastSpell(HK_Q, obj)
+							lastQ = Game.Timer()
+						end
+					end
+				end
+
+				if Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
+					if GetMinionCount(250, minion.pos) >= Menu.Clear.LaneClear.WCount:Value() then
+						Control.CastSpell(HK_W, minion)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Lucian:JungleClear()
+	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+		local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
+		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
+				if Menu.Clear.JungleClear.Priority:Value() == 1 then
+					if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
+						Control.CastSpell(HK_Q, minion)
+						lastQ = Game.Timer()
+					elseif Menu.Clear.JungleClear.W:Value() and (not Menu.Clear.JungleClear.Q:Value() or not IsReady(_Q)) and IsReady(_W) and myHero.pos:DistanceTo(minion.pos) < WSpell.Range then
+						Control.CastSpell(HK_W, minion)
+					elseif Menu.Clear.JungleClear.E:Value() and (not Menu.Clear.JungleClear.Q:Value() or not IsReady(_Q)) and IsReady(_E) and myHero.pos:DistanceTo(minion.pos) < myHero.range + ESpell.Range then
+						self:CastE(minion, Menu.Clear.JungleClear.Emode:Value(), self:CastERange(minion))
+					end
+				end
+
+				if Menu.Clear.JungleClear.Priority:Value() == 2 then
+					if Menu.Clear.JungleClear.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(minion.pos) < WSpell.Range then
+						Control.CastSpell(HK_W, minion)
+					elseif Menu.Clear.JungleClear.Q:Value() and (not Menu.Clear.JungleClear.W:Value() or not IsReady(_W)) and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
+						Control.CastSpell(HK_Q, minion)
+						lastQ = Game.Timer()
+					elseif Menu.Clear.JungleClear.E:Value() and (not Menu.Clear.JungleClear.W:Value() or not IsReady(_W)) and IsReady(_E) and myHero.pos:DistanceTo(minion.pos) < myHero.range + ESpell.Range then
+						self:CastE(minion, Menu.Clear.JungleClear.Emode:Value(), self:CastERange(minion))
+					end
+				end
+
+				if Menu.Clear.JungleClear.Priority:Value() == 3 then
+					if Menu.Clear.JungleClear.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(minion.pos) < myHero.range + ESpell.Range then
+						self:CastE(minion, Menu.Clear.JungleClear.Emode:Value(), self:CastERange(minion))
+					elseif Menu.Clear.JungleClear.Q:Value() and (not Menu.Clear.JungleClear.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
+						Control.CastSpell(HK_Q, minion)
+						lastQ = Game.Timer()
+					elseif Menu.Clear.JungleClear.W:Value() and (not Menu.Clear.JungleClear.E:Value() or not IsReady(_E)) and IsReady(_W) and myHero.pos:DistanceTo(minion.pos) < WSpell.Range then
+						Control.CastSpell(HK_W, minion)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Lucian:AntiGapcloser()
+	if Menu.Misc.Egap:Value() and IsReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(1500)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pathing.isDashing then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < Data:GetAutoAttackRange(myHero, target) then
+					local castPos = myHero.pos + (target.pathing.endPos - target.pathing.startPos):Normalized() * ESpell.Range
+					if castPos:To2D().onScreen then
+						Control.CastSpell(HK_E, castPos)
+					end
+				end
+			end	
+		end
+	end
+end
+
+function Lucian:Draw()
+	if myHero.dead then return end
+
+	if Menu.Draw.DrawFarm:Value() then
+		if Menu.Clear.SpellFarm:Value() then
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.DrawHarass:Value() then
+		if Menu.Clear.SpellHarass:Value() then
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.Q:Value() and IsReady(_Q) then
+		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end
 	if Menu.Draw.W:Value() and IsReady(_W) then
 		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
