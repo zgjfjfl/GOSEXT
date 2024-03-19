@@ -1,4 +1,4 @@
-local Version = 2024.09
+local Version = 2024.10
 
 --[ AutoUpdate ]
 
@@ -1435,6 +1435,7 @@ function Lucian:LoadMenu()
 	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Emode", name = "Use E | Mode", value = 1, drop = {"To Side", "To Mouse", "To Target"}})
+	Menu.Combo:MenuElement({id = "Edis", name = "Use E | To Side - hold distance", value = 500, min = 300, max = 700, step = 50})
 	Menu.Combo:MenuElement({id = "Priority", name = "Combo Abilities Priority",	value = 1, drop = {"Q", "W", "E", "EW"}})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
@@ -1512,7 +1513,7 @@ function Lucian:Combo()
 				lastQ = Game.Timer()
 			elseif Menu.Combo.W:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
 				self:CastW(target)
-			elseif Menu.Combo.E:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < myHero.range + ESpell.Range then
+			elseif Menu.Combo.E:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			end
 		end
@@ -1523,13 +1524,13 @@ function Lucian:Combo()
 			elseif Menu.Combo.Q:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
 				lastQ = Game.Timer()
-			elseif Menu.Combo.E:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < myHero.range + ESpell.Range then
+			elseif Menu.Combo.E:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			end
 		end
 
 		if Menu.Combo.Priority:Value() == 3 then
-			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < myHero.range + ESpell.Range then
+			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			elseif Menu.Combo.Q:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
@@ -1540,7 +1541,7 @@ function Lucian:Combo()
 		end
 
 		if Menu.Combo.Priority:Value() == 4 then
-			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < myHero.range + ESpell.Range then
+			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			elseif Menu.Combo.W:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
 				self:CastW(target)
@@ -1564,11 +1565,16 @@ end
 
 function Lucian:CastE(target, mode, range)
 	if mode == 1 then 
-		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, target.pos, myHero.range + myHero.boundingRadius, 500)
+		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, target.pos, ESpell.Range, Menu.Combo.Edis:Value())
 		if intPos1 and intPos2 then
 			local closest = GetDistance(intPos1, mousePos) < GetDistance(intPos2, mousePos) and intPos1 or intPos2
-			local castPos = myHero.pos:Extended(closest, range)
-			Control.CastSpell(HK_E, castPos)
+			if IsFacingMe(target) then
+				local castPos = myHero.pos:Extended(closest, range)
+				Control.CastSpell(HK_E, castPos)
+			else
+				local castPos2 = myHero.pos:Extended(target.pos, range)
+				Control.CastSpell(HK_E, castPos2)
+			end
 		end
 	elseif mode == 2 then 
 		local castPos = myHero.pos:Extended(mousePos, range)
@@ -1683,7 +1689,7 @@ function Lucian:JungleClear()
 						lastQ = Game.Timer()
 					elseif Menu.Clear.JungleClear.W:Value() and (not Menu.Clear.JungleClear.Q:Value() or not IsReady(_Q)) and IsReady(_W) and myHero.pos:DistanceTo(minion.pos) < WSpell.Range then
 						Control.CastSpell(HK_W, minion)
-					elseif Menu.Clear.JungleClear.E:Value() and (not Menu.Clear.JungleClear.Q:Value() or not IsReady(_Q)) and IsReady(_E) and myHero.pos:DistanceTo(minion.pos) < myHero.range + ESpell.Range then
+					elseif Menu.Clear.JungleClear.E:Value() and (not Menu.Clear.JungleClear.Q:Value() or not IsReady(_Q)) and IsReady(_E) and myHero.pos:DistanceTo(minion.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
 						self:CastE(minion, Menu.Clear.JungleClear.Emode:Value(), self:CastERange(minion))
 					end
 				end
@@ -1694,13 +1700,13 @@ function Lucian:JungleClear()
 					elseif Menu.Clear.JungleClear.Q:Value() and (not Menu.Clear.JungleClear.W:Value() or not IsReady(_W)) and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
 						Control.CastSpell(HK_Q, minion)
 						lastQ = Game.Timer()
-					elseif Menu.Clear.JungleClear.E:Value() and (not Menu.Clear.JungleClear.W:Value() or not IsReady(_W)) and IsReady(_E) and myHero.pos:DistanceTo(minion.pos) < myHero.range + ESpell.Range then
+					elseif Menu.Clear.JungleClear.E:Value() and (not Menu.Clear.JungleClear.W:Value() or not IsReady(_W)) and IsReady(_E) and myHero.pos:DistanceTo(minion.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
 						self:CastE(minion, Menu.Clear.JungleClear.Emode:Value(), self:CastERange(minion))
 					end
 				end
 
 				if Menu.Clear.JungleClear.Priority:Value() == 3 then
-					if Menu.Clear.JungleClear.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(minion.pos) < myHero.range + ESpell.Range then
+					if Menu.Clear.JungleClear.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(minion.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
 						self:CastE(minion, Menu.Clear.JungleClear.Emode:Value(), self:CastERange(minion))
 					elseif Menu.Clear.JungleClear.Q:Value() and (not Menu.Clear.JungleClear.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
 						Control.CastSpell(HK_Q, minion)
