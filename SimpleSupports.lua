@@ -1,4 +1,4 @@
-local Version = 2024.08
+local Version = 2024.09
 
 --[ AutoUpdate ]
 
@@ -423,7 +423,7 @@ end
 
 --------------------------------------
 
-Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName})
+Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.5.1/img/champion/"..myHero.charName..".png"})
 	Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
 	Menu:MenuElement({id = "SupportMode", name = "Support Mode (Disable Harass Lasthit)",value = true})
 
@@ -1922,7 +1922,10 @@ function Swain:Auto()
 						self:CastGGPred(HK_W, enemy)
 					else
 						local castPos = enemy.pos:Extended(myHero.pos, 250)
-						Control.CastSpell(HK_W, castPos)
+						if lastW + 350 < GetTickCount() then
+							Control.CastSpell(HK_W, castPos)
+							lastW = GetTickCount()
+						end
 					end
 				else
 					self:CastGGPred(HK_W, enemy)

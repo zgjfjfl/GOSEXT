@@ -1,4 +1,4 @@
-local Version = 2024.03
+local Version = 2024.04
 
 --[ AutoUpdate ]
 
@@ -470,7 +470,7 @@ end
 
 ------------------------------------
 
-Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Zgjfjfl "..myHero.charName})
+Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Simple "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.5.1/img/champion/"..myHero.charName..".png"})
 	Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
 
 ------------------------------------
@@ -478,7 +478,7 @@ Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Zgjfjfl "..
 class "Ornn"
 		
 function Ornn:__init()		 
-	print("Zgjfjfl-Ornn Loaded") 
+	print("Simple Ornn Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -548,7 +548,7 @@ function Ornn:OnWndMsg(msg, wParam)
 	if msg == 257 then
 		if wParam == HK_Q then
 			--print('1')
-			self.qTimer = Game.Timer() + 1
+			self.qTimer = Game.Timer() + 1.25
 		end
 	end
 end
@@ -632,10 +632,10 @@ function Ornn:Combo()
 	if Rtarget and isValid(Rtarget) and Rtarget.pos2D.onScreen then
 		if Menu.Combo.R2:Value() and isSpellReady(_R) and myHero:GetSpellData(_R).name == "OrnnRCharge" then
 			for i = GameParticleCount(), 1, -1 do
-			local particle = GameParticle(i)
+				local particle = GameParticle(i)
 				if particle and particle.name:find("Ornn") and particle.name:find("R_Wave_Mis") then
-					local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(particle.pos, Rtarget.pos, myHero.pos)
-					if isOnSegment and myHero.pos:DistanceTo(point) < 700 then
+					local closePoint, isOnSegment = GGPrediction:ClosestPointOnLineSegment(particle.pos, Rtarget.pos, myHero.pos)
+					if isOnSegment and myHero.pos:DistanceTo(particle.pos) < 700 then
 						Control.CastSpell(HK_R, Rtarget)
 					end
 				end
@@ -706,7 +706,7 @@ end
 class "JarvanIV"
 		
 function JarvanIV:__init()		 
-	print("Zgjfjfl-JarvanIV Loaded") 
+	print("Simple JarvanIV Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -939,7 +939,7 @@ end
 class "Poppy"
 		
 function Poppy:__init()		 
-	print("Zgjfjfl-Poppy Loaded") 
+	print("Simple Poppy Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -1127,7 +1127,7 @@ end
 class "Shyvana"
 		
 function Shyvana:__init()		 
-	print("Zgjfjfl-Shyvana Loaded") 
+	print("Simple Shyvana Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -1289,7 +1289,7 @@ end
 class "Trundle"
 		
 function Trundle:__init()		 
-	print("Zgjfjfl-Trundle Loaded") 
+	print("Simple Trundle Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -1438,7 +1438,7 @@ end
 class "Rakan"
 		
 function Rakan:__init()		 
-	print("Zgjfjfl-Rakan Loaded") 
+	print("Simple Rakan Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -1619,7 +1619,7 @@ end
 class "Belveth"
 
 function Belveth:__init()		 
-	print("Zgjfjfl-Belveth Loaded") 
+	print("Simple Belveth Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -1795,7 +1795,7 @@ end
 class "Nasus"
 		
 function Nasus:__init()		 
-	print("Zgjfjfl-Nasus Loaded") 
+	print("Simple Nasus Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -1988,7 +1988,7 @@ end
 class "Singed"
 		
 function Singed:__init()		 
-	print("Zgjfjfl-Singed Loaded") 
+	print("Simple Singed Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:onTick() end)
@@ -2077,7 +2077,7 @@ end
 class "Udyr"
 		
 function Udyr:__init()		 
-	print("Zgjfjfl-Udyr Loaded") 
+	print("Simple Udyr Loaded") 
 	self:LoadMenu()
 
 	Callback.Add("Tick", function() self:onTick() end)
@@ -2205,7 +2205,7 @@ end
 class "Galio"
 		
 function Galio:__init()		 
-	print("Zgjfjfl-Galio Loaded") 
+	print("Simple Galio Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -2395,7 +2395,7 @@ end
 class "Yorick"
 		
 function Yorick:__init()		 
-	print("Zgjfjfl-Yorick Loaded") 
+	print("Simple Yorick Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -2633,7 +2633,7 @@ end
 class "Ivern"
 		
 function Ivern:__init()		 
-	print("Zgjfjfl-Ivern Loaded") 
+	print("Simple Ivern Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -2793,7 +2793,7 @@ end
 class "Bard"
 		
 function Bard:__init()		 
-	print("Zgjfjfl-Bard Loaded") 
+	print("Simple Bard Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -2897,7 +2897,7 @@ end
 class "Taliyah"
 		
 function Taliyah:__init()		 
-	print("Zgjfjfl-Taliyah Loaded") 
+	print("Simple Taliyah Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -3042,7 +3042,7 @@ end
 class "Lissandra"
 		
 function Lissandra:__init()		 
-	print("Zgjfjfl-Lissandra Loaded") 
+	print("Simple Lissandra Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -3272,7 +3272,7 @@ end
 class "Sejuani"
 		
 function Sejuani:__init()		 
-	print("Zgjfjfl-Sejuani Loaded") 
+	print("Simple Sejuani Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -3371,7 +3371,7 @@ end
 class "KSante"
 		
 function KSante:__init()		 
-	print("Zgjfjfl-KSante Loaded")
+	print("Simple KSante Loaded")
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:onTick() end)
@@ -3652,7 +3652,7 @@ end
 class "Skarner"
 		
 function Skarner:__init()		 
-	print("Zgjfjfl-Skarner Loaded") 
+	print("Simple Skarner Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -3750,7 +3750,7 @@ end
 class "Maokai"
 		
 function Maokai:__init()		 
-	print("Zgjfjfl-Maokai Loaded") 
+	print("Simple Maokai Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -3910,7 +3910,7 @@ end
 class "Gragas"
 		
 function Gragas:__init()		 
-	print("Zgjfjfl-Gragas Loaded") 
+	print("Simple Gragas Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -4153,7 +4153,7 @@ end
 class "Milio"
 		
 function Milio:__init()
-	print("Zgjfjfl_Milio Loaded")
+	print("Simple Milio Loaded")
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
@@ -4459,7 +4459,7 @@ end
 class "AurelionSol"
 		
 function AurelionSol:__init()		 
-	print("Zgjfjfl_AurelionSol Loaded")
+	print("Simple AurelionSol Loaded")
 	self:LoadMenu()
 
 	Callback.Add("Draw", function() self:Draw() end)
@@ -4647,7 +4647,7 @@ end
 class "Heimerdinger"
 		
 function Heimerdinger:__init()		 
-	print("Zgjfjfl_Heimerdinger Loaded")
+	print("Simple Heimerdinger Loaded")
 	self:LoadMenu()
 
 	Callback.Add("Draw", function() self:Draw() end)
@@ -4880,7 +4880,7 @@ end
 class "Briar"
 		
 function Briar:__init()		 
-	print("Zgjfjfl_Briar Loaded")
+	print("Simple Briar Loaded")
 	self:LoadMenu()
 	Callback.Add("Tick", function() self:onTick() end)	
 	Q = {Range = 450}
