@@ -1,4 +1,4 @@
-local Version = 2024.04
+local Version = 2024.05
 
 --[ AutoUpdate ]
 
@@ -2233,7 +2233,7 @@ function Galio:LoadMenu()
 		Menu.Auto:MenuElement({type = MENU, id = "WB", name = "Auto W If Enemy dash on ME"})
 			DelayAction(function()
 				for i, Hero in pairs(getEnemyHeroes()) do
-					Menu.Auto.WB:MenuElement({id = Hero.charName, name =Hero.charName, value = false})		
+					Menu.Auto.WB:MenuElement({id = Hero.charName, name = Hero.charName, value = false})		
 				end		
 			end,0.2)
 
@@ -2371,7 +2371,7 @@ end
 function Galio:getqDmg(target)
 	local qlvl = myHero:GetSpellData(_Q).level
 	local qbaseDmg = 35 * qlvl + 35
-	local qapDmg = myHero.ap * 0.75
+	local qapDmg = myHero.ap * 0.7
 	local qDmg = qbaseDmg + qapDmg
 return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, qDmg) 
 end

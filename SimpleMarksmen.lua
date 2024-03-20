@@ -1,4 +1,4 @@
-local Version = 2024.11
+local Version = 2024.12
 
 --[ AutoUpdate ]
 
@@ -663,7 +663,7 @@ function Smolder:__init()
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	-- Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
 	QSpell = { Delay = 0.25, Range = 550, Speed = 1800}
-	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 125, Range = 1200, Speed = 2000, Collision = false}
+	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 115, Range = 1200, Speed = 2000, Collision = false}
 	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 300, Range = 3650, Speed = 1700, Collision = false}
 end
 
@@ -1727,7 +1727,8 @@ function Lucian:AntiGapcloser()
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing then
 				if myHero.pos:DistanceTo(target.pathing.endPos) < Data:GetAutoAttackRange(myHero, target) then
-					local castPos = myHero.pos + (target.pathing.endPos - target.pathing.startPos):Normalized() * ESpell.Range
+					--local castPos = Vector(myHero.pos) + (Vector(target.pathing.endPos) - Vector(target.pathing.startPos)):Normalized() * ESpell.Range
+					local castPos = myHero.pos + (myHero.pos - target.pos):Normalized() * ESpell.Range
 					if castPos:To2D().onScreen then
 						Control.CastSpell(HK_E, castPos)
 					end

@@ -1,4 +1,4 @@
-local Version = 2024.09
+local Version = 2024.10
 
 --[ AutoUpdate ]
 
@@ -1635,7 +1635,7 @@ function Ziggs:Flee()
 		local castPos = myHero.pos:Extended(mousePos,-100)
 		if castPos:To2D().onScreen then
 			Control.CastSpell(HK_W, castPos)
-			astW = GetTickCount()
+			lastW = GetTickCount()
 		end
 	end
 end
@@ -1680,11 +1680,20 @@ function Ziggs:Auto()
 		end
 	end
 	if Menu.Auto.WTurret:Value() and IsReady(_W) and lastW + 350 < GetTickCount() and myHero:GetSpellData(_W).name == "ZiggsW" then
-	local turrets = ObjectManager:GetEnemyTurrets(1000)
-	for i, turret in ipairs(turrets) do
-			if turret and turret.health/turret.maxHealth < (myHero:GetSpellData(_W).level*2.5 + 22.5)/100 then
-				Control.CastSpell(HK_W, turret)
-				lastW = GetTickCount()
+		local turrets = ObjectManager:GetEnemyTurrets(1000)
+		for i, turret in ipairs(turrets) do
+			if turret then
+				if Game.mapID == SUMMONERS_RIFT then
+					if turret.health/turret.maxHealth < (myHero:GetSpellData(_W).level*2.5 + 22.5)/100 then
+						Control.CastSpell(HK_W, turret)
+						lastW = GetTickCount()
+					end
+				elseif Game.mapID == HOWLING_ABYSS then
+					if turret.health/turret.maxHealth < (myHero:GetSpellData(_W).level*2.5 + 10)/100 then
+						Control.CastSpell(HK_W, turret)
+						lastW = GetTickCount()
+					end
+				end
 			end
 		end
 	end
