@@ -1,4 +1,4 @@
-local Version = 2024.12
+local Version = 2024.13
 
 --[ AutoUpdate ]
 
@@ -1201,7 +1201,7 @@ function Zeri:Combo()
 	
 	if Menu.Combo.W:Value() and IsReady(_W) then
 		local target = GetTarget(W2Spell.Range)
-		if IsValid(target) and target.pos2D.onScreen and myHero.pos:DistanceTo(target.pos) > QSpell.Range then
+		if IsValid(target) and target.pos2D.onScreen and myHero.pos:DistanceTo(target.pos) > QSpell.Range and GetEnemyCount(QSpell.Range, myHero.pos) == 0 then
 			self:CastW(target)
 		end
 	end
