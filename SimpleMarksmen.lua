@@ -1,4 +1,4 @@
-local Version = 2024.13
+local Version = 2024.14
 
 --[ AutoUpdate ]
 
@@ -49,7 +49,7 @@ do
 
 end
 
-local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian"}
+local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian", "Jinx"}
 
 if not table.contains(Heroes, myHero.charName) then
 	print('SimpleMarksmen not supported ' .. myHero.charName)
@@ -359,6 +359,14 @@ local function FindFirstWallCollision(startPos, endPos)
 	end
 	return nil
 end
+
+local slots = {}
+	TableInsert(slots, ITEM_1);
+	TableInsert(slots, ITEM_2);
+	TableInsert(slots, ITEM_3);
+	TableInsert(slots, ITEM_4);
+	TableInsert(slots, ITEM_5);
+	TableInsert(slots, ITEM_6);
 
 ---------------------------------
 
@@ -1179,7 +1187,6 @@ function Zeri:AAkills()
     end
 end
 
-
 function Zeri:Combo()
 	if Menu.Combo.E:Value() and IsReady(_E) then
 		local target = GetTarget(ESpell.Range + QSpell.Range - 50)
@@ -1768,5 +1775,411 @@ function Lucian:Draw()
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
 		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+	end
+end
+
+-----------------------------------------
+
+class "Jinx"
+
+function Jinx:__init()
+	print("Marksmen Jinx Loaded") 
+	self:LoadMenu()
+
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
+	QSpell = { Range = 525 }
+	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 60, Range = 1450, Speed = 3300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
+	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 115, Range = 925, Speed = math.huge, Collision = false}
+	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 140, Range = 12500, Speed = 1700, Collision = false}
+end
+
+function Jinx:LoadMenu()
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = false})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
+	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	
+	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
+	Menu.KillSteal:MenuElement({id = "W", name = "Auto W KillSteal", toggle = true, value = true})
+	Menu.KillSteal:MenuElement({id = "R", name = "Auto R KillSteal", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "WhitChance", name = "W | hitChance", value = 1, drop = {"Normal", "High"}})
+	Menu.Misc:MenuElement({id = "EhitChance", name = "E | hitChance", value = 1, drop = {"Normal", "High"}})
+	Menu.Misc:MenuElement({id = "RhitChance", name = "R | hitChance", value = 1, drop = {"Normal", "High"}})
+	Menu.Misc:MenuElement({id = "Ecc", name = "Auto E On 'CC'", toggle = true, value = true})
+	--Menu.Misc:MenuElement({id = "Etp", name = "Auto E On 'TP'", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "SemiR", name = "Semi-manual R Key", key = string.byte("T")})
+	Menu.Misc:MenuElement({id = "Rmin", name = "Use R| MinRange >= X", value = 1000, min = 500, max = 2500, step = 100})
+	Menu.Misc:MenuElement({id = "Rmax", name = "Use R| MaxRange <= X", value = 3000, min = 1500, max = 3500, step = 100})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
+end
+
+function Jinx:OnPreAttack(args)
+	local target = args.Target
+	if IsValid(target) then
+		if GetMode() == "LaneClear" then
+			if target.type == Obj_AI_Minion then
+				if Menu.Clear.SpellFarm:Value() and IsReady(_Q) then
+					if target.team ~= 300 and Menu.Clear.LaneClear.Q:Value() then
+						if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 then
+							if GetMinionCount(250, target.pos) >= Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "jinxqicon") then
+								Control.CastSpell(HK_Q)
+							end
+							if GetMinionCount(250, target.pos) < Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "JinxQ") then
+								Control.CastSpell(HK_Q)
+							end
+						else
+							if HaveBuff(myHero, "JinxQ") then
+								Control.CastSpell(HK_Q)
+							end
+						end
+					end
+					if target.team == 300 and Menu.Clear.JungleClear.Q:Value() then
+						if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 then
+							if GetMinionCount(250, target.pos) >= 2 and HaveBuff(myHero, "jinxqicon") then
+								Control.CastSpell(HK_Q)
+							end
+							if GetMinionCount(250, target.pos) < 2 and HaveBuff(myHero, "JinxQ") then
+								Control.CastSpell(HK_Q)
+							end
+						else
+							if HaveBuff(myHero, "JinxQ") then
+								Control.CastSpell(HK_Q)
+							end
+						end
+					end
+				end
+			elseif target.type == Obj_AI_Nexus or target.type == Obj_AI_Barracks or target.type == Obj_AI_Turret then
+				if myHero.pos:DistanceTo(target.pos) < self:QbaseRange(target) and HaveBuff(myHero, "JinxQ") then
+					Control.CastSpell(HK_Q)
+				end
+			end
+		end
+	end
+end
+
+function Jinx:OnTick()
+
+	WSpell.Delay = math.max(math.floor((0.6 - 0.02 * ((myHero.attackSpeed - 1)/0.25)) * 100) / 100, 0.4)
+	
+	if myHero.dead or Game.IsChatOpen() or Recalling() then return end
+	if myHero.activeSpell.valid then return end
+	
+	self:AutoE()
+	self:SemiR()
+	self:KillSteal()
+
+	local Mode = GetMode()
+	if Mode == "Combo" then
+		self:Combo()
+		self:ComboQ()
+	elseif Mode == "Harass" then
+		self:Harass()
+	elseif Mode == "LaneClear" then
+		self:FarmHarass()
+		--self:LaneClear()
+		self:JungleClear()
+	end
+end
+
+function Jinx:Combo()
+	local target = GetTarget(WSpell.Range)
+	if IsValid(target) then
+		if Menu.Combo.W:Value() and IsReady(_W) then
+			if myHero.pos:DistanceTo(target.pos) > Data:GetAutoAttackRange(myHero, target) then
+				self:CastW(target)
+			end
+		end
+		if Menu.Combo.E:Value() and IsReady(_E) then
+			if myHero.pos:DistanceTo(target.pos) < ESpell.Range then
+				self:CastE(target)
+			end
+		end
+	end
+end
+
+function Jinx:ComboQ()	
+	local target = GetTarget(900)
+	if IsValid(target) then
+		if Menu.Combo.Q:Value() and IsReady(_Q) then
+			if myHero.pos:DistanceTo(target.pos) > self:QbaseRange(target) and HaveBuff(myHero, "jinxqicon") then
+				if myHero.pos:DistanceTo(target.pos) <= self:QmaxRange(target) then
+					Control.CastSpell(HK_Q)
+				end
+			else
+				if myHero.pos:DistanceTo(target.pos) < self:QbaseRange(target) and HaveBuff(myHero, "JinxQ") then
+					Control.CastSpell(HK_Q)
+				end
+			end
+	    end
+	end
+end
+
+function Jinx:QbaseRange(unit)
+	return QSpell.Range + myHero.boundingRadius + unit.boundingRadius
+end
+
+function Jinx:QmaxRange(unit)
+	local level = myHero:GetSpellData(_Q).level
+	return QSpell.Range + myHero.boundingRadius + unit.boundingRadius + ({80, 110, 140, 170, 200})[level]
+end
+
+function Jinx:CastW(target)
+	local WPrediction = GGPrediction:SpellPrediction(WSpell)
+	WPrediction:GetPrediction(target, myHero)
+	if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
+		Control.CastSpell(HK_W, WPrediction.CastPosition)
+	end
+end
+
+function Jinx:CastE(target)
+	local EPrediction = GGPrediction:SpellPrediction(ESpell)
+	EPrediction:GetPrediction(target, myHero)
+	if EPrediction:CanHit(Menu.Misc.EhitChance:Value() + 1) then
+		Control.CastSpell(HK_E, EPrediction.CastPosition)
+	end
+end
+
+function Jinx:CastR(target)
+	local RPrediction = GGPrediction:SpellPrediction(RSpell)
+	RPrediction:GetPrediction(target, myHero)
+	if RPrediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
+		Control.CastSpell(HK_R, RPrediction.CastPosition)
+	end
+end
+
+function Jinx:Harass()
+	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+		local target = GetTarget(WSpell.Range)
+		if IsValid(target) then
+			if Menu.Harass.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) > self:QmaxRange(target) then
+				self:CastW(target)
+			end
+			if Menu.Harass.Q:Value() and IsReady(_Q) then
+				if myHero.pos:DistanceTo(target.pos) <= self:QmaxRange(target) then
+					if myHero.pos:DistanceTo(target.pos) > self:QbaseRange(target) and HaveBuff(myHero, "jinxqicon") then
+						Control.CastSpell(HK_Q)
+					end
+					if myHero.pos:DistanceTo(target.pos) < self:QbaseRange(target) and HaveBuff(myHero, "JinxQ") then
+						Control.CastSpell(HK_Q)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Jinx:FarmHarass()
+	if IsUnderTurret(myHero) then return end
+	if Menu.Clear.SpellHarass:Value() then
+		self:Harass()
+	end
+end
+
+--[[ function Jinx:LaneClear()
+	if IsUnderTurret(myHero) then return end
+	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
+			local minions = ObjectManager:GetEnemyMinions(QSpell.Range + 130)
+			MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+			for i, minion in ipairs(minions) do
+				if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
+					if GetMinionCount(250, minion.pos) >= Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "jinxqicon") then
+						Control.CastSpell(HK_Q)
+					end
+					if GetMinionCount(250, minion.pos) < Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "JinxQ") then
+						Control.CastSpell(HK_Q)
+					end
+					if minion.health < Damage:GetAutoAttackDamage(myHero, minion) then
+						if myHero.pos:DistanceTo(minion.pos) > self:QbaseRange() and HaveBuff(myHero, "jinxqicon") then
+							Control.CastSpell(HK_Q)
+						end
+					end
+				else
+					if HaveBuff(myHero, "JinxQ") then
+						Control.CastSpell(HK_Q)
+					end
+				end
+			end
+		end
+	end
+end ]]
+
+function Jinx:JungleClear()
+	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+		local minions = ObjectManager:GetEnemyMinions(QSpell.Range + 130)
+		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
+				if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
+					if not minion.name:lower():find("mini") then
+						Control.CastSpell(HK_W, minion)
+					end
+				end
+				--[[ if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
+					if GetMinionCount(250, minion.pos) >= 2 and HaveBuff(myHero, "jinxqicon") then
+						Control.CastSpell(HK_Q)
+					end
+					if GetMinionCount(250, minion.pos) < 2 and HaveBuff(myHero, "JinxQ") then
+						Control.CastSpell(HK_Q)
+					end
+				end
+			else
+				if HaveBuff(myHero, "JinxQ") then
+					Control.CastSpell(HK_Q)
+				end ]]
+			end
+		end
+	end
+end
+
+function Jinx:AutoE()
+	if Menu.Misc.Ecc:Value() and IsReady(_E) then
+		for i, target in ipairs(GetEnemyHeroes()) do
+			if target and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
+				if
+					GetImmobileDuration(target) > 0.5 --cc
+					or IsInvulnerable(target) --zhonya
+					or HaveBuff(target, "Meditate") --yi w
+					or HaveBuff(target, "ChronoRevive") --zilean r
+				then
+					Control.CastSpell(HK_E, target)
+				end
+
+				for j, slot in ipairs(slots) do
+					local Data = target:GetSpellData(slot)
+					if Data.name == "GuardianAngel" and Data.currentCd == 0 and target.health == 0 then --G A
+						Control.CastSpell(HK_E, target)
+					end
+				end
+			end
+		end
+	end
+	
+	if Menu.Misc.Egap:Value() and IsReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pathing.isDashing then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
+					Control.CastSpell(HK_E, target.pathing.endPos)
+				end
+			end	
+		end
+	end
+
+	--[[ if Menu.Misc.Etp:Value() and IsReady(_E) then
+		for i = GameParticleCount(), 1, -1 do
+			local par = GameParticle(i)
+			if
+				par and par.pos:DistanceTo(myHero.pos) <= ESpell.Range
+ 				and ((par.name:lower():find("teleport") and par.name:lower():find("_red")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
+			then
+				Control.CastSpell(HK_W, par)
+				break
+			end
+		end
+	end ]]
+end
+
+function Jinx:SemiR()
+	if Menu.Misc.SemiR:Value() and IsReady(_R) then
+		local Rtarget = GetTarget(Menu.Misc.Rmax:Value())
+		if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
+			self:CastR(Rtarget)
+		end
+	end
+end
+
+function Jinx:KillSteal()
+	local enemies = ObjectManager:GetEnemyHeroes(Menu.Misc.Rmax:Value())
+	for i, enemy in ipairs(enemies) do
+		if enemy and not enemy.dead and enemy.pos2D.onScreen then
+			if Menu.KillSteal.W:Value() and IsReady(_W) and lastR + 1500 < GetTickCount() then
+				local Wdmg = self:GetWDmg(enemy)
+				if Wdmg >= enemy.health + enemy.hpRegen * 1 then
+					if myHero.pos:DistanceTo(enemy.pos) < WSpell.Range then
+						if myHero.pos:DistanceTo(enemy.pos) > Data:GetAutoAttackRange(myHero, enemy) then 
+							self:CastW(enemy)
+							lastW = GetTickCount()
+						end	
+					end
+				end
+			end
+			if Menu.KillSteal.R:Value() and IsReady(_R) and lastW + 1500 < GetTickCount() then
+				local Rdmg = self:GetRDmg(enemy)
+				local IsSionPassive = HaveBuff(enemy, "sionpassivezombie")
+				if not IsSionPassive and Rdmg >= enemy.health + enemy.hpRegen * 2 and myHero.pos:DistanceTo(enemy.pos) >= Menu.Misc.Rmin:Value() then
+					self:CastR(enemy)
+					lastR = GetTickCount()
+				end
+			end
+		end
+	end
+end
+
+function Jinx:GetWDmg(target)
+	local level = myHero:GetSpellData(_W).level
+	local WDmg = ({10, 60, 110, 160, 210})[level] + 1.6 * myHero.totalDamage
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, WDmg)
+end
+
+function Jinx:GetRDmg(target)
+	local d = target.pos:DistanceTo(myHero.pos)
+	local level = myHero:GetSpellData(_R).level
+	local RDmg = (({325, 475, 625})[level] + 0.165 * myHero.bonusDamage) * (0.06 * math.min(math.floor(d/100), 15) + 0.1) + ({0.25, 0.3, 0.35})[level] * (target.maxHealth - target.health)
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
+end
+
+function Jinx:Draw()
+	if myHero.dead then return end
+
+	if Menu.Draw.DrawFarm:Value() then
+		if Menu.Clear.SpellFarm:Value() then
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.DrawHarass:Value() then
+		if Menu.Clear.SpellHarass:Value() then
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 end
