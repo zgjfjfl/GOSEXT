@@ -1,4 +1,4 @@
-local Version = 2024.14
+local Version = 2024.15
 
 --[ AutoUpdate ]
 
@@ -358,6 +358,18 @@ local function FindFirstWallCollision(startPos, endPos)
 		end
 	end
 	return nil
+end
+
+local function IsWall(pos)
+	if GameIsWall == nil then
+		if MapPosition:inWall(pos) then
+			return true
+		else
+			return false
+		end
+	else
+		return GameIsWall(pos)
+	end
 end
 
 local slots = {}
@@ -1442,6 +1454,9 @@ function Lucian:LoadMenu()
 	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Emode", name = "Use E | Mode", value = 1, drop = {"To Side", "To Mouse", "To Target"}})
+	Menu.Combo:MenuElement({id = "Echeck", name = "E-dash Point inWall / underTurret Check", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "EsafeCheck", name = "E-dash Point Safe Check", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "CheckRange", name = "Safe Check Range", value = 600, min = 300, max = 900, step = 50})
 	Menu.Combo:MenuElement({id = "Edis", name = "Use E | To Side - hold distance", value = 500, min = 300, max = 700, step = 50})
 	Menu.Combo:MenuElement({id = "Priority", name = "Combo Abilities Priority",	value = 1, drop = {"Q", "W", "E", "EW"}})
 
@@ -1571,26 +1586,35 @@ function Lucian:CastERange(target)
 end
 
 function Lucian:CastE(target, mode, range)
+	local castPos;
 	if mode == 1 then
 		local targetPred = target:GetPrediction(MathHuge, 0.25)
 		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, targetPred, ESpell.Range, Menu.Combo.Edis:Value())
 		if intPos1 and intPos2 then
 			local closest = GetDistance(intPos1, mousePos) < GetDistance(intPos2, mousePos) and intPos1 or intPos2
 			if IsFacingMe(target) then
-				local castPos = myHero.pos:Extended(closest, range)
-				Control.CastSpell(HK_E, castPos)
+				castPos = myHero.pos:Extended(closest, range)
 			else
-				local castPos2 = myHero.pos:Extended(target.pos, range)
-				Control.CastSpell(HK_E, castPos2)
+				castPos = myHero.pos:Extended(target.pos, range)
 			end
 		end
 	elseif mode == 2 then 
-		local castPos = myHero.pos:Extended(mousePos, range)
-		Control.CastSpell(HK_E, castPos) 
+		castPos = myHero.pos:Extended(mousePos, range) 
 	elseif mode == 3 then 
-		local castPos = myHero.pos:Extended(target.pos, range)
+		castPos = myHero.pos:Extended(target.pos, range)
+	end
+	
+	if castPos then
+		local underTurret = IsUnderTurret2(castPos)
+		local inWall = IsWall(castPos)
+		local numEnemies = GetEnemyCount(Menu.Combo.CheckRange:Value(), castPos)
+		local numAllies = GetAllyCount(Menu.Combo.CheckRange:Value(), castPos)
+
+		if Menu.Combo.Echeck:Value() and (underTurret or inWall) then return end
+		if Menu.Combo.EsafeCheck:Value() and numEnemies >= 3 and numAllies < 3 then return end
+
 		Control.CastSpell(HK_E, castPos)
-	end 
+	end
 end
 
 function Lucian:CastW(target)
