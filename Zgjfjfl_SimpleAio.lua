@@ -157,7 +157,7 @@ local function isUnderTurret(unit)
 	for i, turret in ipairs(getEnemyTurrets()) do
 		local range = (turret.boundingRadius + 750 + unit.boundingRadius / 2)
 		if not turret.dead then 
-			if turret.pos:DistanceTo(unit) < range then
+			if turret.pos:DistanceTo(unit.pos) < range then
 				return true
 			end
 		end
