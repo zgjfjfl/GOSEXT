@@ -157,7 +157,19 @@ local function isUnderTurret(unit)
 	for i, turret in ipairs(getEnemyTurrets()) do
 		local range = (turret.boundingRadius + 750 + unit.boundingRadius / 2)
 		if not turret.dead then 
-			if turret.pos:DistanceTo(unit.pos) < range then
+			if turret.pos:DistanceTo(unit) < range then
+				return true
+			end
+		end
+	end
+	return false
+end
+
+local function isUnderTurret2(pos)
+	for i, turret in ipairs(getEnemyTurrets()) do
+		local range = (turret.boundingRadius + 750)
+		if not turret.dead then 
+			if turret.pos:DistanceTo(pos) < range then
 				return true
 			end
 		end
@@ -3049,9 +3061,9 @@ function Lissandra:__init()
 	Callback.Add("Tick", function() self:onTick() end)
 	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range =825, Speed = 2200, Collision = false}
 	self.q2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 90, Range =950, Speed = 2200, Collision = false}
-	self.wSpell = { Range = 450 }
+	self.wSpell = { Radius = 450 }
 	self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 125, Range = 1050, Speed = 1200, Collision = false}
-	self.rSpell = { Range = 550 }
+	self.rSpell = { Range = 550, Radius = 550 }
 end
 
 function Lissandra:LoadMenu()
@@ -3061,15 +3073,12 @@ function Lissandra:LoadMenu()
 		Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "E1", name = "[E1]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "E2", name = "[E2]", toggle = true, value = true})
-	Menu.Combo:MenuElement({name = " ", drop = {"if enemy isUnderTurret wont E2 "}})
+		Menu.Combo:MenuElement({id = "E2Hp", name = "Use E2 when self Hp > X%", value = 50, min = 1, max = 100, step = 5})
+		Menu.Combo:MenuElement({id = "ecountW", name = "E2+W when enemies count <= X", value = 2, min = 1, max = 5, step = 1})
+		Menu.Combo:MenuElement({id = "ecountR", name = "E2+R when enemies count <= X", value = 2, min = 1, max = 5, step = 1})
 		Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-		Menu.Combo:MenuElement({id = "healthy", name = "Define self healthy%", value = 50, min = 1, max = 100, step = 5})
-	Menu.Combo:MenuElement({name = " ", drop = {"greater than healthy to do:"}})
-		Menu.Combo:MenuElement({id = "ecountW", name = "Enemies count for E2 (W)", value = 2, min = 1, max = 5, step = 1})
-		Menu.Combo:MenuElement({id = "ecountR", name = "Enemies count for E2 (R)", value = 2, min = 1, max = 5, step = 1})
-		Menu.Combo:MenuElement({id = "R1count", name = "Enemies count for Ult them", value = 2, min = 1, max = 5, step = 1})
-	Menu.Combo:MenuElement({name = " ", drop = {"less than healthy to do:"}})
-		Menu.Combo:MenuElement({id = "R2count", name = "Enemies count for self Ult", value = 2, min = 1, max = 5, step = 1})
+		Menu.Combo:MenuElement({id = "R2Hp", name = "Use R self when Hp <= X%", value = 40, min = 1, max = 100, step = 5})
+		Menu.Combo:MenuElement({id = "R2count", name = "or R self when enemies count >= X", value = 3, min = 1, max = 5, step = 1})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 		Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -3118,36 +3127,37 @@ function Lissandra:Combo()
 	local target = TargetSelector:GetTarget(1000)
 	if target and isValid(target) then
 
-	if Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() then
-		if myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range then
-			if getEnemyCount(self.rSpell.Range, target.pos) >= Menu.Combo.R1count:Value() and self:IsHealthy() then
+		if Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 500 < GetTickCount() then
+			if myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and self:R1Health() and getEnemyCount(self.rSpell.Radius, myHero.pos) < Menu.Combo.R2count:Value() then
 				Control.CastSpell(HK_R, target)
 				lastR = GetTickCount()
 			end
 		end
-	end
 
-	if Menu.Combo.Q:Value() then
-		self:CastQ(target)
-	end
-
-	if Menu.Combo.E1:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
-		if not self:E2Ready() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range-100 then
-			castSpellHigh(self.eSpell, HK_E, target)
-			lastE = GetTickCount()
+		if Menu.Combo.Q:Value() then
+			self:CastQ(target)
 		end
-	end
-		self:CastE2(target)
+
+		if Menu.Combo.E1:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
+			if not self:E2Ready() and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range-100 then
+				castSpellHigh(self.eSpell, HK_E, target)
+				lastE = GetTickCount()
+			end
+		end
+
+		if Menu.Combo.E2:Value() and self:E2Health() and self:E2Ready() and isSpellReady(_E) then
+			self:CastE2(target)
+		end
 	end
 
 	if Menu.Combo.R:Value() and isSpellReady(_R) and lastR + 250 < GetTickCount() then
-		if getEnemyCount(self.rSpell.Range, myHero.pos) >= Menu.Combo.R2count:Value() and not self:IsHealthy() then
+		if (self:R2Health() and getEnemyCount(self.rSpell.Radius, myHero.pos) > 0) or getEnemyCount(self.rSpell.Radius, myHero.pos) >= Menu.Combo.R2count:Value() then
 			Control.CastSpell(HK_R, myHero)
 			lastR = GetTickCount()
 		end
 	end
 
-	if getEnemyCount(self.wSpell.Range, myHero.pos) >= 1 and Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
+	if getEnemyCount(self.wSpell.Radius, myHero.pos) >= 1 and Menu.Combo.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
 		Control.CastSpell(HK_W)
 		lastW = GetTickCount()
 	end
@@ -3175,11 +3185,9 @@ function Lissandra:Flee()
 	end
 end
 
-local EmissilePos = nil
 function Lissandra:CheckEPos()
-	if EmissilePos ~= nil then
-		return EmissilePos
-	end
+	local EmissilePos = nil
+
 	local particle = nil
 	for i = 1, GameParticleCount() do
 		local p = GameParticle(i)
@@ -3189,11 +3197,11 @@ function Lissandra:CheckEPos()
 		end
 	end
 	if particle then
-		missilePos = particle
+		EmissilePos = particle.pos:Extended(myHero.pos, 100)
 	else
-		missilePos = nil
+		EmissilePos = nil
 	end
-	return missilePos
+	return EmissilePos
 end
 
 function Lissandra:CastQ(target)
@@ -3224,27 +3232,51 @@ function Lissandra:CastQ(target)
 end
 
 function Lissandra:CastE2(target)
-		if self:E2Ready() then
-		--self:CheckEPos()
-		local EmissilePos = self:CheckEPos()
-		local dis1 = myHero.pos:DistanceTo(target.pos)
-		if EmissilePos ~= nil then
-			local dis2 = EmissilePos.pos:DistanceTo(target.pos)
-			if Menu.Combo.E2:Value() and self:IsHealthy() and self:E2Ready() and isSpellReady(_E) then
-				if dis1 > dis2 and not isUnderTurret(EmissilePos) then
-					if getEnemyCount(self.rSpell.Range-100, EmissilePos.pos) >= Menu.Combo.ecountR:Value() and isSpellReady(_R) then
-						Control.CastSpell(HK_E)
-					elseif getEnemyCount(self.wSpell.Range-100, EmissilePos.pos) >= Menu.Combo.ecountW:Value() and isSpellReady(_W) then
-						Control.CastSpell(HK_E)
+	local missilePos = self:CheckEPos()
+	local dist1 = myHero.pos:DistanceTo(target.pos)
+	local enemyCount = getEnemyCount(600, target.pos)
+
+	if missilePos then
+		local dist2 = missilePos:DistanceTo(target.pos)
+
+		if dist1 > dist2 and not isUnderTurret2(missilePos) then
+			local shouldCastE = false
+
+			if isSpellReady(_R) then
+				if isSpellReady(_W) then
+					if dist2 < self.wSpell.Radius - 100 then
+						shouldCastE = (enemyCount == 1 or enemyCount <= Menu.Combo.ecountR:Value())
 					end
-				end 
+				else
+					if dist2 < self.rSpell.Radius - 100 then
+						shouldCastE = (enemyCount == 1 or enemyCount <= Menu.Combo.ecountR:Value())
+					end
+				end
+			else
+				if isSpellReady(_W) then
+					if dist2 < self.wSpell.Radius - 100 then
+						shouldCastE = (enemyCount == 1 or enemyCount <= Menu.Combo.ecountW:Value())
+					end
+				end
+			end
+
+			if shouldCastE then
+				Control.CastSpell(HK_E)
 			end
 		end
 	end
 end
 
-function Lissandra:IsHealthy()
-	return myHero.health / myHero.maxHealth > Menu.Combo.healthy:Value()/100
+function Lissandra:E2Health()
+	return myHero.health / myHero.maxHealth > Menu.Combo.E2Hp:Value()/100
+end
+
+function Lissandra:R1Health()
+	return myHero.health / myHero.maxHealth > Menu.Combo.R2Hp:Value()/100
+end
+
+function Lissandra:R2Health()
+	return myHero.health / myHero.maxHealth <= Menu.Combo.R2Hp:Value()/100
 end
 
 function Lissandra:E2Ready()
@@ -3252,6 +3284,7 @@ function Lissandra:E2Ready()
 end
 
 function Lissandra:Draw()
+
 	if Menu.Draw.Q:Value() and isSpellReady(_Q) then
 			Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 225, 255, 10))
 	end
@@ -3259,7 +3292,7 @@ function Lissandra:Draw()
 			Draw.Circle(myHero.pos, self.q2Spell.Range, 1, Draw.Color(255, 225, 255, 10))
 	end
 	if Menu.Draw.W:Value() and isSpellReady(_W) then
-			Draw.Circle(myHero.pos, self.wSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+			Draw.Circle(myHero.pos, self.wSpell.Radius, 1, Draw.Color(255, 225, 255, 10))
 	end
 	if Menu.Draw.E:Value() and isSpellReady(_E) then
 			Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 225, 255, 10))
@@ -3421,8 +3454,9 @@ function KSante:onTick()
 
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
 		return
-	end	
-	local bonusHealth = math.min(math.floor(myHero.maxHealth - (625 + 115 * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1600)
+	end
+	local baseHP, hpPerLevel = myHero.baseHP, myHero.hpPerLevel
+	local bonusHealth = math.min(math.floor(myHero.maxHealth - (baseHP + hpPerLevel * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1600)
 	local time = math.floor(bonusHealth / 8000 * 100) / 100
 	--print(time)
 	self.q1Spell.Delay = 0.45 - time
