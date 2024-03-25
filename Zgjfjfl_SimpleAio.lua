@@ -1,4 +1,4 @@
-local Version = 2024.05
+local Version = 2024.06
 
 --[ AutoUpdate ]
 
