@@ -1,4 +1,4 @@
-local Version = 2024.15
+local Version = 2024.16
 
 --[ AutoUpdate ]
 
@@ -833,24 +833,24 @@ function Smolder:Auto()
 end
 
 function Smolder:Combo()
-	if Menu.Combo.W:Value() and IsReady(_W) then
-		local target = GetTarget(WSpell.Range)
-		if IsValid(target) and target.pos2D.onScreen then
-			self:CastGGPred(HK_W, target)	
-		end
-	end
-	
-	if Menu.Combo.Q:Value() and IsReady(_Q) then
-		local target = GetTarget(QSpell.Range)
-		if IsValid(target) and target.pos2D.onScreen then
-			-- self:QLogic(target, Menu.Combo.Q2:Value())
-			Control.CastSpell(HK_Q, target)
+	local Wtarget = GetTarget(WSpell.Range)
+	if IsValid(Wtarget) and Wtarget.pos2D.onScreen then
+		if Menu.Combo.W:Value() and IsReady(_W) then
+			self:CastGGPred(HK_W, Wtarget)	
 		end
 	end
 
-	if Menu.Combo.R:Value() and IsReady(_R) then
-		local Rtarget = GetTarget(Menu.Combo.RRange:Value())
-		if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
+	local Qtarget = GetTarget(QSpell.Range)
+	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
+		if Menu.Combo.Q:Value() and IsReady(_Q) then
+			-- self:QLogic(target, Menu.Combo.Q2:Value())
+			Control.CastSpell(HK_Q, Qtarget)
+		end
+	end
+
+	local Rtarget = GetTarget(Menu.Combo.RRange:Value())
+	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
+		if Menu.Combo.R:Value() and IsReady(_R) then
 			if myHero.health/myHero.maxHealth < Menu.Combo.RHp:Value()/100 and myHero.pos:DistanceTo(Rtarget.pos) < WSpell.Range then
 				self:CastGGPred(HK_R, Rtarget)
 			else
@@ -865,18 +865,18 @@ end
 
 function Smolder:Harass()
 	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
-		if Menu.Harass.W:Value() and IsReady(_W) then
-			local target = GetTarget(WSpell.Range)
-			if IsValid(target) and target.pos2D.onScreen then
-				self:CastGGPred(HK_W, target)
+		local Wtarget = GetTarget(WSpell.Range)
+		if IsValid(Wtarget) and Wtarget.pos2D.onScreen then
+			if Menu.Harass.W:Value() and IsReady(_W) then
+				self:CastGGPred(HK_W, Wtarget)
 			end
 		end
 
-		if Menu.Harass.Q:Value() and IsReady(_Q) then
-			local target = GetTarget(QSpell.Range)
-			if IsValid(target) and target.pos2D.onScreen then
+		local Qtarget = GetTarget(QSpell.Range)
+		if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
+			if Menu.Harass.Q:Value() and IsReady(_Q) then
 				-- self:QLogic(target, Menu.Harass.Q2:Value())
-				Control.CastSpell(HK_Q, target)
+				Control.CastSpell(HK_Q, Qtarget)
 			end
 		end
 	end
@@ -1200,28 +1200,29 @@ function Zeri:AAkills()
 end
 
 function Zeri:Combo()
-	if Menu.Combo.E:Value() and IsReady(_E) then
-		local target = GetTarget(ESpell.Range + QSpell.Range - 50)
-		if IsValid(target) and target.pos2D.onScreen then
-			Control.CastSpell(HK_E, target)
+
+	local Etarget = GetTarget(ESpell.Range + QSpell.Range - 50)
+	if IsValid(Etarget) and Etarget.pos2D.onScreen then
+		if Menu.Combo.E:Value() and IsReady(_E) then
+			Control.CastSpell(HK_E, Etarget)
 		end
 	end
 
-	if Menu.Combo.Q:Value() and IsReady(_Q) then
-		local target = GetTarget(QSpell.Range)
-		if IsValid(target) and target.pos2D.onScreen then
+	local Qtarget = GetTarget(QSpell.Range)
+	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
+		if Menu.Combo.Q:Value() and IsReady(_Q) then
 			local QPrediction = GGPrediction:SpellPrediction(QSpell)
-			QPrediction:GetPrediction(target, myHero)
+			QPrediction:GetPrediction(Qtarget, myHero)
 			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
 				Control.CastSpell(HK_Q, QPrediction.CastPosition)
 			end
 		end
 	end
-	
+
+	local Wtarget = GetTarget(W2Spell.Range)
 	if Menu.Combo.W:Value() and IsReady(_W) then
-		local target = GetTarget(W2Spell.Range)
-		if IsValid(target) and target.pos2D.onScreen and myHero.pos:DistanceTo(target.pos) > QSpell.Range and GetEnemyCount(QSpell.Range, myHero.pos) == 0 then
-			self:CastW(target)
+		if IsValid(Wtarget) and Wtarget.pos2D.onScreen and myHero.pos:DistanceTo(Wtarget.pos) > QSpell.Range and GetEnemyCount(QSpell.Range, myHero.pos) == 0 then
+			self:CastW(Wtarget)
 		end
 	end
 
@@ -1278,9 +1279,9 @@ function Zeri:CastW(target)
 end
 
 function Zeri:Harass()
-	if Menu.Harass.Q:Value() and IsReady(_Q) then
-		local target = GetTarget(QSpell.Range)
-		if IsValid(target) and target.pos2D.onScreen then
+	local Qtarget = GetTarget(QSpell.Range)
+	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
+		if Menu.Harass.Q:Value() and IsReady(_Q) then
 			local QPrediction = GGPrediction:SpellPrediction(QSpell)
 			QPrediction:GetPrediction(target, myHero)
 			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
