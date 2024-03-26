@@ -1,4 +1,4 @@
-local Version = 2024.18
+local Version = 2024.19
 
 --[ AutoUpdate ]
 
@@ -1251,21 +1251,20 @@ function Zeri:CastW(target)
 	local pred = GGPrediction:SpellPrediction(W2Spell)
 	pred:GetPrediction(target, myHero)
 	if pred:CanHit(Menu.Misc.WhitChance:Value() + 1) then
-		local castPos = pred.CastPosition
-		local unitPos = pred.UnitPosition
+		local predPos = Vector(pred.CastPosition)
 
 		local wallColPos
 		if GameIsWall == nil then
-			wallColPos = MapPosition:getIntersectionPoint3D(myHero.pos, unitPos)
+			wallColPos = MapPosition:getIntersectionPoint3D(myHero.pos,predPos)
 		else
-			wallColPos = FindFirstWallCollision(myHero.pos, unitPos)
+			wallColPos = FindFirstWallCollision(myHero.pos, predPos)
 		end
 
 		if wallColPos ~= nil then
-			if myHero.pos:DistanceTo(wallColPos) < WSpell.Range and wallColPos:DistanceTo(unitPos) < 1400 then
+			if myHero.pos:DistanceTo(wallColPos) < WSpell.Range and wallColPos:DistanceTo(predPos) < 1400 then
 				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, wallColPos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
 				if collisionCount == 0 then
-					Control.CastSpell(HK_W, castPos)
+					Control.CastSpell(HK_W, predPos)
 				end
 			end
 		else
@@ -1632,9 +1631,9 @@ function Lucian:CastQExt(target)
 	local pred = GGPrediction:SpellPrediction(Q2Spell)
 	pred:GetPrediction(target, myHero)
 	if pred:CanHit(Menu.Misc.QhitChance:Value() + 1) then
-		local unitPos = pred.UnitPosition
+		local predPos = Vector(pred.CastPosition)
 		
-		local targetPos = myHero.pos:Extended(unitPos, GetDistance(myHero.pos, unitPos))
+		local targetPos = myHero.pos:Extended(predPos, GetDistance(myHero.pos, predPos))
 
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range + myHero.boundingRadius + target.boundingRadius)
 		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range + myHero.boundingRadius + target.boundingRadius)
@@ -1651,7 +1650,7 @@ function Lucian:CastQExt(target)
 
 		for i = 1, #objTable do
 			local obj = objTable[i]
-			local objPos = myHero.pos:Extended(obj.pos, GetDistance(myHero.pos, unitPos))
+			local objPos = myHero.pos:Extended(obj.pos, GetDistance(myHero.pos, predPos))
 			if GetDistance(targetPos, objPos) < (Q2Spell.Radius/2 + target.boundingRadius) then
 				Control.CastSpell(HK_Q, obj.pos)
 			end
