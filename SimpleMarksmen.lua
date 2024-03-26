@@ -1,4 +1,4 @@
-local Version = 2024.17
+local Version = 2024.18
 
 --[ AutoUpdate ]
 
@@ -1285,7 +1285,7 @@ function Zeri:Harass()
 	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
 		if Menu.Harass.Q:Value() and IsReady(_Q) then
 			local QPrediction = GGPrediction:SpellPrediction(QSpell)
-			QPrediction:GetPrediction(target, myHero)
+			QPrediction:GetPrediction(Qtarget, myHero)
 			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
 				Control.CastSpell(HK_Q, QPrediction.CastPosition)
 			end
