@@ -1,4 +1,4 @@
-local Version = 2024.22
+local Version = 2024.23
 
 --[ AutoUpdate ]
 
@@ -2252,6 +2252,8 @@ function Tristana:LoadMenu()
 	Menu.KillSteal:MenuElement({id = "R", name = "Auto R KillSteal(E+R calculation)", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "ForceE", name = "Focus target with E", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Rgap", name = "Auto R Anti Gapcloser", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "SemiR", name = "Semi-manual R Key", key = string.byte("T")})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
@@ -2325,6 +2327,9 @@ function Tristana:OnTick()
 
 	AAERRange = 517 + (8 * myHero.levelData.lvl) + myHero.boundingRadius
 	--E.Delay = myHero.attackData.windUpTime
+	
+	self:ForceE()
+	self:AntiGapcloser()
 
 	if myHero.dead or Game.IsChatOpen() or Recalling() then return end
 	if myHero.activeSpell.valid then return end
@@ -2352,6 +2357,32 @@ function Tristana:JungleClear()
 					Control.CastSpell(HK_Q)
 				end
 			end
+		end
+	end
+end
+
+function Tristana:ForceE()
+	local enemies = ObjectManager:GetEnemyHeroes(1000)
+	for i, enemy in ipairs(enemies) do
+		if IsValid(enemy) and enemy.pos2D.onScreen then
+			if Menu.Misc.ForceE:Value() and HaveBuff(enemy, "tristanaechargesound") and myHero.pos:DistanceTo(enemy.pos) <= AAERRange + enemy.boundingRadius then
+				Orbwalker.ForceTarget = enemy
+			else
+				Orbwalker.ForceTarget = nil
+			end
+		end
+	end
+end
+
+function Tristana:AntiGapcloser()
+	if Menu.Misc.Rgap:Value() and IsReady(_R) then
+		local enemies = ObjectManager:GetEnemyHeroes(1500)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pathing.isDashing then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < Data:GetAutoAttackRange(myHero, target) then
+					Control.CastSpell(HK_R, target)
+				end
+			end	
 		end
 	end
 end
