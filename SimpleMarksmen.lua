@@ -1,4 +1,4 @@
-local Version = 2024.21
+local Version = 2024.22
 
 --[ AutoUpdate ]
 
@@ -2424,12 +2424,5 @@ function Tristana:Draw()
 		else
 			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
 		end
-	end
-
-	if Menu.Draw.W:Value() and IsReady(_W) then
-		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
-	end
-	if Menu.Draw.E:Value() and IsReady(_E) then
-		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 end
