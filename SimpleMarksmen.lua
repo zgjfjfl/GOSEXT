@@ -1,4 +1,4 @@
-local Version = 2024.19
+local Version = 2024.20
 
 --[ AutoUpdate ]
 
@@ -1106,7 +1106,7 @@ function Zeri:LoadMenu()
 	Menu.Misc:MenuElement({id = "QhitChance", name = "Q | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "WhitChance", name = "W | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "QRange", name = "Q range manual fine-tuning", value = 0, min = -50, max = 50, step = 5})
-	Menu.Misc:MenuElement({id = "AAkills", name = "Use PassiveAA kills target when no Q", toggle = true, value = false})
+	-- Menu.Misc:MenuElement({id = "AAkills", name = "Use PassiveAA kills target when no Q", toggle = true, value = false})
 	Menu.Misc:MenuElement({id = "ComboAA", name = "Disable AA when no Qpassive in combo", toggle = true, value = true, key = string.byte("T")})
 	Menu.Misc:MenuElement({id = "ClearAA", name = "Disable AA when in Clear(Mouse Scroll)", toggle = true, value = true, key = 4})	
 
@@ -1123,7 +1123,8 @@ function Zeri:OnPreAttack(args)
 	local Mode = GetMode()
 	local target = args.Target 
 	if Mode == "Combo" then
-		if Menu.Misc.ComboAA:Value() and not HaveBuff(myHero, "ZeriQPassiveReady") then
+		local AADamage = Damage:GetAutoAttackDamage(myHero, target)
+		if Menu.Misc.ComboAA:Value() and not HaveBuff(myHero, "ZeriQPassiveReady") and target.health > AADamage then
 			args.Process = false
 		else
 			args.Process = true
@@ -1169,7 +1170,7 @@ function Zeri:OnTick()
 	local Mode = GetMode()
 	if Mode == "Combo" then
 		self:Combo()
-		self:AAkills()
+		-- self:AAkills()
 	elseif Mode == "Harass" then
 		self:LastHit()
 		self:Harass()
@@ -1184,7 +1185,7 @@ function Zeri:OnTick()
 	end
 end
 
-function Zeri:AAkills()
+--[[ function Zeri:AAkills()
 	if not Menu.Misc.AAkills:Value() or myHero.activeSpell.valid then return end
 
 	local targets = ObjectManager:GetEnemyHeroes(Data:GetAutoAttackRange(myHero))
@@ -1197,7 +1198,7 @@ function Zeri:AAkills()
             end
         end
     end
-end
+end ]]
 
 function Zeri:Combo()
 
