@@ -1,4 +1,4 @@
-local Version = 2024.20
+local Version = 2024.21
 
 --[ AutoUpdate ]
 
@@ -49,7 +49,7 @@ do
 
 end
 
-local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian", "Jinx"}
+local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian", "Jinx", "Tristana"}
 
 if not table.contains(Heroes, myHero.charName) then
 	print('SimpleMarksmen not supported ' .. myHero.charName)
@@ -1105,7 +1105,7 @@ function Zeri:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "QhitChance", name = "Q | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "WhitChance", name = "W | hitChance", value = 1, drop = {"Normal", "High"}})
-	Menu.Misc:MenuElement({id = "QRange", name = "Q range manual fine-tuning", value = 0, min = -50, max = 50, step = 5})
+	Menu.Misc:MenuElement({id = "QRange", name = "Q Range = RealRange + X", value = 0, min = -50, max = 50, step = 5})
 	-- Menu.Misc:MenuElement({id = "AAkills", name = "Use PassiveAA kills target when no Q", toggle = true, value = false})
 	Menu.Misc:MenuElement({id = "ComboAA", name = "Disable AA when no Qpassive in combo", toggle = true, value = true, key = string.byte("T")})
 	Menu.Misc:MenuElement({id = "ClearAA", name = "Disable AA when in Clear(Mouse Scroll)", toggle = true, value = true, key = 4})	
@@ -2185,6 +2185,229 @@ function Jinx:GetRDmg(target)
 end
 
 function Jinx:Draw()
+	if myHero.dead then return end
+
+	if Menu.Draw.DrawFarm:Value() then
+		if Menu.Clear.SpellFarm:Value() then
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.DrawHarass:Value() then
+		if Menu.Clear.SpellHarass:Value() then
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+end
+
+-----------------------------------------
+
+class "Tristana"
+
+function Tristana:__init()
+	print("Marksmen Tristana Loaded") 
+	self:LoadMenu()
+
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
+	Orbwalker:OnPostAttackTick(function() self:OnPostAttackTick() end)
+end
+
+function Tristana:LoadMenu()
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "Use Q| Near Minion Counts >= ", value = 3, min = 1, max = 6, step = 1})
+	Menu.Clear.LaneClear:MenuElement({id = "E", name = "Use E On Turret", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	
+	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
+	Menu.KillSteal:MenuElement({id = "R", name = "Auto R KillSteal(E+R calculation)", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "SemiR", name = "Semi-manual R Key", key = string.byte("T")})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
+end
+
+function Tristana:OnPreAttack(args)
+	local target = args.Target
+	if IsValid(target) and target.type == Obj_AI_Hero then
+		if GetMode() == "Combo" then
+			if Menu.Combo.E:Value() and IsReady(_E) then
+				Control.CastSpell(HK_E, target)
+			end
+		end
+		if GetMode() == "Harass" then
+			if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+				if Menu.Harass.E:Value() and IsReady(_E) then
+					Control.CastSpell(HK_E, target)
+				end
+			end
+		end
+		if GetMode() == "LaneClear" then
+			if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+				if Menu.Clear.SpellHarass:Value() and Menu.Harass.E:Value() and IsReady(_E) then
+					Control.CastSpell(HK_E, target)
+				end
+			end
+		end
+	end
+
+	if target and target.type == Obj_AI_Turret then
+		if GetMode() == "LaneClear" then
+			if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+				if Menu.Clear.LaneClear.E:Value() and IsReady(_E) then
+					Control.CastSpell(HK_E, target)
+				end
+			end
+		end
+	end
+end
+
+function Tristana:OnPostAttackTick()
+	local target = Orbwalker:GetTarget()
+	if IsValid(target) and target.type == Obj_AI_Hero then
+		if GetMode() == "Combo" then
+			if Menu.Combo.Q:Value() and IsReady(_Q) then
+				Control.CastSpell(HK_Q)
+			end
+		end
+		if GetMode() == "Harass" then
+			if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+				if Menu.Harass.Q:Value() and IsReady(_Q) then
+					Control.CastSpell(HK_Q)
+				end
+			end
+		end
+	end
+	if target and target.type == Obj_AI_Minion and target.team ~= 300 then
+		if GetMode() == "LaneClear" then
+			if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) and GetMinionCount(700, myHero.pos) >= Menu.Clear.LaneClear.QCount:Value() then
+					Control.CastSpell(HK_Q)
+				end
+			end
+		end
+	end
+end
+
+function Tristana:OnTick()
+
+	AAERRange = 517 + (8 * myHero.levelData.lvl) + myHero.boundingRadius
+	--E.Delay = myHero.attackData.windUpTime
+
+	if myHero.dead or Game.IsChatOpen() or Recalling() then return end
+	if myHero.activeSpell.valid then return end
+
+	self:SemiR()
+	self:KillSteal()
+
+	if GetMode() == "LaneClear" then
+		self:JungleClear()
+	end
+end
+
+function Tristana:JungleClear()
+	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+		local minions = ObjectManager:GetEnemyMinions(AAERRange)
+		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
+				if Menu.Clear.JungleClear.E:Value() and IsReady(_E) then
+					if not minion.name:lower():find("mini") then
+						Control.CastSpell(HK_E, minion)
+					end
+				end
+				if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
+					Control.CastSpell(HK_Q)
+				end
+			end
+		end
+	end
+end
+
+function Tristana:SemiR()
+	local enemies = ObjectManager:GetEnemyHeroes(1000)
+	MathSort(enemies, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+	for i, enemy in ipairs(enemies) do
+		if IsValid(enemy) and enemy.pos2D.onScreen then
+			if Menu.Misc.SemiR:Value() and IsReady(_R) and myHero.pos:DistanceTo(enemy.pos) <= AAERRange + enemy.boundingRadius then
+				Control.CastSpell(HK_R, enemy)
+			end
+		end
+	end
+end
+
+function Tristana:KillSteal()
+	local enemies = ObjectManager:GetEnemyHeroes(1000)
+	for i, enemy in ipairs(enemies) do
+		if IsValid(enemy) and enemy.pos2D.onScreen then
+			if Menu.KillSteal.R:Value() and IsReady(_R) and myHero.pos:DistanceTo(enemy.pos) <= AAERRange + enemy.boundingRadius then
+				local Edmg = self:GetEDmg(enemy)
+				local Rdmg = self:GetRDmg(enemy)
+				local hasbuff = HaveBuff(enemy, "sionpassivezombie")
+				if not hasbuff and Edmg + Rdmg > enemy.health and Edmg < enemy.health and enemy.health > Damage:GetAutoAttackDamage(myHero, enemy) then
+					Control.CastSpell(HK_R, enemy)
+				end
+			end
+		end
+	end
+end
+
+function Tristana:GetEDmg(unit)
+    local Edmg = 0
+    local hasbuff = HaveBuff(unit, "tristanaecharge")
+	local count = GetBuffData(unit, "tristanaecharge").count
+
+    if hasbuff then
+        local EbaseDmg = ({70, 80, 90, 100,110})[myHero:GetSpellData(_E).level]
+        local Ead = myHero.bonusDamage * ({0.5, 0.75, 1, 1.25, 1.5})[myHero:GetSpellData(_E).level]
+        local Eap = myHero.ap * 0.5
+        local Evalue = (EbaseDmg + Ead+ Eap) * (count * 0.3 + 1) * (myHero.critChance * 0.3333 + 1)
+        Edmg = Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_PHYSICAL, Evalue)
+    end
+    return Edmg
+end
+
+function Tristana:GetRDmg(unit)
+    local baseDmg = ({300, 400, 500})[myHero:GetSpellData(_R).level]
+    local bonusDmg = myHero.ap * 1
+    local Rvalue = baseDmg + bonusDmg
+    local Rdmg = Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_MAGICAL, Rvalue)
+    return Rdmg
+end
+
+function Tristana:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
