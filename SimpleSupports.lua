@@ -1,4 +1,4 @@
-local Version = 2024.10
+local Version = 2024.11
 
 --[ AutoUpdate ]
 
@@ -216,7 +216,7 @@ local function GetMinionCount(range, unit)
 	for i = 1,GameMinionCount() do
 		local hero = GameMinion(i)
 		local Range = range * range
-		if hero.team ~= TEAM_ALLY and hero.dead == false and GetDistanceSqr(unit, hero.pos) < Range then
+		if hero.team ~= myHero.team and hero.dead == false and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
 	end
@@ -641,7 +641,7 @@ end
 
 function Lux:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
-	local QDmg = ({80, 120, 160, 200, 240})[level] + 0.6 * myHero.ap
+	local QDmg = ({80, 120, 160, 200, 240})[level] + 0.65 * myHero.ap
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
 end
 

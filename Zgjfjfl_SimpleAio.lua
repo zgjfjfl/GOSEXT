@@ -1,4 +1,4 @@
-local Version = 2024.07
+local Version = 2024.08
 
 --[ AutoUpdate ]
 
@@ -496,7 +496,7 @@ function Ornn:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:onTick() end)
 	Callback.Add("WndMsg", function(msg, wParam) self:OnWndMsg(msg, wParam) end)
-	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 65, Range = 800, Speed = 1800, Collision = false}
+	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.3, Radius = 65, Range = 800, Speed = 1800, Collision = false}
 	self.wSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 175, Range = 500, Speed = math.huge, Collision = false}
 	self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 180, Range = 750, Speed = 1600, Collision = false}
 	self.r1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 170, Range = 2500, Speed = 1200, Collision = false}
@@ -557,9 +557,9 @@ function Ornn:onTick()
 end
 
 function Ornn:OnWndMsg(msg, wParam)
-	if msg == 257 then
-		if wParam == HK_Q then
-			--print('1')
+	if isSpellReady(_Q) then
+		if msg == KEY_UP and wParam == HK_Q then
+			--print("1")
 			self.qTimer = Game.Timer() + 1.25
 		end
 	end
@@ -595,7 +595,7 @@ function Ornn:Combo()
 		local objpos = target.pos:Extended(myHero.pos, -Menu.Combo.ED:Value())
 
 		if (not MapPosition:intersectsWall(target.pos, objpos) or not isSpellReady(_E)) and myHero:GetSpellData(_R).name ~= "OrnnRCharge" then
-			if Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+			if Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 400 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
 				castSpellHigh(self.qSpell, HK_Q, target)
 				lastQ = GetTickCount()
 			end
@@ -689,7 +689,7 @@ function Ornn:Harass()
 	local target = TargetSelector:GetTarget(self.qSpell.Range)
 	if target and isValid(target) and target.pos2D.onScreen then
 			
-		if Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
+		if Menu.Harass.Q:Value() and isSpellReady(_Q) and lastQ + 400 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.qSpell.Range then
 			castSpellHigh(self.qSpell, HK_Q, target)
 			lastQ = GetTickCount()
 		end
@@ -1972,7 +1972,7 @@ end
 
 function Nasus:getqDmg(target)
 	local qlvl = myHero:GetSpellData(_Q).level
-	local qbaseDmg = 20 * qlvl + 10
+	local qbaseDmg = 20 * qlvl + 20
 	local qDmg = qbaseDmg + getBuffData(myHero, "NasusQStacks").stacks + myHero.totalDamage
 return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
@@ -3691,22 +3691,31 @@ function Skarner:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:onTick() end)
-	self.qSpell = { Range = 350 }
-	self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 950, Speed = 1200, Collision = false}
+	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 90, Range = 1050, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.wSpell = {Range = 650}
+	self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 100, Range = 625, Speed = math.huge, Collision = false}
 end
 
 function Skarner:LoadMenu()
 			
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 		Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-		Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "WCount", name = "Use W when can hit >= X enemies", value=2, min = 1, max = 5})
+		Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "Rcount", name = "R hit x enemies", value = 2, min = 1, max = 5 })
+		
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+		Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 
-	Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Jungle Clear"})
 		Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-		Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+		Menu.Clear:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
-		Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+		Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+		Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+		Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 end
 
 function Skarner:onTick()
@@ -3714,69 +3723,97 @@ function Skarner:onTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
 		return
 	end	
-	if haveBuff(myHero, "skarnerimpalebuff") then
+	if haveBuff(myHero, "SkarnerR") then
 		Orbwalker:SetAttack(false)
 	else
 		Orbwalker:SetAttack(true)
 	end
-
+    if myHero.activeSpell.valid then return end
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
 		self:Combo()
 	end
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
 		self:LaneClear()
 	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	end
 end
 
 function Skarner:Combo()
-
-	if Attack:IsActive() then return end
-
-	local target = TargetSelector:GetTarget(self.eSpell.Range)
-	if target and isValid(target) then
-		if myHero.pos:DistanceTo(target.pos) < self.qSpell.Range and Menu.Combo.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
-			Control.CastSpell(HK_Q)
-			lastQ = GetTickCount()
-		end
-		if myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
-			castSpellHigh(self.eSpell, HK_E, target)
-			lastE = GetTickCount()
+	local Qtarget = TargetSelector:GetTarget(self.qSpell.Range)
+	if Qtarget and isValid(Qtarget) then
+		if Menu.Combo.Q:Value() and isSpellReady(_Q) then
+			if myHero:GetSpellData(_Q).name == "SkarnerQ" then
+				Control.CastSpell(HK_Q)
+			end
+			if myHero:GetSpellData(_Q).name == "SkarnerQRockThrow" then
+				if myHero.pos:DistanceTo(Qtarget.pos) > Data:GetAutoAttackRange(myHero, Qtarget) then
+					castSpellHigh(self.qSpell, HK_Q, Qtarget)
+				end
+			end
 		end
 	end
-	-- for i, enemy in pairs(getEnemyHeroes()) do
-		-- if enemy and isValid(enemy) and getBuffData(enemy, "skarnerpassivebuff").duration > 0.5 then
-			-- Orbwalker.ForceTarget = enemy
-		-- else
-			-- Orbwalker.ForceTarget = nil
-		-- end
-	-- end
+	
+	local Rtarget = TargetSelector:GetTarget(self.rSpell.Range-50)
+	if Rtarget and isValid(Rtarget) then
+		if Menu.Combo.R:Value() and isSpellReady(_R) then
+			if getEnemyCount(self.rSpell.Radius, Rtarget.pos) >= Menu.Combo.WCount:Value() then
+				castSpellHigh(self.rSpell, HK_R, Rtarget)
+			end
+		end
+	end
+
+	if Menu.Combo.W:Value() and isSpellReady(_W) and getEnemyCount(self.wSpell.Range, myHero.pos) >= Menu.Combo.WCount:Value() then
+		Control.CastSpell(HK_W)
+	end
 end
 
-function Skarner:LaneClear()
-	if Attack:IsActive() then return end
-	local target = HealthPrediction:GetJungleTarget()
-	if not target then
-		target = HealthPrediction:GetLaneClearTarget()
-	end
-	if target and isValid(target) then
-		if Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
-			Control.CastSpell(HK_Q)
-			lastQ = GetTickCount()
-		end
-
-		if Menu.Clear.E:Value() and isSpellReady(_E) and lastE + 350 < GetTickCount() then
-			bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
-			if bestCount > 0 then 
-				Control.CastSpell(HK_E, bestPosition)
-				lastE = GetTickCount()
+function Skarner:Harass()
+	local Qtarget = TargetSelector:GetTarget(self.qSpell.Range)
+	if Qtarget and isValid(Qtarget) then
+		if Menu.Harass.Q:Value() and isSpellReady(_Q) then
+			if myHero:GetSpellData(_Q).name == "SkarnerQ" then
+				Control.CastSpell(HK_Q)
+			end
+			if myHero:GetSpellData(_Q).name == "SkarnerQRockThrow" then
+				if myHero.pos:DistanceTo(Qtarget.pos) > Data:GetAutoAttackRange(myHero, Qtarget) then
+					castSpellHigh(self.qSpell, HK_Q, Qtarget)
+				end
 			end
 		end
 	end
 end
 
+function Skarner:LaneClear()
+	local target = HealthPrediction:GetJungleTarget()
+	if target and isValid(target) then
+		if Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
+			if myHero:GetSpellData(_Q).name == "SkarnerQ" then
+				Control.CastSpell(HK_Q)
+			end
+			if myHero:GetSpellData(_Q).name == "SkarnerQRockThrow" then
+				if myHero.pos:DistanceTo(target.pos) > Data:GetAutoAttackRange(myHero, target) then
+					Control.CastSpell(HK_Q, target)
+				end
+			end
+		end
+
+		if Menu.Clear.W:Value() and isSpellReady(_W) and myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
+			Control.CastSpell(HK_W)
+		end
+	end
+end
+
 function Skarner:Draw()
-	if Menu.Draw.E:Value() and isSpellReady(_E) then
-			Draw.Circle(myHero.pos, self.eSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+	if Menu.Draw.Q:Value() and isSpellReady(_Q) then
+		Draw.Circle(myHero.pos, self.qSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+	end
+	if Menu.Draw.W:Value() and isSpellReady(_W) then
+		Draw.Circle(myHero.pos, self.wSpell.Range, 1, Draw.Color(255, 225, 255, 10))
+	end
+	if Menu.Draw.R:Value() and isSpellReady(_R) then
+		Draw.Circle(myHero.pos, self.rSpell.Range, 1, Draw.Color(255, 225, 255, 10))
 	end
 end
 

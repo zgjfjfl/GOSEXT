@@ -1,4 +1,4 @@
-local Version = 2024.23
+local Version = 2024.24
 
 --[ AutoUpdate ]
 
@@ -737,9 +737,10 @@ end
 
 function Smolder:OnPreAttack(args)
 	local Mode = GetMode()
-	local target = args.Target 
+	local target = args.Target
+	local QTotalDmg = self:GetQDmg(target) + self:GetPQDmg(target)
 	if target.type == Obj_AI_Minion then
-		if (Mode == "LaneClear" or Mode == "Harass" or Mode == "LastHit") and target.health < self:GetQDmg(target) and IsReady(_Q) then
+		if (Mode == "LaneClear" or Mode == "Harass" or Mode == "LastHit") and target.health < QTotalDmg * 1.1 and IsReady(_Q) then
 			args.Process = false
 		else
 			args.Process = true
@@ -890,13 +891,19 @@ end
 
 function Smolder:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
-	local PassiveStacks = GetBuffData(myHero, "SmolderQPassive").stacks
 	if level > 0 then
-		local QDmg = (({15, 25, 35, 45, 55})[level] + myHero.totalDamage + 0.15 * myHero.ap) + ((0.4 * PassiveStacks) * (1 + 0.3 * myHero.critChance))
-		if target.type == Obj_AI_Minion then
-			QDmg = QDmg * 1.1
-		end
+		local QDmg = (({15, 25, 35, 45, 55})[level] + myHero.totalDamage + 0.15 * myHero.ap) * (1 + 0.5 * myHero.critChance)
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
+	else
+		return 0
+	end
+end
+
+function Smolder:GetPQDmg(target)
+	local PassiveStacks = GetBuffData(myHero, "SmolderQPassive").stacks
+	if PassiveStacks then
+		local Dmg = (0.4 * (1 + 0.3 * myHero.critChance)) * PassiveStacks
+		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
 	else
 		return 0
 	end
@@ -907,8 +914,9 @@ function Smolder:LastHit()
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
+				local QTotalDmg = self:GetQDmg(minion) + self:GetPQDmg(minion)
 				local hp = HealthPrediction:GetPrediction(minion, QSpell.Delay + myHero.pos:DistanceTo(minion.pos)/QSpell.Speed)
-				if self:GetQDmg(minion) > hp then
+				if QTotalDmg * 1.1 > hp then
 					Control.CastSpell(HK_Q, minion)
 				end
 			end
@@ -2376,10 +2384,10 @@ end
 
 function Tristana:AntiGapcloser()
 	if Menu.Misc.Rgap:Value() and IsReady(_R) then
-		local enemies = ObjectManager:GetEnemyHeroes(1500)
+		local enemies = ObjectManager:GetEnemyHeroes(1000)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing then
-				if myHero.pos:DistanceTo(target.pathing.endPos) < Data:GetAutoAttackRange(myHero, target) then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < 300 then
 					Control.CastSpell(HK_R, target)
 				end
 			end	
