@@ -1,4 +1,4 @@
-local Version = 2024.08
+local Version = 2024.09
 
 --[ AutoUpdate ]
 
@@ -3693,7 +3693,7 @@ function Skarner:__init()
 	Callback.Add("Tick", function() self:onTick() end)
 	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 90, Range = 1050, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.wSpell = {Range = 650}
-	self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 100, Range = 625, Speed = math.huge, Collision = false}
+	self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 150, Range = 625, Speed = math.huge, Collision = false}
 end
 
 function Skarner:LoadMenu()
@@ -3701,9 +3701,9 @@ function Skarner:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 		Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-		Menu.Combo:MenuElement({id = "WCount", name = "Use W when can hit >= X enemies", value=2, min = 1, max = 5})
+		Menu.Combo:MenuElement({id = "WCount", name = "Use W when can hit >= X enemies", value = 1, min = 1, max = 5})
 		Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-		Menu.Combo:MenuElement({id = "Rcount", name = "R hit x enemies", value = 2, min = 1, max = 5 })
+		Menu.Combo:MenuElement({id = "RCount", name = "R hit x enemies", value = 2, min = 1, max = 5 })
 		
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 		Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
@@ -3755,10 +3755,11 @@ function Skarner:Combo()
 		end
 	end
 	
-	local Rtarget = TargetSelector:GetTarget(self.rSpell.Range-50)
+	local Rtarget = TargetSelector:GetTarget(self.rSpell.Range)
 	if Rtarget and isValid(Rtarget) then
 		if Menu.Combo.R:Value() and isSpellReady(_R) then
-			if getEnemyCount(self.rSpell.Radius, Rtarget.pos) >= Menu.Combo.WCount:Value() then
+			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, Rtarget.pos, self.rSpell.Speed, self.rSpell.Delay, self.rSpell.Radius, {GGPrediction.COLLISION_ENEMYHERO}, nil)
+			if collisionCount >= Menu.Combo.RCount:Value() then
 				castSpellHigh(self.rSpell, HK_R, Rtarget)
 			end
 		end
