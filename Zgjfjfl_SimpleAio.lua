@@ -1,4 +1,4 @@
-local Version = 2024.09
+local Version = 2024.10
 
 --[ AutoUpdate ]
 
@@ -3691,7 +3691,7 @@ function Skarner:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:onTick() end)
-	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 90, Range = 1050, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 90, Range = 1050, Speed = 1600, Collision = false}
 	self.wSpell = {Range = 650}
 	self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 150, Range = 625, Speed = math.huge, Collision = false}
 end
@@ -3749,7 +3749,7 @@ function Skarner:Combo()
 			end
 			if myHero:GetSpellData(_Q).name == "SkarnerQRockThrow" then
 				if myHero.pos:DistanceTo(Qtarget.pos) > Data:GetAutoAttackRange(myHero, Qtarget) then
-					castSpellHigh(self.qSpell, HK_Q, Qtarget)
+					self:CastQ2(Qtarget)
 				end
 			end
 		end
@@ -3770,6 +3770,22 @@ function Skarner:Combo()
 	end
 end
 
+function Skarner:CastQ2(target)
+	local Pred = GGPrediction:SpellPrediction(self.qSpell)
+	Pred:GetPrediction(target, myHero)
+	if Pred:CanHit(3) then
+		local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, Pred.CastPosition, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+		if collisionCount > 0 then
+			local minion = collisionObjects[1]
+			if minion.pos:DistanceTo(Pred.CastPosition) < 250 then
+				Control.CastSpell(HK_Q, Pred.CastPosition)
+			end
+		else
+			Control.CastSpell(HK_Q, Pred.CastPosition)
+		end
+	end
+end
+
 function Skarner:Harass()
 	local Qtarget = TargetSelector:GetTarget(self.qSpell.Range)
 	if Qtarget and isValid(Qtarget) then
@@ -3779,7 +3795,7 @@ function Skarner:Harass()
 			end
 			if myHero:GetSpellData(_Q).name == "SkarnerQRockThrow" then
 				if myHero.pos:DistanceTo(Qtarget.pos) > Data:GetAutoAttackRange(myHero, Qtarget) then
-					castSpellHigh(self.qSpell, HK_Q, Qtarget)
+					self:CastQ2(Qtarget)
 				end
 			end
 		end
