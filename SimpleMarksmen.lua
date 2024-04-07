@@ -1,4 +1,4 @@
-local Version = 2024.25
+local Version = 2024.26
 
 --[ AutoUpdate ]
 
@@ -2312,15 +2312,8 @@ function Tristana:OnPostAttackTick()
 				Control.CastSpell(HK_Q)
 			end
 		end
-		if GetMode() == "Harass" then
-			if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
-				if Menu.Harass.Q:Value() and IsReady(_Q) then
-					Control.CastSpell(HK_Q)
-				end
-			end
-		end
 	end
-	if target and target.type == Obj_AI_Minion and target.team ~= 300 then
+	if IsValid(target) and target.type == Obj_AI_Minion and target.team ~= 300 then
 		if GetMode() == "LaneClear" then
 			if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
 				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) and GetMinionCount(700, myHero.pos) >= Menu.Clear.LaneClear.QCount:Value() then
@@ -2630,7 +2623,7 @@ function MissFortune:newTarget()
 			else
 				Orbwalker.ForceTarget = nil
 			end
-        end
+		end
 	else
 		Orbwalker.ForceTarget = nil
     end
