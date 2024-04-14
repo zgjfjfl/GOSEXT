@@ -1,4 +1,4 @@
-local Version = 2024.26
+local Version = 2024.27
 
 --[ AutoUpdate ]
 
@@ -2745,16 +2745,17 @@ function MissFortune:QLogic(target, UseQBounce)
 					local leftVector = (middlePos - objPred):Rotated(0, angle * math.pi / 180, 0)
 					local rightVector = (middlePos - objPred):Rotated(0, -angle * math.pi / 180, 0)
 					local targetVector = tarPred - objPred
-					local Angle1 = leftVector:Angle(rightVector)
+					-- Method 1 -- EXT API: Vector:Angle(Vector) broken, so use Method 2
+					--[[local Angle1 = leftVector:Angle(rightVector)
 					local Angle2 = leftVector:Angle(targetVector)
 					local Angle3 = rightVector:Angle(targetVector)
-					--[[ -- another calculates
+					if objPred:DistanceTo(tarPred) < 420 and Angle2 < Angle1 and Angle3 < Angle1 then]]
+					--Method 2
 					local dotLeft = targetVector:DotProduct(leftVector)
 					local dotRight = targetVector:DotProduct(rightVector)
 					local crossLeft = targetVector:CrossProduct(leftVector)
 					local crossRight = rightVector:CrossProduct(targetVector)
-					if objPred:DistanceTo(tarPred) < 420 and dotLeft > 0 and dotRight > 0 and crossLeft * crossRight > 0 then ]]
-					if objPred:DistanceTo(tarPred) < 420 and Angle2 < Angle1 and Angle3 < Angle1 then
+					if objPred:DistanceTo(tarPred) < 420 and dotLeft > 0 and dotRight > 0 and crossLeft * crossRight > 0 then
 						bounceFirstTar[#bounceFirstTar + 1] = {tar = obj, dis = objPred:DistanceTo(tarPred)}
 					end
 				end
