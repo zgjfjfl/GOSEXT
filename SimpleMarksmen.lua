@@ -1,4 +1,4 @@
-local Version = 2024.27
+local Version = 2024.28
 
 --[ AutoUpdate ]
 
@@ -1143,6 +1143,9 @@ function Zeri:OnPreAttack(args)
 		local AADamage = Damage:GetAutoAttackDamage(myHero, target)
 		if Menu.Misc.ClearAA:Value() then
 			args.Process = false
+			if target.maxHealth <= 8 then
+				args.Process = true
+			end
 			if IsValid(target) and target.health < AADamage and Data:IsInAutoAttackRange(myHero, target) then
 				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 				if collisionCount > 0 or not IsReady(_Q) then
@@ -1256,33 +1259,34 @@ end
 
 function Zeri:CastW(target)
 	if myHero.activeSpell.valid then return end
-	
+
+	local predPos;
 	local pred = GGPrediction:SpellPrediction(W2Spell)
 	pred:GetPrediction(target, myHero)
 	if pred:CanHit(Menu.Misc.WhitChance:Value() + 1) then
-		local predPos = Vector(pred.CastPosition)
+		predPos = Vector(pred.CastPosition)
+	end
 
-		local wallColPos
-		if GameIsWall == nil then
-			wallColPos = MapPosition:getIntersectionPoint3D(myHero.pos,predPos)
-		else
-			wallColPos = FindFirstWallCollision(myHero.pos, predPos)
-		end
+	local wallColPos
+	if GameIsWall == nil then
+		wallColPos = MapPosition:getIntersectionPoint3D(myHero.pos, predPos)
+	else
+		wallColPos = FindFirstWallCollision(myHero.pos, predPos)
+	end
 
-		if wallColPos ~= nil then
-			if myHero.pos:DistanceTo(wallColPos) < WSpell.Range and wallColPos:DistanceTo(predPos) < 1400 then
-				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, wallColPos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
-				if collisionCount == 0 then
-					Control.CastSpell(HK_W, predPos)
-				end
+	if wallColPos ~= nil then
+		if myHero.pos:DistanceTo(wallColPos) < WSpell.Range and wallColPos:DistanceTo(predPos) < 1400 then
+			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, wallColPos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+			if collisionCount == 0 then
+				Control.CastSpell(HK_W, predPos)
 			end
-		else
-			if not Menu.Combo.Wwall:Value() then
-				local WPrediction = GGPrediction:SpellPrediction(WSpell)
-				WPrediction:GetPrediction(target, myHero)
-				if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
-					Control.CastSpell(HK_W, WPrediction.CastPosition)
-				end
+		end
+	else
+		if not Menu.Combo.Wwall:Value() then
+			local WPrediction = GGPrediction:SpellPrediction(WSpell)
+			WPrediction:GetPrediction(target, myHero)
+			if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
+				Control.CastSpell(HK_W, WPrediction.CastPosition)
 			end
 		end
 	end
@@ -1465,9 +1469,9 @@ function Lucian:LoadMenu()
 	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Emode", name = "Use E | Mode", value = 1, drop = {"To Side", "To Mouse", "To Target"}})
-	Menu.Combo:MenuElement({id = "Echeck", name = "E-dash Point inWall / underTurret Check", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "enemyCheck", name = "Block E-dash in X enemies", value = 3, min = 0, max = 5, step = 1})	
+	Menu.Combo:MenuElement({id = "Echeck", name = "Block E-dash inWall / underTurret", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "EsafeCheck", name = "E-dash Point Safe Check", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "CheckRange", name = "Safe Check Range", value = 600, min = 300, max = 900, step = 50})
 	Menu.Combo:MenuElement({id = "Edis", name = "Use E | To Side - hold distance", value = 500, min = 300, max = 700, step = 50})
 	Menu.Combo:MenuElement({id = "Priority", name = "Combo Abilities Priority",	value = 1, drop = {"Q", "W", "E", "EW"}})
 
@@ -1618,11 +1622,12 @@ function Lucian:CastE(target, mode, range)
 	if castPos then
 		local underTurret = IsUnderTurret2(castPos)
 		local inWall = IsWall(castPos)
-		local numEnemies = GetEnemyCount(Menu.Combo.CheckRange:Value(), castPos)
-		local numAllies = GetAllyCount(Menu.Combo.CheckRange:Value(), castPos)
+		local enemyCheck = Menu.Combo.enemyCheck:Value()
+		local enemyCountCastPos = GetEnemyCount(600, castPos)
+		local enemyCountMyHero = GetEnemyCount(400, castPos)
 
 		if Menu.Combo.Echeck:Value() and (underTurret or inWall) then return end
-		if Menu.Combo.EsafeCheck:Value() and numEnemies >= 3 and numAllies < 3 then return end
+		if Menu.Combo.EsafeCheck:Value() and (enemyCountCastPos >= enemyCheck or enemyCountCastPos > enemyCountMyHero) then return end
 
 		Control.CastSpell(HK_E, castPos)
 	end
@@ -1768,7 +1773,7 @@ function Lucian:AntiGapcloser()
 		local enemies = ObjectManager:GetEnemyHeroes(1500)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing then
-				if myHero.pos:DistanceTo(target.pathing.endPos) < Data:GetAutoAttackRange(myHero, target) then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < 300 then -- Data:GetAutoAttackRange(myHero, target)
 					--local castPos = Vector(myHero.pos) + (Vector(target.pathing.endPos) - Vector(target.pathing.startPos)):Normalized() * ESpell.Range
 					local castPos = myHero.pos + (myHero.pos - target.pos):Normalized() * ESpell.Range
 					if castPos:To2D().onScreen then
@@ -2746,11 +2751,11 @@ function MissFortune:QLogic(target, UseQBounce)
 					local rightVector = (middlePos - objPred):Rotated(0, -angle * math.pi / 180, 0)
 					local targetVector = tarPred - objPred
 					-- Method 1 -- EXT API: Vector:Angle(Vector) broken, so use Method 2
-					--[[local Angle1 = leftVector:Angle(rightVector)
-					local Angle2 = leftVector:Angle(targetVector)
-					local Angle3 = rightVector:Angle(targetVector)
-					if objPred:DistanceTo(tarPred) < 420 and Angle2 < Angle1 and Angle3 < Angle1 then]]
-					--Method 2
+					-- local Angle1 = leftVector:Angle(rightVector)
+					-- local Angle2 = leftVector:Angle(targetVector)
+					-- local Angle3 = rightVector:Angle(targetVector)
+					-- if objPred:DistanceTo(tarPred) < 420 and Angle2 < Angle1 and Angle3 < Angle1 then
+					-- Method 2
 					local dotLeft = targetVector:DotProduct(leftVector)
 					local dotRight = targetVector:DotProduct(rightVector)
 					local crossLeft = targetVector:CrossProduct(leftVector)
