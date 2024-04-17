@@ -1,4 +1,4 @@
-local Version = 2024.28
+local Version = 2024.29
 
 --[ AutoUpdate ]
 
@@ -1260,21 +1260,23 @@ end
 function Zeri:CastW(target)
 	if myHero.activeSpell.valid then return end
 
-	local predPos;
+	local predPos = nil
 	local pred = GGPrediction:SpellPrediction(W2Spell)
 	pred:GetPrediction(target, myHero)
 	if pred:CanHit(Menu.Misc.WhitChance:Value() + 1) then
 		predPos = Vector(pred.CastPosition)
 	end
 
-	local wallColPos
-	if GameIsWall == nil then
-		wallColPos = MapPosition:getIntersectionPoint3D(myHero.pos, predPos)
-	else
-		wallColPos = FindFirstWallCollision(myHero.pos, predPos)
+	local wallColPos = nil
+	if predPos then
+		if GameIsWall == nil then
+			wallColPos = MapPosition:getIntersectionPoint3D(myHero.pos, predPos)
+		else
+			wallColPos = FindFirstWallCollision(myHero.pos, predPos)
+		end
 	end
 
-	if wallColPos ~= nil then
+	if wallColPos then
 		if myHero.pos:DistanceTo(wallColPos) < WSpell.Range and wallColPos:DistanceTo(predPos) < 1400 then
 			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, wallColPos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
 			if collisionCount == 0 then
@@ -1601,7 +1603,7 @@ function Lucian:CastERange(target)
 end
 
 function Lucian:CastE(target, mode, range)
-	local castPos;
+	local castPos = nil
 	if mode == 1 then
 		local targetPred = target:GetPrediction(MathHuge, 0.25)
 		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, targetPred, ESpell.Range, Menu.Combo.Edis:Value())
@@ -1619,7 +1621,7 @@ function Lucian:CastE(target, mode, range)
 		castPos = myHero.pos:Extended(target.pos, range)
 	end
 	
-	if castPos then
+	if castPos ~= nil then
 		local underTurret = IsUnderTurret2(castPos)
 		local inWall = IsWall(castPos)
 		local enemyCheck = Menu.Combo.enemyCheck:Value()
@@ -2631,7 +2633,7 @@ function MissFortune:newTarget()
 		end
 	else
 		Orbwalker.ForceTarget = nil
-    end
+	end
 end
 
 function MissFortune:Combo()
