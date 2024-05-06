@@ -1,4 +1,4 @@
-local Version = 2024.30
+local Version = 2024.31
 
 --[ AutoUpdate ]
 
@@ -49,7 +49,7 @@ do
 
 end
 
-local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian", "Jinx", "Tristana", "MissFortune", "Jayce"}
+local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian", "Jinx", "Tristana", "MissFortune", "Jayce", "Kalista", "Ashe"}
 
 if not table.contains(Heroes, myHero.charName) then
 	print('SimpleMarksmen not supported ' .. myHero.charName)
@@ -110,6 +110,9 @@ Callback.Add("Load", function()
 
 	if table.contains(Heroes, myHero.charName) then
 		_G[myHero.charName]()
+	end
+	if myHero.charName == "Kalista" then
+		Menu.Draw.Edmg:Value(0)
 	end
 end)
 
@@ -193,19 +196,33 @@ local function IsUnderTurret2(pos)
 end
 
 local function HaveBuff(unit, buffName)
+	buffName = buffName:lower()
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
-		if buff.name == buffName and buff.count > 0 then 
+		if buff.name:lower() == buffName and buff.count > 0 then
 			return true
 		end
 	end
 	return false
 end
 
-local function GetBuffData(unit, buffname)
+local function HaveBuffContainsNameNums(unit, name)
+	name = name:lower()
+	local count = 0
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
-		if buff.name == buffname and buff.count > 0 then 
+		if buff.name:lower():find(name) and buff.count > 0 then
+			count = count + buff.count
+		end
+	end
+	return count
+end
+
+local function GetBuffData(unit, buffName)
+	buffName = buffName:lower()
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
+		if buff.name:lower() == buffName and buff.count > 0 then 
 			return buff
 		end
 	end
@@ -290,9 +307,10 @@ local function IsSlow(unit)
 	return false
 end
 
-local function Recalling()
-	for i, Buff in pairs(GetBuffs(myHero)) do
-		if Buff.name == "recall" and Buff.duration > 0 then
+local function Recalling(unit)
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
+		if buff.name == "recall" and buff.duration > 0 then
 			return true
 		end
 	end
@@ -369,6 +387,23 @@ local function IsWall(pos)
 		end
 	else
 		return GameIsWall(pos)
+	end
+end
+
+local function EpicMonster(unit)
+	if unit.charName == "SRU_Baron"
+		or unit.charName ==	"SRU_Horde"
+		or unit.charName == "SRU_RiftHerald"
+		or unit.charName == "SRU_Dragon_Water"
+		or unit.charName == "SRU_Dragon_Fire"
+		or unit.charName == "SRU_Dragon_Earth"
+		or unit.charName == "SRU_Dragon_Air"
+		or unit.charName ==	"SRU_Dragon_Chemtech"
+		or unit.charName ==	"SRU_Dragon_Hextech"
+		or unit.charName ==	"SRU_Dragon_Elder" then
+		return true
+	else
+		return false
 	end
 end
 
@@ -594,7 +629,7 @@ end
 function Nilah:getqDmg(target)
     local qlvl = myHero:GetSpellData(_Q).level
     local qbaseDmg  = 5 * qlvl
-    local qadDmg = myHero.totalDamage * (0.075 *qlvl + 0.825 )
+    local qadDmg = myHero.totalDamage * (0.05 *qlvl + 0.85 )
     local qDmg = qbaseDmg * (myHero.critChance + 1) + qadDmg * (myHero.critChance + 1)
     return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg)
 end
@@ -764,7 +799,7 @@ end
 
 function Smolder:OnTick()
 	QSpell.Range = myHero.range + myHero.boundingRadius * 2
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
 
@@ -1174,7 +1209,7 @@ function Zeri:OnTick()
 	WSpell.Delay = MathMax(MathFloor((0.55 - 0.09 * (myHero.attackSpeed - 1)) * 100) / 100, 0.3)
 	W2Spell.Delay = WSpell.Delay
 	
-	if myHero.dead or Game.IsChatOpen() or Recalling() then
+	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then
 		return
 	end
 
@@ -1530,7 +1565,7 @@ function Lucian:OnTick()
 	if lastQ + QSpell.Delay * 2 > Game.Timer() then return end
 	if HavePassive or myHero.activeSpell.valid or Dashing or CastingR then return end
 	
-	if myHero.dead or Game.IsChatOpen() or Recalling() then return end
+	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then return end
 
 	local Mode = GetMode()
 	if Mode == "Combo" then
@@ -1931,9 +1966,9 @@ function Jinx:OnTick()
 
 	WSpell.Delay = math.max(math.floor((0.6 - 0.02 * ((myHero.attackSpeed - 1)/0.25)) * 100) / 100, 0.4)
 	
-	if myHero.dead or Game.IsChatOpen() or Recalling() then return end
+	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then return end
 	if myHero.activeSpell.valid then return end
-	
+
 	self:AutoE()
 	self:SemiR()
 	self:KillSteal()
@@ -2339,7 +2374,7 @@ function Tristana:OnTick()
 	self:ForceE()
 	self:AntiGapcloser()
 
-	if myHero.dead or Game.IsChatOpen() or Recalling() then return end
+	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then return end
 	if myHero.activeSpell.valid then return end
 
 	self:SemiR()
@@ -2528,7 +2563,7 @@ function MissFortune:LoadMenu()
 end
 
 function MissFortune:OnTick()
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
 
@@ -3373,5 +3408,585 @@ function Jayce:Draw()
 		else
 			Draw.Circle(myHero.pos, Q2Spell.Range, 1, Draw.Color(255, 66, 244, 113))
 		end
+	end
+end
+
+--------------------------------------
+
+class "Kalista"
+
+function Kalista:__init()
+	print("Marksmen Kalista Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 40, Range = 1150, Speed = 2400, Collision = false}
+	ESpell = {Range = 1000}
+	RSpell = {Range = 1150}
+end
+
+function Kalista:LoadMenu()
+ 
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Use E| If Can Kill Minion And Slow Target", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "E", name = "Use E| If Can Kill Minion And Slow Target", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "Mana", name = "Harass When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = true, key = 4})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = true, key = string.byte("H")})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanKill Counts >= ", value = 2, min = 1, max = 6, step = 1})
+	Menu.Clear.LaneClear:MenuElement({id = "QMana", name = "UseQ When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	Menu.Clear.LaneClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "ECount", name = "If E CanKill Counts >= ", value = 2, min = 1, max = 6, step = 1})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "E", name = "Use E Kills", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
+	Menu.KillSteal:MenuElement({id = "Q", name = "Auto Q KillSteal", toggle = true, value = true})
+	Menu.KillSteal:MenuElement({id = "E", name = "Auto E KillSteal", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "QhitChance", name = "Q| hitChance", value = 1, drop = {"Normal", "High"}})
+	Menu.Misc:MenuElement({id = "E", name = "Auto E Kill EpicMonster", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Edmg", name = "Teams have X? duplicate dragon buffs",  value = 0, min = 0, max = 2, step = 1, tooltip = "Set up when team has duplicate dragon buff"})
+	Menu.Misc:MenuElement({id = "R", name = "Auto R Ally LowHp", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "DragonBuffNums", name = "Draw Duplicate dragon buffs Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw Q Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
+end
+
+function Kalista:OnTick()
+	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then
+		return
+	end
+
+	self:KillSteal()
+	self:AutoKillEpicMonster()
+
+	local Mode = GetMode()
+	if Mode == "Combo" then
+		self:Combo()
+	elseif Mode == "Harass" then
+		self:Harass()
+	elseif Mode == "LaneClear" then
+		self:FarmHarass()
+		self:LaneClear()
+		self:JungleClear()
+	end
+	self:AutoR()
+end
+
+function Kalista:KillSteal()
+	if Menu.KillSteal.E:Value() and IsReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and HaveBuff(target, "kalistaexpungemarker") then
+				local EDmg = self:GetEDmg(target)
+				if EDmg >= target.health + target.hpRegen + target.shieldAD then
+					Control.CastSpell(HK_E)
+				end
+			end
+		end
+	end
+	if Menu.KillSteal.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
+		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) then
+				local QDmg = self:GetQDmg(target)
+				local EDmg = self:GetEDmg(target)
+				local hp = target.health + target.shieldAD
+				if QDmg >= hp and (EDmg < hp or not IsReady(_E)) then
+					self:CastQ(target)
+				elseif QDmg + EDmg > hp and EDmg < hp and Data:IsInAutoAttackRange(myHero, target) then
+					self:CastQ(target)
+				end
+			end
+		end
+	end
+end
+
+function Kalista:CastQ(target)
+	local QPrediction = GGPrediction:SpellPrediction(QSpell)
+	QPrediction:GetPrediction(target, myHero)
+	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) and not myHero.activeSpell.valid and not myHero.pathing.isDashing then
+		local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, QPrediction.CastPosition, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+		if collisionCount > 0 then
+			local allColCanKill = true
+			for _, col in ipairs(collisionObjects) do
+				if IsValid(col) then
+					local QDmg = self:GetQDmg(col)
+					if col.health > QDmg then
+						allColCanKill = false
+						break
+					end
+				end
+			end
+			if allColCanKill then
+				Control.CastSpell(HK_Q, QPrediction.CastPosition)
+			end
+		else
+			Control.CastSpell(HK_Q, QPrediction.CastPosition)
+		end
+	end
+end
+
+function Kalista:Combo()
+	if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
+		local Qtarget = GetTarget(QSpell.Range)
+		if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
+			self:CastQ(Qtarget)
+		end
+	end
+	if Menu.Combo.E:Value() and IsReady(_E) then
+		local Etarget = GetTarget(ESpell.Range)
+		if IsValid(Etarget) then
+			local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+			for i, minion in ipairs(minions) do
+				if IsValid(minion) and HaveBuff(minion, "kalistaexpungemarker") then
+					local EDmg = self:GetEDmg(minion)
+					if minion.health <= EDmg and HaveBuff(Etarget, "kalistaexpungemarker") then
+						Control.CastSpell(HK_E)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Kalista:Harass()
+	if IsUnderTurret(myHero) then return end
+	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
+			local Qtarget = GetTarget(QSpell.Range)
+			if IsValid(Qtarget) and Qtarget.pos2D.onScreen and not Data:IsInAutoAttackRange(myHero, Qtarget) then
+				self:CastQ(Qtarget)
+			end
+		end
+		if Menu.Harass.E:Value() and IsReady(_E) then
+			local Etarget = GetTarget(ESpell.Range)
+			if IsValid(Etarget) then
+				local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+				for i, minion in ipairs(minions) do
+					if IsValid(minion) and HaveBuff(minion, "kalistaexpungemarker") then
+						local EDmg = self:GetEDmg(minion)
+						if minion.health <= EDmg and HaveBuff(Etarget, "kalistaexpungemarker") then
+							Control.CastSpell(HK_E)
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+function Kalista:FarmHarass()
+	if Menu.Clear.SpellHarass:Value() then
+		self:Harass()
+	end
+end
+
+function Kalista:LaneClear()
+	if Menu.Clear.SpellFarm:Value() then
+		if Menu.Clear.LaneClear.E:Value() and IsReady(_E) then
+			local killCount = 0
+			local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+			for i, minion in ipairs(minions) do
+				if IsValid(minion) and minion.team ~= 300 and HaveBuff(minion, "kalistaexpungemarker") then
+					if minion.health <= self:GetEDmg(minion) then
+						killCount = killCount + 1
+						if not Data:IsInAutoAttackRange(myHero, minion) then
+							Control.CastSpell(HK_E)
+						end
+						if minion.charName:lower():find("siege") or minion.name:lower():find("super") then
+							Control.CastSpell(HK_E)
+						end
+					end
+					if killCount >= Menu.Clear.LaneClear.ECount:Value() then
+						Control.CastSpell(HK_E)
+					end
+				end
+			end
+		end
+		if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.QMana:Value()/100 and Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
+			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			for i, minion in ipairs(minions) do
+				if IsValid(minion) and minion.team ~= 300 then
+					if minion.health <= self:GetQDmg(minion) and not myHero.activeSpell.valid and not myHero.pathing.isDashing then
+						local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
+						if Menu.Clear.LaneClear.QCount:Value() == 1 then
+							if collisionCount == 0 then
+								Control.CastSpell(HK_Q, minion)
+							end
+						else
+							if collisionCount == Menu.Clear.LaneClear.QCount:Value() - 1 then
+								local allColCanKill = true
+								for _, col in ipairs(collisionObjects) do
+									if IsValid(col) then
+										local QDmg = self:GetQDmg(col)
+										if col.health > QDmg then
+											allColCanKill = false
+											break
+										end
+									end
+								end
+								if allColCanKill then
+									Control.CastSpell(HK_Q, minion)
+								end
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+function Kalista:JungleClear()
+	if Menu.Clear.JungleClear.E:Value() and IsReady(_E) then
+		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team == 300 and HaveBuff(minion, "kalistaexpungemarker") then
+				if not EpicMonster(minion) then
+					local EDmg = self:GetEDmg(minion)
+					if EDmg >= minion.health then
+						Control.CastSpell(HK_E)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Kalista:AutoKillEpicMonster()
+	if Menu.Misc.E:Value() and IsReady(_E) then
+		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team == 300 and HaveBuff(minion, "kalistaexpungemarker") then
+				if EpicMonster(minion) then
+					local EDmg = self:GetEDmg(minion) * 0.5
+					if minion.charName == "SRU_Baron" and HaveBuff(myHero, "BaronTarget") then
+						EDmg = EDmg * 0.5
+					end
+					if minion.name:find("SRU_Dragon") and minion.name ~= "SRU_Dragon_Elder" then
+						local buffNums = HaveBuffContainsNameNums(myHero, "SRX_DragonBuff")
+						EDmg = EDmg * (1 - 0.07 * (buffNums + Menu.Misc.Edmg:Value()))
+					end
+					if EDmg >= (minion.health + minion.hpRegen + minion.shieldAD) then
+						Control.CastSpell(HK_E)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Kalista:AutoR()
+	if Menu.Misc.R:Value() and IsReady(_R) then
+		local allies = ObjectManager:GetAllyHeroes(RSpell.Range)
+		for i, ally in ipairs(allies) do
+			if IsValid(ally) and not ally.isMe and HaveBuff(ally, "kalistacoopstrikeally") then
+				if ally.health < GetEnemyCount(600, ally.pos) * ally.levelData.lvl * 30 then
+					Control.CastSpell(HK_R)
+				end
+			end
+		end
+	end
+end
+
+function Kalista:GetQDmg(target)
+	local level = myHero:GetSpellData(_Q).level
+	if level > 0 then
+		local QDmg = ({20, 85, 150, 215, 280})[level] + 1.05 * myHero.totalDamage
+		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
+	else
+		return 0
+	end
+end
+
+function Kalista:GetEDmg(target)
+	local buff = GetBuffData(target, "kalistaexpungemarker")
+	local level = myHero:GetSpellData(_E).level
+	if buff.count > 0 and level > 0 then
+		local baseDmg = ({10, 20, 30, 40, 50})[level] + 0.7 * myHero.totalDamage + 0.2 * myHero.ap
+		local bonusDmg = (buff.count - 1) * (({8, 12, 16, 20, 24})[level] + ({0.25, 0.3, 0.35, 0.4, 0.45})[level] * myHero.totalDamage + 0.2 * myHero.ap)
+		local totalDmg = baseDmg + bonusDmg
+		if HaveBuff(myHero, "SummonerExhaust") then
+			totalDmg = totalDmg * 0.65
+		end
+		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, totalDmg)
+	else
+		return 0
+	end
+end
+
+function Kalista:Draw()
+	if myHero.dead then return end
+
+	if Menu.Draw.DrawFarm:Value() then
+		if Menu.Clear.SpellFarm:Value() then
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.DrawHarass:Value() then
+		if Menu.Clear.SpellHarass:Value() then
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.DragonBuffNums:Value() then
+		Draw.Text("Duplicate DragonBuffNums: "..Menu.Misc.Edmg:Value(), 16, myHero.pos2D.x-57, myHero.pos2D.y+98, Draw.Color(200, 242, 120, 34))
+	end
+
+	if Menu.Draw.Q:Value() and IsReady(_Q) then
+		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+	if Menu.Draw.R:Value() and IsReady(_R) then
+		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+	end
+end
+
+--------------------------------------
+
+class "Ashe"
+
+function Ashe:__init()
+	print("Marksmen Ashe Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	Orbwalker:OnPostAttackTick(function() self:OnPostAttackTick() end)
+	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 20, Range = 1200, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 130, Range = 12500, Speed = 1600, Collision = false}
+end
+
+function Ashe:LoadMenu()
+ 
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Raoe", name = "Use R| AOE", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "Mana", name = "Harass When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = true, key = string.byte("H")})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "Count", name = "If LaneClear Counts >= ", value = 2, min = 1, max = 6, step = 1})
+	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
+	Menu.KillSteal:MenuElement({id = "W", name = "Auto W KillSteal", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "WhitChance", name = "W| hitChance", value = 1, drop = {"Normal", "High"}})
+	Menu.Misc:MenuElement({id = "RhitChance", name = "R| hitChance", value = 2, drop = {"Normal", "High"}})
+	Menu.Misc:MenuElement({id = "Rsm", name = "Semi-manual R Target near mouse", key = string.byte("T")})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
+end
+
+function Ashe:OnPostAttackTick()
+	local target = Orbwalker:GetTarget()
+	if IsValid(target) and IsReady(_Q) then
+		if target.type == Obj_AI_Hero then
+			if GetMode() == "Combo" and Menu.Combo.Q:Value() or (GetMode() == "Harass" and Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100) then
+				Control.CastSpell(HK_Q)
+			end
+		elseif target.type == Obj_AI_Minion then
+			if GetMode() == "LaneClear" and Menu.Clear.SpellFarm:Value() then
+				if target.team ~= 300 and myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.LaneClear.Q:Value() then
+					if GetMinionCount(600, myHero.pos) > Menu.Clear.LaneClear.Count:Value() then
+						Control.CastSpell(HK_Q)
+					end
+				elseif target.team == 300 and myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.JungleClear.Q:Value() then
+					Control.CastSpell(HK_Q)
+				end
+			end
+		end
+	end
+end
+
+function Ashe:OnTick()
+	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then
+		return
+	end
+	self:SemiManualR()
+	if myHero.activeSpell.valid then return end
+	self:KillSteal()
+	local Mode = GetMode()
+	if Mode == "Combo" then
+		self:Combo()
+	elseif Mode == "Harass" then
+		self:Harass()
+	elseif Mode == "LaneClear" then
+		self:FarmHarass()
+		self:LaneClear()
+		self:JungleClear()
+	end
+end
+
+function Ashe:KillSteal()
+	if Menu.KillSteal.W:Value() and IsReady(_W) then
+		local enemies = ObjectManager:GetEnemyHeroes(WSpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) then
+				local WDmg = self:GetWDmg(target)
+				if WDmg >= target.health + target.hpRegen + target.shieldAD then
+					self:CastW(target)
+				end
+			end
+		end
+	end
+end
+
+function Ashe:SemiManualR()
+	if Menu.Misc.Rsm:Value() and IsReady(_R) then
+		local enemies = ObjectManager:GetEnemyHeroes(RSpell.Range)
+		MathSort(enemies, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
+		if IsValid(enemies[1]) and enemies[1].pos2D.onScreen then
+			self:CastR(enemies[1])
+		end
+	end
+end
+
+function Ashe:CastW(target)
+	local WPrediction = GGPrediction:SpellPrediction(WSpell)
+	WPrediction:GetPrediction(target, myHero)
+	if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
+		Control.CastSpell(HK_W, WPrediction.CastPosition)
+	end
+end
+
+function Ashe:CastR(target)
+	local RPrediction = GGPrediction:SpellPrediction(RSpell)
+	RPrediction:GetPrediction(target, myHero)
+	if RPrediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
+		Control.CastSpell(HK_R, RPrediction.CastPosition)
+	end
+end
+
+function Ashe:Combo()
+	if Menu.Combo.W:Value() and IsReady(_W) then
+		local target = GetTarget(WSpell.Range)
+		if IsValid(target) and target.pos2D.onScreen then
+			self:CastW(target)
+		end
+	end
+	if Menu.Combo.Raoe:Value() and IsReady(_R) then
+		local target = GetTarget(2000)
+		if IsValid(target) and target.pos2D.onScreen and GetEnemyCount(250, target.pos) > 2 then
+			self:CastR(target)
+		end
+	end
+end
+
+function Ashe:Harass()
+	if IsUnderTurret(myHero) then return end
+	if Menu.Harass.W:Value() and IsReady(_W) and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+		local target = GetTarget(WSpell.Range)
+		if IsValid(target) and target.pos2D.onScreen then
+			self:CastW(target)
+		end
+	end
+end
+
+function Ashe:FarmHarass()
+	if Menu.Clear.SpellHarass:Value() then
+		self:Harass()
+	end
+end
+
+function Ashe:LaneClear()
+	if Menu.Clear.SpellFarm:Value() then
+		if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
+			local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
+			for i, minion in ipairs(minions) do
+				if IsValid(minion) and minion.team ~= 300 then
+					if GetMinionCount(300, minion.pos) >= Menu.Clear.LaneClear.Count:Value() then
+						Control.CastSpell(HK_W, minion)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Ashe:JungleClear()
+	if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
+		local minions = ObjectManager:GetEnemyMinions(600)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team == 300 then
+				Control.CastSpell(HK_W, minion)
+			end
+		end
+	end
+end
+
+function Ashe:GetWDmg(target)
+	local level = myHero:GetSpellData(_W).level
+	if level > 0 then
+		local QDmg = ({20, 35, 50, 65, 80})[level] + myHero.totalDamage
+		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
+	else
+		return 0
+	end
+end
+
+function Ashe:Draw()
+	if myHero.dead then return end
+
+	if Menu.Draw.DrawFarm:Value() then
+		if Menu.Clear.SpellFarm:Value() then
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.DrawHarass:Value() then
+		if Menu.Clear.SpellHarass:Value() then
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
 	end
 end
