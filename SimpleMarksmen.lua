@@ -1,4 +1,4 @@
-local Version = 2024.31
+local Version = 2024.32
 
 --[ AutoUpdate ]
 
@@ -110,9 +110,6 @@ Callback.Add("Load", function()
 
 	if table.contains(Heroes, myHero.charName) then
 		_G[myHero.charName]()
-	end
-	if myHero.charName == "Kalista" then
-		Menu.Draw.Edmg:Value(0)
 	end
 end)
 
@@ -392,15 +389,15 @@ end
 
 local function EpicMonster(unit)
 	if unit.charName == "SRU_Baron"
-		or unit.charName ==	"SRU_Horde"
+		or unit.charName == "SRU_Horde"
 		or unit.charName == "SRU_RiftHerald"
 		or unit.charName == "SRU_Dragon_Water"
 		or unit.charName == "SRU_Dragon_Fire"
 		or unit.charName == "SRU_Dragon_Earth"
 		or unit.charName == "SRU_Dragon_Air"
-		or unit.charName ==	"SRU_Dragon_Chemtech"
-		or unit.charName ==	"SRU_Dragon_Hextech"
-		or unit.charName ==	"SRU_Dragon_Elder" then
+		or unit.charName == "SRU_Dragon_Chemtech"
+		or unit.charName == "SRU_Dragon_Hextech"
+		or unit.charName == "SRU_Dragon_Elder" then
 		return true
 	else
 		return false
