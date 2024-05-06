@@ -1,4 +1,4 @@
-local Version = 2024.32
+local Version = 2024.33
 
 --[ AutoUpdate ]
 
@@ -3453,7 +3453,6 @@ function Kalista:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "QhitChance", name = "Q| hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "E", name = "Auto E Kill EpicMonster", toggle = true, value = true})
-	Menu.Misc:MenuElement({id = "Edmg", name = "Teams have X? duplicate dragon buffs",  value = 0, min = 0, max = 2, step = 1, tooltip = "Set up when team has duplicate dragon buff"})
 	Menu.Misc:MenuElement({id = "R", name = "Auto R Ally LowHp", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
@@ -3679,7 +3678,7 @@ function Kalista:AutoKillEpicMonster()
 					end
 					if minion.name:find("SRU_Dragon") and minion.name ~= "SRU_Dragon_Elder" then
 						local buffNums = HaveBuffContainsNameNums(myHero, "SRX_DragonBuff")
-						EDmg = EDmg * (1 - 0.07 * (buffNums + Menu.Misc.Edmg:Value()))
+						EDmg = EDmg * (1 - 0.07 * buffNums)
 					end
 					if EDmg >= (minion.health + minion.hpRegen + minion.shieldAD) then
 						Control.CastSpell(HK_E)
@@ -3746,10 +3745,6 @@ function Kalista:Draw()
 		else
 			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
 		end
-	end
-
-	if Menu.Draw.DragonBuffNums:Value() then
-		Draw.Text("Duplicate DragonBuffNums: "..Menu.Misc.Edmg:Value(), 16, myHero.pos2D.x-57, myHero.pos2D.y+98, Draw.Color(200, 242, 120, 34))
 	end
 
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
