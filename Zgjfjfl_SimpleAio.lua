@@ -1,4 +1,4 @@
-local Version = 2024.10
+local Version = 2024.11
 
 --[ AutoUpdate ]
 
@@ -671,7 +671,7 @@ function Ornn:LaneClear()
 	if not target then
 		target = HealthPrediction:GetLaneClearTarget()
 	end
-	if target and isValid(target) then
+	if target and isValid(target) and target.maxHealth > 6 then
 		if Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
 			bestPosition, bestCount = getAOEMinion(self.wSpell.Range, self.wSpell.Radius)
 			if bestCount > 0 then 
@@ -844,7 +844,7 @@ function JarvanIV:LaneClear()
 	if not target then
 		target = HealthPrediction:GetLaneClearTarget()
 	end
-	if target and isValid(target) then
+	if target and isValid(target) and targt.maxHealth > 6 then
 		if Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 500 < GetTickCount() then
 			bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
 			if bestCount > 0 then 
@@ -1066,7 +1066,7 @@ function Poppy:LaneClear()
 	if not target then
 		target = HealthPrediction:GetLaneClearTarget()
 	end
-	if target and isValid(target) then
+	if target and isValid(target) and targt.maxHealth > 6 then
 		if Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 250 < GetTickCount() then
 			bestPosition, bestCount = getAOEMinion(self.qSpell.Range, self.qSpell.Radius)
 			if bestCount > 0 then 
@@ -1238,7 +1238,7 @@ function Shyvana:LaneClear()
 	if not target then
 		target = HealthPrediction:GetLaneClearTarget()
 	end
-	if target and isValid(target) then
+	if target and isValid(target) and targt.maxHealth > 6 then
 		if myHero.pos:DistanceTo(target.pos) < 400 and Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount() then
 			Control.CastSpell(HK_W)
 			lastW = GetTickCount()
@@ -1392,7 +1392,7 @@ function Trundle:LaneClear()
 	if not target then
 		target = HealthPrediction:GetLaneClearTarget()
 	end
-	if target and isValid(target) then
+	if target and isValid(target) and targt.maxHealth > 6 then
 		if myHero.pos:DistanceTo(target.pos) < 300 and Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 250 < GetTickCount()then
 			Control.CastSpell(HK_W, myHero)
 			lastW = GetTickCount()
@@ -1744,7 +1744,7 @@ function Belveth:LaneClear()
 	if not target then
 		target = HealthPrediction:GetLaneClearTarget()
 	end
-	if target and isValid(target) then
+	if target and isValid(target) and targt.maxHealth > 6 then
 		if Menu.Clear.W:Value() and isSpellReady(_W) and lastW + 600 < GetTickCount() then
 			bestPosition, bestCount = getAOEMinion(self.wSpell.Range, self.wSpell.Radius)
 			if bestCount > 0 then 
@@ -2190,7 +2190,7 @@ function Udyr:JungleClear()
 	local haspassiveAA = doesMyChampionHaveBuff("UdyrPAttackReady")
 	local R1 = getBuffData(myHero, "UdyrRActivation")
 	local target = HealthPrediction:GetJungleTarget()
-	if target and not haspassiveAA then
+	if target and targt.maxHealth > 6 and not haspassiveAA then
 		if Menu.Clear.Q:Value() and isSpellReady(_Q) and c == 1 then
 			Control.CastSpell(HK_Q)
 				if hasAwakenedQ then
@@ -2525,7 +2525,7 @@ function Yorick:LaneClear()
 	if not target then
 		target = HealthPrediction:GetLaneClearTarget()
 	end
-	if target and isValid(target) then
+	if target and isValid(target) and targt.maxHealth > 6 then
 		if Menu.Clear.Q:Value() and isSpellReady(_Q) and lastQ + 300 < GetTickCount() and myHero:GetSpellData(_Q).name == "YorickQ" and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
 			Control.CastSpell(HK_Q)
 			lastQ = GetTickCount()
@@ -2551,7 +2551,7 @@ function Yorick:LastHit()
 	if not target then
 		target = HealthPrediction:GetLaneClearTarget()
 	end
-	if target and isValid(target) then
+	if target and isValid(target) and targt.maxHealth > 6 then
 		if Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 300 < GetTickCount() and myHero:GetSpellData(_Q).name == "YorickQ" and myHero.pos:DistanceTo(target.pos) <= 300 and self:getqDmg(target) >= target.health then
 			Control.CastSpell(HK_Q)
 			lastQ = GetTickCount()
@@ -3623,7 +3623,7 @@ function KSante:LaneClear()
 		local minions = ObjectManager:GetEnemyMinions(self.qSpell.Range)
 		for i = 1, #minions do
 			local minion = minions[i]
-			if isValid(minion) and minion.team ~= 300 then
+			if isValid(minion) and minion.team ~= 300 and minion.maxHealth > 6 then
 				local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
 				if collisionCount >= Menu.Clear1.QCount:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
 					Control.CastSpell(HK_Q, minion)
@@ -3640,7 +3640,7 @@ function KSante:JungleClear()
 		local minions = ObjectManager:GetEnemyMinions(self.qSpell.Range)
 		for i = 1, #minions do
 			local minion = minions[i]
-			if isValid(minion) and minion.team == 300 and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
+			if isValid(minion) and minion.team == 300 and minion.maxHealth > 6 and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
 				Control.CastSpell(HK_Q, minion)
 				lastQ = GetTickCount()
 			end
@@ -3655,7 +3655,7 @@ function KSante:LastHit()
 	for i = 1, #minionInRange do
 		local minion = minionInRange[i]
 		if Menu.LastHit.Q:Value() and isSpellReady(_Q) and lastQ + 350 < GetTickCount() then
-			if self:getqDmg(minion) >= minion.health and not minion.dead then
+			if self:getqDmg(minion) >= minion.health and not minion.dead and minion.maxHealth > 6 then
 				Control.CastSpell(HK_Q, minion)
 				lastQ = GetTickCount()
 			end
@@ -3804,7 +3804,7 @@ end
 
 function Skarner:LaneClear()
 	local target = HealthPrediction:GetJungleTarget()
-	if target and isValid(target) then
+	if target and isValid(target) and targt.maxHealth > 6 then
 		if Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
 			if myHero:GetSpellData(_Q).name == "SkarnerQ" then
 				Control.CastSpell(HK_Q)
@@ -4141,7 +4141,7 @@ end
 function Gragas:JungleClear()
 	if Attack:IsActive() then return end
 	local target = HealthPrediction:GetJungleTarget()
-	if target and isValid(target) then
+	if target and isValid(target) and targt.maxHealth > 6 then
 		if Menu.Clear.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and lastQ + 350 < GetTickCount() and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
 			Control.CastSpell(HK_Q, target)
 			lastQ = GetTickCount()
@@ -5078,7 +5078,7 @@ end
 function Briar:JungleClear()
 	if Attack:IsActive() then return end
 	local target = HealthPrediction:GetJungleTarget()
-	if isValid(target) then
+	if isValid(target) and targt.maxHealth > 6 then
 
 		if Menu.Clear.Q:Value() and isSpellReady(_Q) and getDistance(myHero.pos, target.pos) <= Q.Range then
 			Control.CastSpell(HK_Q, target)
