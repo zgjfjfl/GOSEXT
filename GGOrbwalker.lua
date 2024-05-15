@@ -1466,8 +1466,7 @@ Damage = {
 			end
 		end,
 		["Corki"] = function(args)
-			args.RawTotal = args.RawTotal * 0.5
-			args.RawMagical = args.RawTotal
+			args.CalculatedTrue = args.CalculatedTrue + 0.15 * args.From.totalDamage
 		end,
 		["Diana"] = function(args)
 			if Buff:GetBuffCount(args.From, "dianapassivemarker") == 2 then
@@ -1585,11 +1584,16 @@ Damage = {
 
 	ItemStaticDamage = {
 		[1043] = function(args)
-			args.RawMagical = args.RawMagical + 15
+			args.RawPhysical = args.RawPhysical + 15
 		end,
-		[3085] = function(args)
-			args.RawMagical = args.RawMagical + 30
+		[3144] = function(args)
+			if not args.TargetIsMinion then
+				args.RawMagical = args.RawMagical + 40
+			end
 		end,
+		-- [3085] = function(args)
+			-- args.RawMagical = args.RawMagical + 30
+		-- end,
 		[3091] = function(args)
 			local t = { 15, 15, 15, 15, 15, 15, 15, 15, 25, 35, 45, 55, 65, 75, 76.25, 77.5, 78.75, 80 }
 			args.RawMagical = args.RawMagical + t[math_max(math_min(args.From.levelData.lvl, 18), 1)]
@@ -1603,35 +1607,35 @@ Damage = {
 		[3302] = function(args)
 			args.RawMagical = args.RawMagical + 30
 		end,
-		[6670] = function(args)
-			if args.TargetIsMinion then
-				args.RawPhysical = args.RawPhysical + 20
-			end
-		end,
-		[2015] = function(args)
-			if Buff:GetBuffStacks(args.From, "itemstatikshankcharge") == 100 then
-				args.RawMagical = args.RawMagical + 60
-			end
-		end,
-		[3087] = function(args)
-			if Buff:GetBuffStacks(args.From, "itemstatikshankcharge") == 100 then
-				if args.TargetIsMinion then
-					args.RawMagical = args.RawMagical + 150
-				else
-					args.RawMagical = args.RawMagical + 90
-				end
-			end
-		end,
+		-- [6670] = function(args)
+			-- if args.TargetIsMinion then
+				-- args.RawPhysical = args.RawPhysical + 20
+			-- end
+		-- end,
+		-- [2015] = function(args)
+			-- if Buff:GetBuffStacks(args.From, "itemstatikshankcharge") == 100 then
+				-- args.RawMagical = args.RawMagical + 60
+			-- end
+		-- end,
+		-- [3087] = function(args)
+			-- if Buff:GetBuffStacks(args.From, "itemstatikshankcharge") == 100 then
+				-- if args.TargetIsMinion then
+					-- args.RawMagical = args.RawMagical + 150
+				-- else
+					-- args.RawMagical = args.RawMagical + 90
+				-- end
+			-- end
+		-- end,
 		[3094] = function(args)
 			if Buff:GetBuffStacks(args.From, "itemstatikshankcharge") == 100 then
 				args.RawMagical = args.RawMagical + 60
 			end
 		end,
-		[3095] = function(args)
-			if Buff:GetBuffStacks(args.From, "itemstatikshankcharge") == 100 then
-				args.RawMagical = args.RawMagical + 100
-			end
-		end,
+		-- [3095] = function(args)
+			-- if Buff:GetBuffStacks(args.From, "itemstatikshankcharge") == 100 then
+				-- args.RawMagical = args.RawMagical + 100
+			-- end
+		-- end,
 		[6699] = function(args)
 			if Buff:GetBuffStacks(args.From, "itemstatikshankcharge") == 100 then
 				args.RawPhysical = args.RawPhysical + 100
@@ -1639,27 +1643,27 @@ Damage = {
 		end,
 		[3057] = function(args)
 			if Buff:HasBuff(args.From, "sheen") then
-				args.RawPhysical = args.RawPhysical + 1 * args.From.baseDamage
+				args.RawPhysical = args.RawPhysical + 1.0 * args.From.baseDamage
 			end
 		end,
 		[6662] = function(args)
 			if Buff:HasBuff(args.From, "6662buff") then
-				args.RawPhysical = args.RawPhysical + 1 * args.From.baseDamage
+				args.RawPhysical = args.RawPhysical + 1.0 * args.From.baseDamage
 			end
 		end,
 		[3078] = function(args)
 			if Buff:HasBuff(args.From, "3078trinityforce") then
-				args.RawPhysical = args.RawPhysical + 2 * args.From.baseDamage
+				args.RawPhysical = args.RawPhysical + 2.0 * args.From.baseDamage
 			end
 		end,
-		[3508] = function(args)
-			if Buff:HasBuff(args.From, "3508buff") then
-				args.RawPhysical = args.RawPhysical + 1.4 * args.From.baseDamage + 0.2 * args.From.bonusDamage
-			end
-		end,
+		-- [3508] = function(args)
+			-- if Buff:HasBuff(args.From, "3508buff") then
+				-- args.RawPhysical = args.RawPhysical + 1.4 * args.From.baseDamage + 0.2 * args.From.bonusDamage
+			-- end
+		-- end,
 		[3100] = function(args)
 			if Buff:HasBuff(args.From, "lichbane") then
-				args.RawMagical = args.RawMagical + 0.75 * args.From.baseDamage + 0.5 * args.From.ap
+				args.RawMagical = args.RawMagical + 0.75 * args.From.baseDamage + 0.45 * args.From.ap
 			end
 		end,
 	},
@@ -2259,7 +2263,7 @@ Data = {
 		Camille = { 3, true, 0.644 },
 		Cassiopeia = { 4, false, 0.647 },
 		Chogath = { 1, true, 0.625 },
-		Corki = { 5, false, 0.638 },
+		Corki = { 5, false, 0.644 },
 		Darius = { 2, true, 0.625 },
 		Diana = { 4, true, 0.625 },
 		DrMundo = { 1, true, 0.67 },

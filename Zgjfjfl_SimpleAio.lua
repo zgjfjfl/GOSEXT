@@ -1,4 +1,4 @@
-local Version = 2024.11
+local Version = 2024.12
 
 --[ AutoUpdate ]
 
@@ -3693,7 +3693,7 @@ function Skarner:__init()
 	Callback.Add("Tick", function() self:onTick() end)
 	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 90, Range = 1050, Speed = 1600, Collision = false}
 	self.wSpell = {Range = 650}
-	self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 150, Range = 625, Speed = math.huge, Collision = false}
+	self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.65, Radius = 150, Range = 625, Speed = math.huge, Collision = false}
 end
 
 function Skarner:LoadMenu()

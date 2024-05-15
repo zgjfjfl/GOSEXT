@@ -1,4 +1,4 @@
-local Version = 2024.34
+local Version = 2024.35
 
 --[ AutoUpdate ]
 
@@ -1234,8 +1234,8 @@ function Zeri:OnPreAttack(args)
 end
 
 function Zeri:OnTick()
-	if myHero.range == 550 then
-		QSpell.Range = 800 + Menu.Misc.QRange:Value()
+	if myHero.range == 650 then
+		QSpell.Range = 900 + Menu.Misc.QRange:Value()
 	else
 		QSpell.Range = 750 + Menu.Misc.QRange:Value()
 	end
@@ -3537,7 +3537,13 @@ function Kalista:KillSteal()
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and HaveBuff(target, "kalistaexpungemarker") then
 				local EDmg = self:GetEDmg(target)
-				if Game.mapID == HOWLING_ABYSS then EDmg = EDmg * 1.1 end
+				if HaveBuff(myHero, "SRX_DragonSoulBuffChemtech") and myHero.health/myHero.maxHealth < 0.5 then
+					EDmg = EDmg * 1.11
+				elseif HaveBuff(target, "SRX_DragonSoulBuffChemtech") and target.health/target.maxHealth < 0.5 then
+					EDmg = EDmg * 0.89
+				elseif Game.mapID == HOWLING_ABYSS then
+					EDmg = EDmg * 1.1
+				end
 				if EDmg >= target.health + target.hpRegen + target.shieldAD then
 					Control.CastSpell(HK_E)
 				end
@@ -4054,7 +4060,7 @@ function Corki:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 275, Range = 950, Speed = 1000, Collision = false}
+	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 275, Range = 950, Speed = 1100, Collision = false}
 	ESpell = {Range = 690}
 	R1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1250, Speed = 2000, Collision = false}
 	R2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1450, Speed = 2000, Collision = false}
