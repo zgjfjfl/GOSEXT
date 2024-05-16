@@ -1,4 +1,4 @@
-local Version = 2024.35
+local Version = 2024.36
 
 --[ AutoUpdate ]
 
@@ -197,6 +197,17 @@ local function HaveBuff(unit, buffName)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff.name:lower() == buffName and buff.count > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+local function HasBuffContainsName(unit, name)
+	name = name:lower()
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
+		if buff.name:lower():find(name) and buff.count > 0 then
 			return true
 		end
 	end
@@ -3544,6 +3555,7 @@ function Kalista:KillSteal()
 				elseif Game.mapID == HOWLING_ABYSS then
 					EDmg = EDmg * 1.1
 				end
+				print(EDmg)
 				if EDmg >= target.health + target.hpRegen + target.shieldAD then
 					Control.CastSpell(HK_E)
 				end
@@ -3785,6 +3797,9 @@ function Kalista:GetEDmg(target)
 		local baseDmg = ({10, 20, 30, 40, 50})[level] + 0.7 * myHero.totalDamage + 0.2 * myHero.ap
 		local bonusDmg = (buff.count - 1) * (({8, 12, 16, 20, 24})[level] + ({0.25, 0.3, 0.35, 0.4, 0.45})[level] * myHero.totalDamage + 0.2 * myHero.ap)
 		local totalDmg = baseDmg + bonusDmg
+		if HasBuffContainsName(myHero, "PressTheAttackLockout") then
+			totalDmg = totalDmg * 1.08
+		end
 		if HaveBuff(myHero, "SummonerExhaust") then
 			totalDmg = totalDmg * 0.65
 		end
