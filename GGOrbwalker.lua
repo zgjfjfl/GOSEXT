@@ -3038,7 +3038,7 @@ Spell = {
 					local targets = self:GetLastHitTargets()
 					for i = 1, #targets do
 						local unit = targets[i]
-						if unit.alive then
+						if unit.alive and unit.maxHealth > 6 then
 							--self.SpellPrediction:GetPrediction(unit, myHero)
 							if Control.CastSpell(self.HK, unit.pos) then
 								--if self.SpellPrediction:CanHit() and Control.CastSpell(self.HK, self.SpellPrediction.CastPosition) then
@@ -3056,7 +3056,7 @@ Spell = {
 					local targets = self:GetLaneClearTargets()
 					for i = 1, #targets do
 						local unit = targets[i]
-						if unit.alive then
+						if unit.alive and unit.maxHealth > 6 then
 							--self.SpellPrediction:GetPrediction(unit, myHero)
 							if Control.CastSpell(self.HK, unit.pos) then
 								--if self.SpellPrediction:CanHit() and Control.CastSpell(self.HK, self.SpellPrediction.CastPosition) then
