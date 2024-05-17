@@ -1,4 +1,4 @@
-local Version = 2024.37
+local Version = 2024.38
 
 --[ AutoUpdate ]
 
@@ -4092,7 +4092,7 @@ function Corki:LoadMenu()
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "Rammo", name = "Minimum R ammo harass", value = 3, min = 0, max = 6, step = 1})
+	Menu.Harass:MenuElement({id = "Rammo", name = "Minimum R ammo harass", value = 2, min = 0, max = 3, step = 1})
 	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
@@ -4234,7 +4234,7 @@ function Corki:Harass()
 
 		if Menu.Harass.R:Value() and IsReady(_R) then
 			local target = GetTarget(1500)
-			if IsValid(target) and target.pos2D.onScreen then
+			if IsValid(target) and target.pos2D.onScreen and myHero:GetSpellData(_R).ammo > Menu.Harass.Rammo:Value() then
 				self:CastR(target)
 			end
 		end
@@ -4301,7 +4301,7 @@ end
 
 function Corki:HaveSheenBuff()
 	local target = Orbwalker:GetTarget()
-	if IsValid(target) and (HaveBuff(myHero, "sheen") or HaveBuff(myHero, "6662buff") or HaveBuff(myHero, "3078trinityforce") or HaveBuff(myHero, "3508buff") or HaveBuff(myHero, "lichbane")) then
+	if IsValid(target) and (HaveBuff(myHero, "sheen") or HaveBuff(myHero, "6662buff") or HaveBuff(myHero, "3078trinityforce") or HaveBuff(myHero, "lichbane")) then
 		return true
 	else
 		return false
