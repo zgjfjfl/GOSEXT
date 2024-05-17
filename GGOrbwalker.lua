@@ -644,34 +644,35 @@ end
 Cached = {
 
 	OtherMinions = {
-		"ApheliosTurret",
-		"GangplankBarrel",
-		"HeimerTYellow",
-		"HeimerTBlue",
-		"IllaoiMinion",
-		"JhinTrap",
-		"KalistaSpawn",
-		"NidaleeSpear",
-		"SennaSoul",
-		"TeemoMushroom",
-		"YorickWInVisible",
-		"ZyraGraspingPlant",
-		"ZyraThornPlant",
-		"SRU_Plant_Health",
-		"SRU_Plant_Satchel",
-		"SRU_Plant_Vision",
-		"Cherry_Plant_Powerup"
+		"apheliosturret",
+		"gangplankbarrel",
+		"heimertyellow",
+		"heimertblue",
+		"illaoiminion",
+		"jhintrap",
+		"kalistaspawn",
+		"nidaleespear",
+		"sennasoul",
+		"teemomushroom",
+		"yorickwinvisible",
+		"zyragraspingplant",
+		"zyrathornplant",
+		"sru_plant_health",
+		"sru_plant_satchel",
+		"sru_plant_vision",
+		"cherry_plant_powerup"
 	},
 
 	Minions = {},
 	TempCachedMinions = {},
 	TempCachedWards = {},
 	TempCachedTurrets = {},
-	TempCachedOtherUnits = {},
+	TempCachedPlants = {},
 	ExtraHeroes = {},
 	ExtraUnits = {},
 	Turrets = {},
 	Wards = {},
+	Plants = {},
 	Heroes = {},
 	Buffs = {},
 	HeroesSaved = false,
@@ -680,7 +681,8 @@ Cached = {
 	ExtraUnitsSaved = false,
 	TurretsSaved = false,
 	WardsSaved = false,
-	TempCacheBuffer = {m = GameTimer(), w = GameTimer(), t = GameTimer(), o = GameTimer()},
+	PlantsSaved = false,
+	TempCacheBuffer = {m = GameTimer(), w = GameTimer(), t = GameTimer(), p = GameTimer()},
 	TempCacheTimeout = 3,
 
 	WndMsg = function(self, msg, wParam)
@@ -700,7 +702,7 @@ Cached = {
 		--If we press an orbwalker hotkey, reset our buffer so we immediately cache new minions (we only do this once per button press to prevent lag)
 		for _, key in pairs(oKeys) do
 			if (msg == KEY_DOWN and wParam == key) then
-				self.TempCacheBuffer = {m = GameTimer(), w = GameTimer(), t = GameTimer(), o = GameTimer()}
+				self.TempCacheBuffer = {m = GameTimer(), w = GameTimer(), t = GameTimer(), p = GameTimer()}
 				return
 			end
 		end
@@ -754,6 +756,12 @@ Cached = {
 				self.Wards[i] = nil
 			end
 			self.WardsSaved = false
+		end
+		if self.PlantsSaved then
+			for i = #self.Plants, 1, -1 do
+				self.Plants[i] = nil
+			end
+			self.PlantsSaved = false
 		end
 	end,
 
@@ -835,30 +843,20 @@ Cached = {
 			self.MinionsSaved = true
 			self.ExtraUnitsSaved = true
 			local cachedMinions = self:FetchCachedMinions()
-			local count1 = #cachedMinions
-			if count1 and count1 > 0 and count1 < 1000 then
-				for i = 1, count1 do
+			local count = #cachedMinions
+			if count and count > 0 and count < 1000 then
+				for i = 1, count do
 					local o = cachedMinions[i]
 					if o and o.valid and o.visible and o.isTargetable and not o.dead and not o.isImmortal then
 						table_insert(self.Minions, o)
 					end
 				end
 			end
-			
-			local cachedOtherUnits = self:FetchCachedOtherUnits()
-			local count2 = #cachedOtherUnits
-			if count2 and count2 > 0 and count2 < 1000 then
-				for i = 1, count2 do
-					local o = cachedOtherUnits[i]
-					if o and o.valid and o.visible and o.isTargetable and not o.dead and not o.isImmortal then
-						table_insert(self.Minions, o)
-					end
-				end
+
+			for i = 1, #self.ExtraUnits do
+				local e = self.ExtraUnits[i]
+				table_insert(self.Minions, e)
 			end
-		end
-		for i = 1, #self.ExtraUnits do
-			local e = self.ExtraUnits[i]
-			table_insert(self.Minions, e)
 		end
 		return self.Minions
 	end,
@@ -880,29 +878,6 @@ Cached = {
 		end
 
 		return self.TempCachedMinions
-	end,
-	
-	FetchCachedOtherUnits = function(self)
-		if self.TempCacheBuffer.o <= GameTimer() then
-			self.TempCachedOtherUnits = {}
-			local count = GameObjectCount()
-			if count and count > 0 and count < 100000 then
-				for i = 1, count do
-					local o = GameObject(i)
-					if o and o.type == Obj_AI_Minion and o.isEnemy and o.valid and o.visible and o.isTargetable and not o.dead and not o.isImmortal then
-						for _, unitName in ipairs(self.OtherMinions) do
-							if o.charName == unitName then
-								table_insert(self.TempCachedOtherUnits, o)
-							end
-						end
-					end
-				end
-			end
-			self.TempCacheBuffer.o = self.TempCacheBuffer.o + self.TempCacheTimeout
-			return self.TempCachedOtherUnits
-		end
-
-		return self.TempCachedOtherUnits
 	end,
 
 	GetTurrets = function(self)
@@ -944,7 +919,6 @@ Cached = {
 	GetWards = function(self)
 		if not self.WardsSaved then
 			self.WardsSaved = true
-
 			local cachedWards = self:FetchCachedWards()
 			local count = #cachedWards
 			if count and count > 0 and count < 1000 then
@@ -976,6 +950,46 @@ Cached = {
 		end
 
 		return self.TempCachedWards
+	end,
+	
+	GetPlants = function(self)
+		if not self.PlantsSaved then
+			self.PlantsSaved = true
+			local cachedPlants = self:FetchCachedPlants()
+			local count = #cachedPlants
+			if count and count > 0 and count < 1000 then
+				for i = 1, count do
+					local o = cachedPlants[i]
+					if o and o.valid and o.visible and o.isTargetable and not o.dead and not o.isImmortal then
+						table_insert(self.Plants, o)
+					end
+				end
+			end
+		end
+		return self.Plants
+	end,
+
+	FetchCachedPlants = function(self)
+		if self.TempCacheBuffer.p <= GameTimer() then
+			self.TempCachedPlants = {}
+			local count = GameObjectCount()
+			if count and count > 0 and count < 100000 then
+				for i = 1, count do
+					local o = GameObject(i)
+					if o and o.type == Obj_AI_Minion and o.isEnemy and o.valid and o.visible and o.isTargetable and not o.dead and not o.isImmortal then
+						for _, unitName in ipairs(self.OtherMinions) do
+							if o.charName:lower() == unitName then
+								table_insert(self.TempCachedPlants, o)
+							end
+						end
+					end
+				end
+			end
+			self.TempCacheBuffer.p = self.TempCacheBuffer.p + self.TempCacheTimeout
+			return self.TempCachedPlants
+		end
+
+		return self.TempCachedPlants
 	end,
 
 	GetBuffs = function(self, o)
@@ -1060,6 +1074,8 @@ Menu = {
         self.Orbwalker.Keys:MenuElement({id = 'Flee', name = 'Flee Key', key = string.byte('A')})
         self.Orbwalker.Keys:MenuElement({id = 'HoldKey', name = 'Hold Key', key = string.byte('H'), tooltip = 'Should be same in game keybinds'})
         self.Orbwalker:MenuElement({id = 'General', name = 'General', type = MENU})
+        self.Orbwalker.General:MenuElement({id = 'AttackBarrel', name = 'Attack Gangplank Barrel', value = true})
+        self.Orbwalker.General:MenuElement({id = 'AttackPlants', name = 'Attack Plants(LaneClear Mode)', value = true})
         self.Orbwalker.General:MenuElement({id = 'HarassFarm', name = 'Farm In Harass Mode', value = true})
         self.Orbwalker.General:MenuElement({id = 'AttackResetting', name = 'Attack Resetting', value = true})
         self.Orbwalker.General:MenuElement({id = 'FastKiting', name = 'Fast Kiting', value = true})
@@ -4002,10 +4018,10 @@ Target = {
 			elseif enemy.distance < attackRange + extraRange then
 				table_insert(enemiesaa, enemy)
 			end
-			if enemy.charName == "Gangplank" then
+			if Menu.Orbwalker.General.AttackBarrel:Value() and enemy.charName == "Gangplank" then
 				local validBarrels = {}
-				for _, obj in ipairs(Cached:GetMinions()) do
-					if obj.charName == "GangplankBarrel" then
+				for _, obj in ipairs(Cached:GetPlants()) do
+					if obj and obj.charName:lower() == "gangplankbarrel" then
 						table.insert(validBarrels, obj)
 					end
 				end
@@ -4024,6 +4040,13 @@ Target = {
 							end
 						end
 					end
+				end
+			end
+		end
+		if Game.mapID == 30 then
+			for _, obj in ipairs(Cached:GetPlants()) do
+				if obj and obj.charName:lower() == "cherry_plant_powerup" and obj.distance <= attackRange + obj.boundingRadius then
+					return obj
 				end
 			end
 		end
@@ -4160,6 +4183,7 @@ Health = {
 	JungleMinionsInAttackRange = {},
 	EnemyStructuresInAttackRange = {},
 	CachedWards = {},
+	CachedPlants = {},
 	CachedMinions = {},
 	TargetsHealth = {},
 	AttackersDamage = {},
@@ -4191,6 +4215,7 @@ Health = {
 			self.Handles = {}
 			self.CachedMinions = {}
 			self.CachedWards = {}
+			self.CachedPlants = {}
 		end
 		-- SPELLS
 		for i = 1, #self.Spells do
@@ -4218,6 +4243,13 @@ Health = {
 				table_insert(self.CachedWards, obj)
 			end
 		end
+		local cachedplants = Cached:GetPlants()
+		for i = 1, #cachedplants do
+			local obj = cachedplants[i]
+			if IsInRange(myHero, obj, 2000) then
+				table_insert(self.CachedPlants, obj)
+			end
+		end
 		for i = 1, #self.CachedMinions do
 			local obj = self.CachedMinions[i]
 			local handle = obj.handle
@@ -4230,13 +4262,6 @@ Health = {
 					IsInRange(myHero, obj, attackRange + obj.boundingRadius)
 					or (Object.IsAzir and ChampionInfo:IsInAzirSoldierRange(obj))
 				then
-					if (Object.IsAzir and ChampionInfo:IsInAzirSoldierRange(obj)) then
-					end
-
-					-- if obj.charName == "IllaoiMinion" then
-						-- local value= {LastHitable = true, Unkillable = false, AlmostLastHitable = false,PredictedHP = myHero.totalDamage, Minion = obj, AlmostAlmost = false, Time = GameTimer()}
-					-- end
-
 					table_insert(self.EnemyMinionsInAttackRange, obj)
 				end
 			elseif team == Data.JungleTeam then
@@ -4244,19 +4269,7 @@ Health = {
 					IsInRange(myHero, obj, attackRange + obj.boundingRadius)
 					or (Object.IsAzir and ChampionInfo:IsInAzirSoldierRange(obj))
 				then
-					if myHero.charName == "Senna" and obj.charName == "SennaSoul" then
-						local time = Attack:GetWindup() + obj.distance / Attack:GetProjectileSpeed()
-						local value= {LastHitable = true, Unkillable = false, AlmostLastHitable = false, PredictedHP = 1, Minion = obj,	AlmostAlmost = false, Time = time}
-						table_insert(self.FarmMinions, value)
-					elseif obj.charName == "Cherry_Plant_Powerup" then
-						local time = Attack:GetWindup() + obj.distance / Attack:GetProjectileSpeed()
-						local value= {LastHitable = true, Unkillable = false, AlmostLastHitable = false, PredictedHP = 1, Minion = obj,	AlmostAlmost = false, Time = time}
-						table_insert(self.FarmMinions, value)
-					else
-						if obj.charName ~= "SennaSoul" and obj.charName ~= "GangplankBarrel" and obj.maxHealth > 1 then
-							table_insert(self.JungleMinionsInAttackRange, obj)
-						end
-					end
+					table_insert(self.JungleMinionsInAttackRange, obj)
 				end
 			end
 		end
@@ -4264,6 +4277,22 @@ Health = {
 			local obj = self.CachedWards[i]
 			if IsInRange(myHero, obj, attackRange + 35) then
 				table_insert(self.EnemyWardsInAttackRange, obj)
+			end
+		end
+		for i = 1, #self.CachedPlants do
+			local obj = self.CachedPlants[i]
+			if IsInRange(myHero, obj, attackRange + obj.boundingRadius) then
+				if myHero.charName == "Senna" and obj.charName:lower() == "sennasoul" then
+					local time = Attack:GetWindup() + obj.distance / Attack:GetProjectileSpeed()
+					local value= {LastHitable = true, Unkillable = false, AlmostLastHitable = false, PredictedHP = 1, Minion = obj,	AlmostAlmost = false, Time = time}
+					table_insert(self.FarmMinions, value)
+				else
+					if obj.charName:lower() ~= "sennasoul" and obj.charName:lower() ~= "gangplankbarrel" then
+						if Menu.Orbwalker.General.AttackPlants:Value() or obj.maxHealth > 1 then
+							table_insert(self.EnemyMinionsInAttackRange, obj)
+						end
+					end
+				end
 			end
 		end
 		structures = Object:GetAllStructures(2000)
@@ -5524,6 +5553,7 @@ _G.SDK = {
 	Attack = Attack,
 	Orbwalker = Orbwalker,
 	Cached = Cached,
+	Movement = Movement,
 	DAMAGE_TYPE_PHYSICAL = DAMAGE_TYPE_PHYSICAL,
 	DAMAGE_TYPE_MAGICAL = DAMAGE_TYPE_MAGICAL,
 	DAMAGE_TYPE_TRUE = DAMAGE_TYPE_TRUE,
