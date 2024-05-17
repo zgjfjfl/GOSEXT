@@ -4174,6 +4174,7 @@ Health = {
 	EnemyWardsInAttackRange = {},
 	EnemyMinionsInAttackRange = {},
 	JungleMinionsInAttackRange = {},
+	PlantsMinionsInAttackRange = {},
 	EnemyStructuresInAttackRange = {},
 	CachedWards = {},
 	CachedPlants = {},
@@ -4200,6 +4201,7 @@ Health = {
 			self.EnemyWardsInAttackRange = {}
 			self.EnemyMinionsInAttackRange = {}
 			self.JungleMinionsInAttackRange = {}
+			self.PlantsMinionsInAttackRange = {}
 			self.EnemyStructuresInAttackRange = {}
 			self.AttackersDamage = {}
 			self.ActiveAttacks = {}
@@ -4282,7 +4284,7 @@ Health = {
 				else
 					if obj.charName:lower() ~= "sennasoul" and obj.charName:lower() ~= "gangplankbarrel" then
 						if Menu.Orbwalker.General.AttackPlants:Value() or obj.team ~= 300 then
-							table_insert(self.JungleMinionsInAttackRange, obj)
+							table_insert(self.PlantsMinionsInAttackRange, obj)
 						end
 					end
 				end
@@ -4643,6 +4645,16 @@ Health = {
 
 	ShouldWait = function(self)
 		return GetTickCount() < self.ShouldWaitTime + 250
+	end,
+
+	GetPlantsTarget = function(self)
+		if #self.PlantsMinionsInAttackRange > 0 then
+			table_sort(self.PlantsMinionsInAttackRange, function(a, b)
+				return a.maxHealth > b.maxHealth
+			end)
+			return self.PlantsMinionsInAttackRange[1]
+		end
+		return nil
 	end,
 
 	GetJungleTarget = function(self)
@@ -5415,6 +5427,10 @@ Orbwalker = {
 			end
 		end
 		if self.Modes[ORBWALKER_MODE_LANECLEAR] then
+			local plants = Health:GetPlantsTarget()
+			if plants ~= nil then
+				return plants
+			end
 			return Health:GetLaneClearTarget()
 		end
 		if self.Modes[ORBWALKER_MODE_HARASS] then
