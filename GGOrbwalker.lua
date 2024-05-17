@@ -3054,7 +3054,7 @@ Spell = {
 					local targets = self:GetLastHitTargets()
 					for i = 1, #targets do
 						local unit = targets[i]
-						if unit.alive and unit.maxHealth > 6 then
+						if unit.alive then
 							--self.SpellPrediction:GetPrediction(unit, myHero)
 							if Control.CastSpell(self.HK, unit.pos) then
 								--if self.SpellPrediction:CanHit() and Control.CastSpell(self.HK, self.SpellPrediction.CastPosition) then
@@ -3072,7 +3072,7 @@ Spell = {
 					local targets = self:GetLaneClearTargets()
 					for i = 1, #targets do
 						local unit = targets[i]
-						if unit.alive and unit.maxHealth > 6 then
+						if unit.alive then
 							--self.SpellPrediction:GetPrediction(unit, myHero)
 							if Control.CastSpell(self.HK, unit.pos) then
 								--if self.SpellPrediction:CanHit() and Control.CastSpell(self.HK, self.SpellPrediction.CastPosition) then
@@ -5019,7 +5019,7 @@ Attack = {
 	LocalStart = 0,
 	AttackWindup = 0,
 	AttackAnimation = 0,
-	--IsSenna = myHero.charName == "Senna",
+	IsSenna = myHero.charName == "Senna",
 
 	OnTick = function(self)
 		if Data:CanResetAttack() and Orbwalker.Menu.General.AttackResetting:Value() then
