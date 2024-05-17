@@ -4043,13 +4043,6 @@ Target = {
 				end
 			end
 		end
-		if Game.mapID == 30 then
-			for _, obj in ipairs(Cached:GetPlants()) do
-				if obj and obj.charName:lower() == "cherry_plant_powerup" and obj.distance <= attackRange + obj.boundingRadius then
-					return obj
-				end
-			end
-		end
 		return self:GetTarget(enemiesaa, dmgType, true)
 	end,
 }
@@ -4288,8 +4281,8 @@ Health = {
 					table_insert(self.FarmMinions, value)
 				else
 					if obj.charName:lower() ~= "sennasoul" and obj.charName:lower() ~= "gangplankbarrel" then
-						if Menu.Orbwalker.General.AttackPlants:Value() or obj.maxHealth > 1 then
-							table_insert(self.EnemyMinionsInAttackRange, obj)
+						if Menu.Orbwalker.General.AttackPlants:Value() or obj.team ~= 300 then
+							table_insert(self.JungleMinionsInAttackRange, obj)
 						end
 					end
 				end
