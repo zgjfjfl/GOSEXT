@@ -1468,7 +1468,7 @@ Damage = {
 		end,
 		["Caitlyn"] = function(args)
 			if Buff:HasBuff(args.From, "caitlynpassivedriver") then
-				local modCrit = 1.4875 + (Item:HasItem(args.From, 3031) and 0.34 or 0)
+				local modCrit = 1.4875 + (Item:HasItem(args.From, 3031) and 0.425 or 0)
 				local level = args.From.levelData.lvl
 				local t = level < 7 and 1.1 or (level < 13 and 1.15 or 1.2)
 				if args.TargetIsMinion then
@@ -1687,7 +1687,7 @@ Damage = {
 	HeroPassiveDamage = {
 		["Ashe"] = function(args)
 			if Buff:HasBuff(args.Target, "ashepassiveslow") then
-				local modCrit = 0.75 + (Item:HasItem(args.From, 3031) and 0.4 or 0)
+				local modCrit = 0.75 + (Item:HasItem(args.From, 3031) and 0.5 or 0)
 				args.RawTotal = args.RawTotal * (1.2 + (modCrit * args.From.critChance))
 			end
 		end,
