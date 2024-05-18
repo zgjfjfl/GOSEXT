@@ -1,4 +1,4 @@
-local Version = 2024.38
+local Version = 2024.39
 
 --[ AutoUpdate ]
 
@@ -493,7 +493,7 @@ function Nilah:LoadMenu()
 end
 
 function Nilah:OnTick()
-	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
 	self:AutoW()
@@ -1260,7 +1260,7 @@ function Zeri:OnTick()
 	WSpell.Delay = MathMax(MathFloor((0.55 - 0.09 * (myHero.attackSpeed - 1)) * 100) / 100, 0.3)
 	W2Spell.Delay = WSpell.Delay
 	
-	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
 
@@ -1618,7 +1618,9 @@ function Lucian:OnTick()
 	if lastQ + QSpell.Delay * 2 > Game.Timer() then return end
 	if HavePassive or myHero.activeSpell.valid or Dashing or CastingR then return end
 	
-	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then return end
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+		return
+	end
 
 	local Mode = GetMode()
 	if Mode == "Combo" then
@@ -2019,7 +2021,9 @@ function Jinx:OnTick()
 
 	WSpell.Delay = math.max(math.floor((0.6 - 0.02 * ((myHero.attackSpeed - 1)/0.25)) * 100) / 100, 0.4)
 	
-	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then return end
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+		return
+	end
 	if myHero.activeSpell.valid then return end
 
 	self:AutoE()
@@ -2427,7 +2431,9 @@ function Tristana:OnTick()
 	self:ForceE()
 	self:AntiGapcloser()
 
-	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then return end
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+		return
+	end
 	if myHero.activeSpell.valid then return end
 
 	self:SemiR()
@@ -3062,7 +3068,9 @@ end
 
 local Etick = 0
 function Jayce:OnTick()
--- print(Game.Latency())
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+		return
+	end
 	if QmanualTimer and GetTickCount() > QmanualTimer + 1000 then
 		isQmanualCast = false
 		QmanualTimer = nil
@@ -3522,7 +3530,7 @@ function Kalista:LoadMenu()
 end
 
 function Kalista:OnTick()
-	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
 
@@ -3915,7 +3923,7 @@ function Ashe:OnPostAttackTick()
 end
 
 function Ashe:OnTick()
-	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
 	self:SemiManualR()
@@ -4145,8 +4153,9 @@ function Corki:OnPreAttack(args)
 end
 
 function Corki:OnTick()
-	
-	if myHero.dead or Game.IsChatOpen() or Recalling(myHero) then return end
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+		return
+	end
 	if myHero.activeSpell.valid then return end
 	if self:HaveSheenBuff() then return end
 	self:SemiR()

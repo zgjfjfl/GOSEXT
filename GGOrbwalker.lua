@@ -1,4 +1,4 @@
-local __version__ = 3.044
+local __version__ = 3.045
 local __name__ = "GGOrbwalker"
 
 
@@ -5630,15 +5630,6 @@ Callback.Add("Load", function()
 			LastChatOpenTimer = GetTickCount()
 		end
 
-		FlashHelper:OnTick()
-		Cached:Reset()
-		Cursor:OnTick()
-		Action:OnTick()
-		Attack:OnTick()
-		Orbwalker:OnTick()
-		for i = 1, #ticks do
-			ticks[i]()
-		end
 		if Menu.Main.Drawings.Enabled:Value() then
 			Target:OnDraw()
 			Cursor:OnDraw()
@@ -5665,12 +5656,20 @@ Callback.Add("Load", function()
 			LastChatOpenTimer = GetTickCount()
 		end
 
+		FlashHelper:OnTick()
 		Cached:Reset()
+		Cursor:OnTick()
+		Action:OnTick()
+		Attack:OnTick()
+		Orbwalker:OnTick()
 		ChampionInfo:OnTick()
 		SummonerSpell:OnTick()
 		Item:OnTick()
 		Target:OnTick()
 		Health:OnTick()
+		for i = 1, #ticks do
+			ticks[i]()
+		end
 		--tickTest = 2
 	end)
 
