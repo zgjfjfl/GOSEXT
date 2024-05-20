@@ -1,4 +1,4 @@
-local Version = 2024.39
+local Version = 2024.40
 
 --[ AutoUpdate ]
 
@@ -4156,7 +4156,7 @@ function Corki:OnTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
-	if myHero.activeSpell.valid then return end
+	-- if myHero.activeSpell.valid then return end
 	if self:HaveSheenBuff() then return end
 	self:SemiR()
 	local Mode = GetMode()
@@ -4190,12 +4190,14 @@ end
 function Corki:CastQ(target)
 	local QPrediction = GGPrediction:SpellPrediction(QSpell)
 	QPrediction:GetPrediction(target, myHero)
-	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
+	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) and lastQ + 330 < GetTickCount() and Orbwalker:CanMove() then
 		local castPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 825)
 		if myHero.pos:DistanceTo(QPrediction.CastPosition) <= 825 then
 			Control.CastSpell(HK_Q, QPrediction.CastPosition)
+			lastQ = GetTickCount()
 		elseif myHero.pos:DistanceTo(QPrediction.CastPosition) > 825 and myHero.pos:DistanceTo(QPrediction.CastPosition) <= 950 then
 			Control.CastSpell(HK_Q, castPos)
+			lastQ = GetTickCount()
 		end
 	end
 end
@@ -4204,29 +4206,33 @@ function Corki:CastR(target)
 	if HaveBuff(myHero, "mbcheck2") then
 		local R2Prediction = GGPrediction:SpellPrediction(R2Spell)
 		R2Prediction:GetPrediction(target, myHero)
-		if R2Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
+		if R2Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) and lastR + 250 < GetTickCount() and Orbwalker:CanMove() then
 			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R2Prediction.CastPosition, R2Spell.Speed, R2Spell.Delay, R2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 			if collisionCount > 0 then
 				local minion = collisionObjects[1]
 				if minion.pos:DistanceTo(R2Prediction.CastPosition) < 250 then
 					Control.CastSpell(HK_R, R2Prediction.CastPosition)
+					lastR = GetTickCount()
 				end
 			else
 				Control.CastSpell(HK_R, R2Prediction.CastPosition)
+				lastR = GetTickCount()
 			end
 		end
 	else
 		local R1Prediction = GGPrediction:SpellPrediction(R1Spell)
 		R1Prediction:GetPrediction(target, myHero)
-		if R1Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
+		if R1Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) and lastR + 250 < GetTickCount() and Orbwalker:CanMove()then
 			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R1Prediction.CastPosition, R1Spell.Speed, R1Spell.Delay, R1Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 			if collisionCount > 0 then
 				local minion = collisionObjects[1]
 				if minion.pos:DistanceTo(R1Prediction.CastPosition) < 100 then
 					Control.CastSpell(HK_R, R1Prediction.CastPosition)
+					lastR = GetTickCount()
 				end
 			else
 				Control.CastSpell(HK_R, R1Prediction.CastPosition)
+				lastR = GetTickCount()
 			end
 		end
 	end
