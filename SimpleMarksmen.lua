@@ -1,4 +1,4 @@
-local Version = 2024.41
+local Version = 2024.42
 
 --[ AutoUpdate ]
 
@@ -4265,6 +4265,7 @@ end
 
 function Corki:LaneClear()
 	if IsUnderTurret(myHero) then return end
+	if myHero.activeSpell.valid then return end
 	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 		for i, minion in ipairs(minions) do
@@ -4289,6 +4290,7 @@ function Corki:LaneClear()
 end
 
 function Corki:JungleClear()
+	if myHero.activeSpell.valid then return end
 	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
