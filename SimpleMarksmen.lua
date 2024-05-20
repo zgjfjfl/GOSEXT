@@ -1,4 +1,4 @@
-local Version = 2024.40
+local Version = 2024.41
 
 --[ AutoUpdate ]
 
@@ -4222,7 +4222,7 @@ function Corki:CastR(target)
 	else
 		local R1Prediction = GGPrediction:SpellPrediction(R1Spell)
 		R1Prediction:GetPrediction(target, myHero)
-		if R1Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) and lastR + 250 < GetTickCount() and Orbwalker:CanMove()then
+		if R1Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) and lastR + 250 < GetTickCount() and Orbwalker:CanMove() then
 			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R1Prediction.CastPosition, R1Spell.Speed, R1Spell.Delay, R1Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 			if collisionCount > 0 then
 				local minion = collisionObjects[1]
