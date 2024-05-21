@@ -1,4 +1,4 @@
-local Version = 2024.42
+local Version = 2024.43
 
 --[ AutoUpdate ]
 
@@ -4116,19 +4116,12 @@ function Corki:LoadMenu()
 	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
-	
-	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
-	Menu.KillSteal:MenuElement({id = "W", name = "Auto W KillSteal", toggle = true, value = true})
-	Menu.KillSteal:MenuElement({id = "R", name = "Auto R KillSteal", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "QhitChance", name = "Q | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "RhitChance", name = "R | hitChance", value = 2, drop = {"Normal", "High"}})
-	Menu.Misc:MenuElement({id = "Ecc", name = "Auto E On 'CC'", toggle = true, value = true})
-	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Qcc", name = "Auto Q On 'CC'", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "SemiR", name = "Semi-manual R Key", key = string.byte("T")})
-	Menu.Misc:MenuElement({id = "Rmin", name = "Use R| MinRange >= X", value = 1000, min = 500, max = 2500, step = 100})
-	Menu.Misc:MenuElement({id = "Rmax", name = "Use R| MaxRange <= X", value = 3000, min = 1500, max = 3500, step = 100})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
@@ -4159,6 +4152,7 @@ function Corki:OnTick()
 	-- if myHero.activeSpell.valid then return end
 	if self:HaveSheenBuff() then return end
 	self:SemiR()
+	self:AutoQ()
 	local Mode = GetMode()
 	if Mode == "Combo" then
 		self:Combo()
@@ -4183,6 +4177,17 @@ function Corki:Combo()
 		local target = GetTarget(1500)
 		if IsValid(target) and target.pos2D.onScreen then
 			self:CastR(target)
+		end
+	end
+end
+
+function Corki:AutoQ()
+	if Menu.Misc.Qcc:Value() and IsReady(_Q) then
+		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pos2D.onScreen and IsImmobile(target) then
+				self:CastQ(target)
+			end
 		end
 	end
 end
