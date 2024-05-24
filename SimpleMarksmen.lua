@@ -1,4 +1,4 @@
-local Version = 2024.43
+local Version = 2024.44
 
 --[ AutoUpdate ]
 
@@ -3563,7 +3563,7 @@ function Kalista:KillSteal()
 				elseif Game.mapID == HOWLING_ABYSS then
 					EDmg = EDmg * 1.1
 				end
-				print(EDmg)
+				-- print(EDmg)
 				if EDmg >= target.health + target.hpRegen + target.shieldAD then
 					Control.CastSpell(HK_E)
 				end
