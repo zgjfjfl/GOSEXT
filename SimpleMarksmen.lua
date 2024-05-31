@@ -1,4 +1,4 @@
-local Version = 2024.44
+local Version = 2024.45
 
 --[ AutoUpdate ]
 
@@ -978,7 +978,7 @@ end
 function Smolder:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	if level > 0 then
-		local QDmg = (({15, 25, 35, 45, 55})[level] + myHero.totalDamage + 0.15 * myHero.ap) * (1 + 0.5 * myHero.critChance)
+		local QDmg = (({15, 25, 35, 45, 55})[level] + myHero.totalDamage + 0.15 * myHero.ap) * (1 + 0.75 * myHero.critChance)
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 	else
 		return 0
@@ -988,7 +988,7 @@ end
 function Smolder:GetPQDmg(target)
 	local PassiveStacks = GetBuffData(myHero, "SmolderQPassive").stacks
 	if PassiveStacks then
-		local Dmg = (0.4 * (1 + 0.3 * myHero.critChance)) * PassiveStacks
+		local Dmg = (0.4 * (1 + 0.75 * myHero.critChance)) * PassiveStacks
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
 	else
 		return 0
@@ -1166,7 +1166,7 @@ function Zeri:__init()
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	-- Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
 	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 40, Range = 750, Speed = 2600, Collision = false}
-	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 40, Range = 1200, Speed = 2500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 40, Range = 1150, Speed = 2500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	W2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 100, Range = 2500, Speed = 2500, Collision = false}
 	ESpell = { Range = 300 }
 	RSpell = { Delay = 0.25, Range = 825 }
@@ -1187,7 +1187,9 @@ function Zeri:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "QHarass", name = "Use Q Harass(In LaneClear Mode)", toggle = true, value = true})
-	Menu.Clear:MenuElement({id = "QObj", name = "Use Q on Buildings & Wards", toggle = true, value = true})
+	Menu.Clear:MenuElement({id = "QBuildings", name = "Use Q on Buildings", toggle = true, value = true})
+	Menu.Clear:MenuElement({id = "QWards", name = "Use Q on Wards", toggle = true, value = true})
+	Menu.Clear:MenuElement({id = "QPlants", name = "Use Q on Plants", toggle = true, value = false})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
@@ -1200,6 +1202,7 @@ function Zeri:LoadMenu()
 	Menu.Misc:MenuElement({id = "QhitChance", name = "Q | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "WhitChance", name = "W | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "QRange", name = "Q Range = RealRange + X", value = 0, min = -50, max = 50, step = 5})
+	Menu.Misc:MenuElement({id = "QBarrel", name = "Q Attack GP's Barrel", toggle = true, value = true})
 	-- Menu.Misc:MenuElement({id = "AAkills", name = "Use PassiveAA kills target when no Q", toggle = true, value = false})
 	Menu.Misc:MenuElement({id = "ComboAA", name = "Disable AA when no Qpassive in combo", toggle = true, value = true, key = string.byte("T")})
 	Menu.Misc:MenuElement({id = "ClearAA", name = "Disable AA when in Clear(Mouse Scroll)", toggle = true, value = true, key = 4})	
@@ -1266,12 +1269,14 @@ function Zeri:OnTick()
 
 	local Mode = GetMode()
 	if Mode == "Combo" then
+		self:QBarrel()
 		self:Combo()
 		-- self:AAkills()
 	elseif Mode == "Harass" then
 		self:LastHit()
 		self:Harass()
 	elseif Mode == "LaneClear" then
+		self:QBarrel()
 		self:FarmHarass()
 		self:LastHit()
 		self:QObject()
@@ -1296,6 +1301,49 @@ end
 		end
 	end
 end ]]
+
+function Zeri:QBarrel()
+	if not Menu.Misc.QBarrel:Value() or not IsReady(_Q) then
+		return
+	end
+
+	local enemyHeroes = GetEnemyHeroes()
+	local gangplank = nil
+
+	for _, enemy in ipairs(enemyHeroes) do
+		if enemy and enemy.charName == "Gangplank" then
+			gangplank = enemy
+			break
+		end
+	end
+
+	if not gangplank then
+		return
+	end
+
+	local plants = ObjectManager:GetPlants(750)
+	local level = gangplank.levelData.lvl
+	local healthDecayRate = level >= 13 and 0.5 or (level >= 7 and 1 or 2)
+	local currentTime = Game.Timer()
+
+	for _, obj in ipairs(plants) do
+		if obj and obj.charName:lower() == "gangplankbarrel" then
+			local barrelHealth = obj.health
+			local barrelBuffData = GetBuffData(obj, "gangplankebarrelactive")
+			local barrelBuffStartTime = barrelBuffData.startTime
+			local time = obj.distance / QSpell.Speed
+
+			if barrelHealth <= 1 then
+				Control.CastSpell(HK_Q, obj)
+			else
+				local nextHealthDecayTime = currentTime < barrelBuffStartTime + healthDecayRate and barrelBuffStartTime + healthDecayRate or barrelBuffStartTime + healthDecayRate * 2
+				if barrelHealth <= 2 and nextHealthDecayTime <= currentTime + time then
+					Control.CastSpell(HK_Q, obj)
+				end
+			end
+		end
+	end
+end
 
 function Zeri:Combo()
 
@@ -1470,29 +1518,47 @@ function Zeri:JungleClear()
 end
 
 function Zeri:QObject()
-	if not IsReady(_Q) or not Menu.Clear.QObj:Value() then return end
+	if not IsReady(_Q) then return end
 
 	local QRange = 750
 	local targets = {}
-	local turrets = ObjectManager:GetEnemyTurrets(QRange)
-	local buildings = ObjectManager:GetEnemyBuildings(QRange + 350)
-	local wards = ObjectManager:GetOtherEnemyMinions(QRange)
 
-	for _, turret in pairs(turrets) do
-		if turret then
-			TableInsert(targets, turret)
+	if Menu.Clear.QBuildings:Value() then
+		local turrets = ObjectManager:GetEnemyTurrets(QRange)
+		local buildings = ObjectManager:GetEnemyBuildings(QRange + 350)
+
+		for i = 1, #turrets do
+			local turret = turrets[i]
+			if turret then
+				table.insert(targets, turret)
+			end
+		end
+
+		for i = 1, #buildings do
+			local building = buildings[i]
+			if building and (building.type == Obj_AI_Nexus or (building.type == Obj_AI_Barracks and building.distance < QRange + 250)) then
+				table.insert(targets, building)
+			end
 		end
 	end
 
-	for _, building in pairs(buildings) do
-		if building and (building.type == Obj_AI_Nexus or (building.type == Obj_AI_Barracks and building.distance < QRange + 250)) then
-			TableInsert(targets, building)
+	if Menu.Clear.QWards:Value() then
+		local wards = ObjectManager:GetOtherEnemyMinions(QRange)
+		for i = 1, #wards do
+			local ward = wards[i]
+			if ward then
+				table.insert(targets, ward)
+			end
 		end
-	end
+	 end
 
-	for _, ward in pairs(wards) do
-		if ward then
-			TableInsert(targets, ward)
+	local plants = ObjectManager:GetPlants(QRange)
+	for i = 1, #plants do
+		local plant = plants[i]
+		if plant and plant.charName:lower() ~= "sennasoul" and plant.charName:lower() ~= "gangplankbarrel" then
+			if Menu.Clear.QPlants:Value() or plant.team ~= 300 then
+				table.insert(targets, plant)
+			end
 		end
 	end
 

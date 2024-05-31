@@ -1,4 +1,4 @@
-local Version = 2024.13
+local Version = 2024.14
 
 --[ AutoUpdate ]
 
@@ -3422,9 +3422,9 @@ function KSante:LoadMenu()
 		Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "W1", name = "Use W1 push target to tower/ally", toggle = true, value = false})
-		Menu.Combo:MenuElement({id = "W1Time", name = "W1 Channel time(s)", value = 0.75, min = 0.75, max = 1.5, step = 0.05})
+		Menu.Combo:MenuElement({id = "W1Time", name = "W1 Channel time(s)", value = 0.75, min = 0.75, max = 1, step = 0.05})
 		Menu.Combo:MenuElement({id = "W2", name = "[W] AllOut W", toggle = true, value = true})
-		Menu.Combo:MenuElement({id = "W2Time", name = "AllOut W Channel time(s)", value = 0.75, min = 0.75, max = 1.5, step = 0.05})
+		Menu.Combo:MenuElement({id = "W2Time", name = "AllOut W Channel time(s)", value = 0.75, min = 0.75, max = 1, step = 0.05})
 		Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "EA", name = "use E close to enemy AApassive", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "ET", name = "use E close to enemy useQ", toggle = true, value = true})
