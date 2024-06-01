@@ -1,4 +1,4 @@
-local __version__ = 3.045
+local __version__ = 3.046
 local __name__ = "GGOrbwalker"
 
 if _G.GGUpdate then
@@ -4291,6 +4291,7 @@ Health = {
 				if myHero.charName == "Senna" and obj.charName:lower() == "sennasoul" then
 					local time = Attack:GetWindup() + obj.distance / Attack:GetProjectileSpeed()
 					local value= {LastHitable = true, Unkillable = false, AlmostLastHitable = false, PredictedHP = 1, Minion = obj,	AlmostAlmost = false, Time = time}
+					self.IsLastHitable = true
 					table_insert(self.FarmMinions, value)
 				else
 					if obj.charName:lower() ~= "sennasoul" and obj.charName:lower() ~= "gangplankbarrel" then
