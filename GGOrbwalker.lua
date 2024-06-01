@@ -1,6 +1,5 @@
-local __version__ = 999999
+local __version__ = 3.045
 local __name__ = "GGOrbwalker"
-
 
 if _G.GGUpdate then
 	return
@@ -1084,8 +1083,8 @@ Menu = {
         self.Orbwalker.General:MenuElement({id = 'HoldRadius', name = 'Hold Radius', value = 0, min = 0, max = 250, step = 10})
         self.Orbwalker.General:MenuElement({id = 'ExtraWindUpTime', name = 'Extra WindUpTime', value = 0, min = -25, max = 75, step = 5})
         self.Orbwalker:MenuElement({id = 'RandomHumanizer', name = 'Random Humanizer', type = MENU})
-        self.Orbwalker.RandomHumanizer:MenuElement({id = 'Min', name = 'Min', value = 300, min = 50, max = 400, step = 10})
-        self.Orbwalker.RandomHumanizer:MenuElement({id = 'Max', name = 'Max', value = 500, min = 150, max = 500, step = 10})
+        self.Orbwalker.RandomHumanizer:MenuElement({id = 'Min', name = 'Min', value = 100, min = 50, max = 300, step = 10})
+        self.Orbwalker.RandomHumanizer:MenuElement({id = 'Max', name = 'Max', value = 150, min = 150, max = 400, step = 10})
         self.Orbwalker:MenuElement({id = 'Farming', name = 'Farming Settings', type = MENU})
         self.Orbwalker.Farming:MenuElement({id = 'LastHitPriority', name = 'Priorize Last Hit over Harass', value = true})
         self.Orbwalker.Farming:MenuElement({id = 'PushPriority', name = 'Priorize Push over Freeze', value = true})
@@ -1468,7 +1467,7 @@ Damage = {
 		end,
 		["Caitlyn"] = function(args)
 			if Buff:HasBuff(args.From, "caitlynpassivedriver") then
-				local modCrit = 1.4875 + (Item:HasItem(args.From, 3031) and 0.425 or 0)
+				local modCrit = 1.4875 + (Item:HasItem(args.From, 3031) and 0.34 or 0)
 				local level = args.From.levelData.lvl
 				local t = level < 7 and 1.1 or (level < 13 and 1.15 or 1.2)
 				if args.TargetIsMinion then
@@ -1687,7 +1686,7 @@ Damage = {
 	HeroPassiveDamage = {
 		["Ashe"] = function(args)
 			if Buff:HasBuff(args.Target, "ashepassiveslow") then
-				local modCrit = 0.75 + (Item:HasItem(args.From, 3031) and 0.5 or 0)
+				local modCrit = 0.75 + (Item:HasItem(args.From, 3031) and 0.4 or 0)
 				args.RawTotal = args.RawTotal * (1.2 + (modCrit * args.From.critChance))
 			end
 		end,
@@ -3624,6 +3623,18 @@ Object = {
 		for i = 1, #cachedwards do
 			local obj = cachedwards[i]
 			if obj.isEnemy and (not range or obj.distance < range) then
+				table_insert(result, obj)
+			end
+		end
+		return result
+	end,
+
+	GetPlants = function(self, range)
+		local result = {}
+		local cachedplants = Cached:GetPlants()
+		for i = 1, #cachedplants do
+			local obj = cachedplants[i]
+			if not range or obj.distance < range then
 				table_insert(result, obj)
 			end
 		end
