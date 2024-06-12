@@ -1,4 +1,4 @@
-local __version__ = 3.046
+local __version__ = 3.047
 local __name__ = "GGOrbwalker"
 
 if _G.GGUpdate then
@@ -1687,7 +1687,7 @@ Damage = {
 		["Ashe"] = function(args)
 			if Buff:HasBuff(args.Target, "ashepassiveslow") then
 				local modCrit = 0.75 + (Item:HasItem(args.From, 3031) and 0.4 or 0)
-				args.RawTotal = args.RawTotal * (1.2 + (modCrit * args.From.critChance))
+				args.RawTotal = args.RawTotal * (1.15 + (modCrit * args.From.critChance))
 			end
 		end,
 		["KogMaw"] = function(args)
