@@ -1,4 +1,4 @@
-local Version = 2024.45
+local Version = 2024.46
 
 --[ AutoUpdate ]
 
@@ -978,7 +978,7 @@ end
 function Smolder:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	if level > 0 then
-		local QDmg = (({15, 25, 35, 45, 55})[level] + myHero.totalDamage + 0.15 * myHero.ap) * (1 + 0.75 * myHero.critChance)
+		local QDmg = (({20, 30, 40, 50, 60})[level] + myHero.totalDamage + 0.15 * myHero.ap) * (1 + 0.75 * myHero.critChance)
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 	else
 		return 0
@@ -3482,7 +3482,7 @@ end
 
 function Jayce:GetQ1Dmg(target)
 	local level = myHero:GetSpellData(_Q).level
-	local QDmg = ({55, 110, 165, 220, 275, 330})[level] + 1.2 * myHero.bonusDamage
+	local QDmg = ({60, 115, 170, 225, 280, 335})[level] + 1.25 * myHero.bonusDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 

@@ -1,4 +1,4 @@
-local Version = 2024.14
+local Version = 2024.15
 
 --[ AutoUpdate ]
 
@@ -4246,10 +4246,10 @@ function Milio:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:onTick() end)	
-	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1000, Speed = 1200, Collision = true, MaxCollision = 1, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	self.qnocolSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1000, Speed = 1200, Collision = false}
+	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1200, Speed = 1200, Collision = true, MaxCollision = 1, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.qnocolSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1200, Speed = 1200, Collision = false}
 	self.qnocolSpellextended = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 45, Range = 1500, Speed = 1200, Collision = false}
-	self.qantidashSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius =35, Range = 1000, Speed = 1200, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.qantidashSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 35, Range = 1200, Speed = 1200, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.wSpell = { Range = 650 }
 	self.eSpell = { Range = 650 }
 	self.rSpell = { Range = 700 }
@@ -4391,10 +4391,10 @@ end
 function Milio:CastQ(target)
 	if isSpellReady(_Q) and lastQ + 350 < GetTickCount() and Orbwalker:CanMove() then
 		local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.qSpell.Speed, self.qSpell.Delay, self.qSpell.Radius, self.qSpell.CollisionTypes, target.networkID)
-		if collisionCount >= 1 and myHero.pos:DistanceTo(target.pos) < Menu.Combo.QBD:Value() + 1000 then
+		if collisionCount >= 1 and myHero.pos:DistanceTo(target.pos) < Menu.Combo.QBD:Value() + 1200 then
 			local minion = collisionObjects[1]
-			if isValid(minion) and minion.pos:DistanceTo(target.pos) < 400 and minion.pos:DistanceTo(myHero.pos) < 1000 then
-				if myHero.pos:DistanceTo(target.pos) < 1000 then
+			if isValid(minion) and minion.pos:DistanceTo(target.pos) < Menu.Combo.QBD:Value() and minion.pos:DistanceTo(myHero.pos) < 1100 then
+				if myHero.pos:DistanceTo(target.pos) < 1100 then
 					local Pred = GGPrediction:SpellPrediction(self.qnocolSpell)
 					Pred:GetPrediction(target, myHero)
 					if Pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
@@ -4410,7 +4410,7 @@ function Milio:CastQ(target)
 					end
 				end
 			end
-		elseif collisionCount <= 1 and myHero.pos:DistanceTo(target.pos) < 1000 then
+		elseif collisionCount <= 1 and myHero.pos:DistanceTo(target.pos) < 1100 then
 			local Pred = GGPrediction:SpellPrediction(self.qSpell)
 			Pred:GetPrediction(target, myHero)
 			if Pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
@@ -4554,7 +4554,7 @@ function AurelionSol:__init()
 	Callback.Add("Tick", function() self:onTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 75, Range = 750, Speed = 1500, Collision = false}
-	self.wSpell = { Range = 1200 } 
+	self.wSpell = { Range = 1500 } 
 	self.eSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 275, Range = 750, Speed = 1300, Collision = false}
 	self.rSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 275, Range = 1250, Speed = 500, Collision = false}
 end
@@ -4586,7 +4586,7 @@ function AurelionSol:onTick()
 	passivecount = getBuffData(myHero, "AurelionSolPassive").stacks
 	self.qSpell.Range = 740 + 10 * myHero.levelData.lvl
 	self.eSpell.Range = 740 + 10 * myHero.levelData.lvl
-	self.wSpell.Range = 1200 + 7.5 * passivecount
+	self.wSpell.Range = 1400 + 100 * myHero:GetSpellData(_W).level + 7.5 * passivecount
 	self.eSpell.Radius = math.sqrt(275^2+16.93^2 * passivecount)
 	self.rSpell.Radius = math.sqrt(275^2+16.93^2 * passivecount)
 	if myHero:GetSpellData(_R).name == "AurelionSolR2" then
