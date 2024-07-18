@@ -2267,6 +2267,7 @@ Data = {
 		Aphelios = { 5, false, 0.64 },
 		Ashe = { 5, false, 0.658 },
 		AurelionSol = { 4, false, 0.625 },
+		Aurora = { 4, false, 0.668 },
 		Azir = { 4, true, 0.625 },
 		Bard = { 3, false, 0.625 },
 		Belveth = { 4, true, 0.85 },
