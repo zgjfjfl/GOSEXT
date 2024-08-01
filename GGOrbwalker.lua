@@ -1,4 +1,4 @@
-local __version__ = 3.047
+local __version__ = 3.048
 local __name__ = "GGOrbwalker"
 
 if _G.GGUpdate then
@@ -1580,7 +1580,7 @@ Damage = {
 		["Varus"] = function(args)
 			local level = args.From:GetSpellData(_W).level
 			if level > 0 then
-				args.RawMagical = args.RawMagical + 7 * level + 0.35 * args.From.ap
+				args.RawMagical = args.RawMagical + 5 * level + 0.35 * args.From.ap
 			end
 		end,
 		["Viktor"] = function(args)
