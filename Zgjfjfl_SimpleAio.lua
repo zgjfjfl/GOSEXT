@@ -1,4 +1,4 @@
-local Version = 2024.15
+local Version = 2024.16
 
 --[ AutoUpdate ]
 
@@ -49,7 +49,9 @@ do
 
 end
 
-local Heroes = {"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", "Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai", "Gragas", "Milio", "AurelionSol", "Heimerdinger", "Briar"}
+local Heroes = {"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", 
+				"Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai", "Gragas", "Milio", "AurelionSol", "Heimerdinger", 
+				"Briar", "Urgot", "Aurora"}
 
 if not table.contains(Heroes, myHero.charName) then
 	print('SimpleAio not supported ' .. myHero.charName)
@@ -482,7 +484,7 @@ end
 
 ------------------------------------
 
-Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Simple "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.5.1/img/champion/"..myHero.charName..".png"})
+Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Simple "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.17.1/img/champion/"..myHero.charName..".png"})
 	Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
 
 ------------------------------------
@@ -5109,7 +5111,6 @@ function Briar:AutoW2()
 	end
 end
 
-
 function Briar:getW2BonusDmg(target)
 	local Wlvl = myHero:GetSpellData(_W).level
 	local baseDmg = 15 * Wlvl - 10
@@ -5119,4 +5120,349 @@ function Briar:getW2BonusDmg(target)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, Dmg)
 end
 
+------------------------------------
 
+class "Urgot"
+		
+function Urgot:__init()		 
+	print("Simple Urgot Loaded")
+	self:LoadMenu()
+
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:onTick() end)
+	Orbwalker:OnPostAttackTick(function(...) self:OnPostAttackTick(...) end)
+	Q = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.55, Radius = 210, Range = 800, Speed = math.huge, Collision = false}
+	W = { Range = 500 } 
+	E = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.45, Radius = 100, Range = 450, Speed = 1500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	R = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 80, Range = 2500, Speed = 3200, Collision = true, CollisionTypes = {GGPrediction.COLLISION_ENEMYHERO}}
+end
+
+function Urgot:LoadMenu()
+			
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+		Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "AWA", name = "Use [AWA] When W 5 levels", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "Rkill", name = "UseR if can kill target", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "Rsm", name = "UseR Semi-Manual Key", key = string.byte("T")})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+		Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+		Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
+		Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
+		Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+		Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
+end
+
+function Urgot:onTick()
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
+		return
+	end
+	
+	if myHero:GetSpellData(_W).name == "UrgotWCancel" then
+		Orbwalker:SetAttack(false)
+	else
+		Orbwalker:SetAttack(true)
+	end
+	
+	if Menu.Combo.Rsm:Value() then
+		self:SemiManualR()
+	end
+	self:AutoR2()
+
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		self:AWA()
+		self:Combo()
+	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	end
+end
+
+function Urgot:OnPostAttackTick()
+	local target = Orbwalker:GetTarget()
+	if isValid(target) and target.type == Obj_AI_Hero then
+		if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+			if Menu.Combo.W:Value() and isSpellReady(_W) and myHero:GetSpellData(_W).name == "UrgotW" then
+				Control.CastSpell(HK_W)
+			end
+		end
+	end
+end
+
+function Urgot:AWA()
+	local target = Orbwalker:GetTarget()
+	if isValid(target) and target.type == Obj_AI_Hero then
+		if Menu.Combo.AWA:Value() and isSpellReady(_W) then
+			if myHero:GetSpellData(_W).level == 5 and myHero:GetSpellData(_W).name == "UrgotWCancel" and myHero.attackData.state == 1 then
+				Control.CastSpell(HK_W)
+			end
+		end
+	end
+end
+
+function Urgot:Combo()
+	if Menu.Combo.Q:Value() and isSpellReady(_Q) then
+		local target = TargetSelector:GetTarget(Q.Range)
+		if isValid(target) then
+			self:CastQ(target)
+		end
+	end
+	
+	if Menu.Combo.E:Value() and isSpellReady(_E) then
+		local target = TargetSelector:GetTarget(E.Range)
+		if isValid(target) then
+			self:CastE(target)
+		end
+	end
+
+	if Menu.Combo.R:Value() and isSpellReady(_R) then
+		if Menu.Combo.Rkill:Value() then
+			local target = TargetSelector:GetTarget(R.Range)
+			if isValid(target) and (target.health - self:getRDmg(target))/target.maxHealth < 0.25 then
+				self:CastR(target)
+			end
+		end
+	end
+end
+
+function Urgot:Harass()
+	local target = TargetSelector:GetTarget(Q.Range)
+	if isValid(target) then
+		if Menu.Harass.Q:Value() and isSpellReady(_Q) then
+			self:CastQ(target)
+		end
+	end
+end
+
+function Urgot:SemiManualR()
+	local target = TargetSelector:GetTarget(R.Range)
+	if isValid(target) then
+		if isSpellReady(_R) and myHero:GetSpellData(_R).name == "UrgotR" then
+			self:CastR(target)
+		end
+	end
+end
+
+function Urgot:AutoR2()
+	local enemies = ObjectManager:GetEnemyHeroes(R.Range)
+	for i, target in ipairs(enemies) do
+		if isValid(target) and haveBuff(target, "UrgotR") and target.health/target.maxHealth < 0.25 then
+			if isSpellReady(_R) and myHero:GetSpellData(_R).name == "UrgotRRecast" then
+				Control.CastSpell(HK_R)
+			end
+		end
+	end
+end
+
+function Urgot:CastQ(target)
+	if lastQ + 350 < GetTickCount() and Orbwalker:CanMove() then
+		local pred = GGPrediction:SpellPrediction(Q)
+		pred:GetPrediction(target, myHero)
+		if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+			Control.CastSpell(HK_Q, pred.CastPosition)	
+			lastQ = GetTickCount()
+		end
+	end
+end
+
+function Urgot:CastE(target)
+	if lastE + 550 < GetTickCount() and Orbwalker:CanMove() then
+		local pred = GGPrediction:SpellPrediction(E)
+		pred:GetPrediction(target, myHero)
+		if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+			Control.CastSpell(HK_E, pred.CastPosition)	
+			lastE = GetTickCount()
+		end
+	end
+end
+
+function Urgot:CastR(target)
+	if lastR + 600 < GetTickCount() and Orbwalker:CanMove() then
+		local pred = GGPrediction:SpellPrediction(R)
+		pred:GetPrediction(target, myHero)
+		if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+			Control.CastSpell(HK_R, pred.CastPosition)	
+			lastR = GetTickCount()
+		end
+	end
+end
+
+function Urgot:getRDmg(target)
+	local rlvl = myHero:GetSpellData(_R).level
+	local baseDmg = 125 * rlvl - 25
+	local adDmg = myHero.bonusDamage * 0.5
+	local rDmg = baseDmg + adDmg
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, rDmg)
+end
+
+function Urgot:Draw()
+	if Menu.Draw.Q:Value() and isSpellReady(_Q) then
+		Draw.Circle(myHero.pos, Q.Range, 1, Draw.Color(255, 255, 255, 255))
+	end
+	if Menu.Draw.W:Value() and isSpellReady(_W) then
+		Draw.Circle(myHero.pos, W.Range, 1, Draw.Color(255, 0, 255, 255))
+	end
+	if Menu.Draw.E:Value() and isSpellReady(_E) then
+		Draw.Circle(myHero.pos, E.Range, 1, Draw.Color(255, 0, 0, 0))
+	end
+	if Menu.Draw.R:Value() and isSpellReady(_R) then
+		Draw.Circle(myHero.pos, R.Range, 1, Draw.Color(255, 255, 0, 0))
+	end
+end
+
+-----------------------------------
+
+class "Aurora"
+
+function Aurora:__init()
+	print("Simple Aurora Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 90, Range = 850, Speed = 1600, Collision = false}
+	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 80, Range = 850, Speed = MathHuge, Collision = false}
+end
+
+function Aurora:LoadMenu()
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo(when spell ready)", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Qrange", name = "Q Max Range", value = 800, min = 550, max = 850, step = 10})
+	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Erange", name = "E Max Range", value = 750, min = 550, max = 850, step = 10})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	
+	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "AutoQ2", name = "Auto Q2", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "EGap", name = "Use E AntiGapcloser", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw Q Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
+end
+
+function Aurora:OnPreAttack(args)
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		if Menu.Combo.DisableAA:Value() and (isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "AuroraQ" or isSpellReady(_E)) then
+			args.Process = false
+		end
+	end
+end
+
+function Aurora:OnTick()
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
+		return
+	end
+	self:AntiGapcloser()
+	self:AutoQ2()
+	if myHero.activeSpell.valid then return end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		self:Combo()
+	elseif Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	end
+end
+
+function Aurora:GetQ2Dmg(target)
+	local level = myHero:GetSpellData(_Q).level
+	local missingHpPer = (target.maxHealth - target.health) / target.maxHealth
+	local Dmg = (({40, 65, 90, 115, 140})[level] + 0.4 * myHero.ap) * (1 + missingHpPer * 0.5)
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
+end
+
+function Aurora:GetPDmg(target)
+	if getBuffData(target, "AuroraPDebuff").count == 2 then
+		local Dmg = (0.025 + myHero.ap / 100 * 0.02) * target.maxHealth
+		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
+	else
+		return 0
+	end
+end
+
+function Aurora:AutoQ2()
+	if myHero:GetSpellData(_Q).name == "AuroraQRecast" then
+		if Menu.Misc.AutoQ2:Value() and Game.CanUseSpell(_Q) == 0 then
+			for i, enemy in ipairs(getEnemyHeroes()) do
+				if isValid(enemy) and haveBuff(enemy, "auroraqdebufftracker") then
+					local Q2Dmg = self:GetQ2Dmg(enemy) + self:GetPDmg(enemy)
+					if (enemy.health + enemy.shieldAD + enemy.shieldAP) <= Q2Dmg or GetBuffData(myHero, "AuroraQRecast").duration < 1 then
+						Control.CastSpell(HK_Q)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Aurora:AntiGapcloser()
+	if Menu.Misc.EGap:Value() and isSpellReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(Menu.Combo.Erange:Value())
+		for i, target in ipairs(enemies) do
+			if isValid(target) and target.pathing.isDashing then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
+					self:CastE(target)
+				end
+			end	
+		end
+	end
+end
+
+function Aurora:Combo()
+	if Menu.Combo.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "AuroraQ" then
+		local target = TargetSelector:GetTarget(Menu.Combo.Qrange:Value())
+		if isValid(target) then
+			self:CastQ(target)
+		end
+	end
+	if Menu.Combo.E:Value() and isSpellReady(_E) then
+		local target = TargetSelector:GetTarget(Menu.Combo.Erange:Value())
+		if isValid(target) then 
+			self:CastE(target)
+		end
+	end
+end
+
+function Aurora:Harass()
+	if Menu.Harass.Q:Value() and isSpellReady(_Q) and myHero:GetSpellData(_Q).name == "AuroraQ" then
+		local target = TargetSelector:GetTarget(Menu.Combo.Qrange:Value())
+		if isValid(target) then
+			self:CastQ(target)
+		end
+	end
+end
+
+function Aurora:CastQ(unit)
+	local QPrediction = GGPrediction:SpellPrediction(QSpell)
+	QPrediction:GetPrediction(unit, myHero)
+	if QPrediction:CanHit(3) then
+		Control.CastSpell(HK_Q, QPrediction.CastPosition)
+	end
+end
+
+function Aurora:CastE(unit)
+	local EPrediction = GGPrediction:SpellPrediction(ESpell)
+	EPrediction:GetPrediction(unit, myHero)
+	if EPrediction:CanHit(3) then
+		Control.CastSpell(HK_E, EPrediction.CastPosition)
+	end
+end
+
+function Aurora:Draw()
+	if myHero.dead then return end
+	if Menu.Draw.Q:Value() and isSpellReady(_Q) then
+		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and isSpellReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+end
