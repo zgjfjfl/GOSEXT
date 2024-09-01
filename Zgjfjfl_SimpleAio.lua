@@ -1,4 +1,4 @@
-local Version = 2024.16
+local Version = 2024.17
 
 --[ AutoUpdate ]
 
@@ -5251,7 +5251,7 @@ end
 function Urgot:AutoR2()
 	local enemies = ObjectManager:GetEnemyHeroes(R.Range)
 	for i, target in ipairs(enemies) do
-		if isValid(target) and haveBuff(target, "UrgotR") and target.health/target.maxHealth < 0.25 then
+		if isValid(target) and haveBuff(target, "urgotrslow") and target.health/target.maxHealth < 0.25 then
 			if isSpellReady(_R) and myHero:GetSpellData(_R).name == "UrgotRRecast" then
 				Control.CastSpell(HK_R)
 			end
