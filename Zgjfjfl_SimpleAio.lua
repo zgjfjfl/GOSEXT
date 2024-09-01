@@ -1,4 +1,4 @@
-local Version = 2024.17
+local Version = 2024.18
 
 --[ AutoUpdate ]
 
@@ -5133,7 +5133,7 @@ function Urgot:__init()
 	Orbwalker:OnPostAttackTick(function(...) self:OnPostAttackTick(...) end)
 	Q = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.55, Radius = 210, Range = 800, Speed = math.huge, Collision = false}
 	W = { Range = 500 } 
-	E = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.45, Radius = 100, Range = 450, Speed = 1500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	E = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.45, Radius = 100, Range = 450, Speed = 1500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_ENEMYHERO}}
 	R = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 80, Range = 2500, Speed = 3200, Collision = true, CollisionTypes = {GGPrediction.COLLISION_ENEMYHERO}}
 end
 
