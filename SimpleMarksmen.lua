@@ -1,4 +1,4 @@
-local Version = 2024.46
+local Version = 2024.47
 
 --[ AutoUpdate ]
 
@@ -49,7 +49,7 @@ do
 
 end
 
-local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian", "Jinx", "Tristana", "MissFortune", "Jayce", "Kalista", "Ashe", "Corki"}
+local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian", "Jinx", "Tristana", "MissFortune", "Jayce", "Kalista", "Ashe", "Corki", "Caitlyn"}
 
 if not table.contains(Heroes, myHero.charName) then
 	print('SimpleMarksmen not supported ' .. myHero.charName)
@@ -2026,7 +2026,7 @@ function Jinx:LoadMenu()
 	Menu.Misc:MenuElement({id = "EhitChance", name = "E | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "RhitChance", name = "R | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "Ecc", name = "Auto E On 'CC'", toggle = true, value = true})
-	--Menu.Misc:MenuElement({id = "Etp", name = "Auto E On 'TP'", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Etp", name = "Auto E On 'TP'", toggle = true, value = false})
 	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "SemiR", name = "Semi-manual R Key", key = string.byte("T")})
 	Menu.Misc:MenuElement({id = "Rmin", name = "Use R| MinRange >= X", value = 1000, min = 500, max = 2500, step = 100})
@@ -2294,7 +2294,7 @@ function Jinx:AutoE()
 		end
 	end
 
-	--[[ if Menu.Misc.Etp:Value() and IsReady(_E) then
+	if Menu.Misc.Etp:Value() and IsReady(_E) then
 		for i = GameParticleCount(), 1, -1 do
 			local par = GameParticle(i)
 			if
@@ -2305,7 +2305,7 @@ function Jinx:AutoE()
 				break
 			end
 		end
-	end ]]
+	end
 end
 
 function Jinx:SemiR()
@@ -4427,5 +4427,441 @@ function Corki:Draw()
 		else
 			Draw.Circle(myHero.pos, R1Spell.Range+50, 1, Draw.Color(255, 244, 66, 104))
 		end
+	end
+end
+
+---------------------------------------------
+
+class "Caitlyn"
+
+function Caitlyn:__init()
+	print("Marksmen Caitlyn Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.625, Radius = 60, Range = 1250, Speed = 2200, Collision = false}
+	WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 15, Range = 800, Speed = MathHuge, Collision = false}
+	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.15, Radius = 70, Range = 750, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.375, Radius = 40, Range = 3500, Speed = 3200, Collision = false}
+end
+
+function Caitlyn:LoadMenu()
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "QCount", name = "Use Q| Aoe Hit Count >= x", value = 2, min = 1, max = 5, step = 1})
+	Menu.Combo:MenuElement({id = "QRange", name = "Use Q| Min Range >= x", value = 750, min = 500, max = 1000, step = 50})
+	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "WCount", name = "Use W| Keep Ammo Count == x", value = 1, min = 1, max = 3, step = 1})
+	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "RSafe", name = "Use R| Safe Check?", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "RRange", name = "Use R| Min Range >= x", value = 900, min = 500, max = 1500, step = 100})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 5, step = 1})
+	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+	Menu.Flee:MenuElement({id = "E", name = "Use E Dash to Mouse", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
+	Menu.KillSteal:MenuElement({id = "Q", name = "Auto Q KillSteal", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "Qcc", name = "Auto Q on CC", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Wcc", name = "Auto W on CC", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Wgap", name = "Auto W Anti Gapcloser", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Wtp", name = "Auto W on TP", toggle = true, value = false})
+	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Rsm", name = "Semi-manual R Key", key = string.byte("T")})
+	Menu.Misc:MenuElement({id = "EQKey", name = "One Key EQ target(In E Range)", key = string.byte("G")})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw Q Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "Rmin", name = "Draw R Range on minimap", toggle = true, value = false})
+end
+
+function Caitlyn:OnTick()
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+		return
+	end
+
+	if myHero.activeSpell.valid and (myHero.activeSpell.name == "CaitlynQ" or myHero.activeSpell.name == "CaitlynR") then
+		Orbwalker:SetMovement(false)
+		Orbwalker:SetAttack(false)
+	else
+		Orbwalker:SetMovement(true)
+		Orbwalker:SetAttack(true)
+	end
+	if myHero.activeSpell.valid then return end
+	if Menu.Misc.EQKey:Value() then
+		self:OneKeyEQ()
+	end
+	if Menu.Misc.Rsm:Value() and IsReady(_R) then
+		self:OneKeyCastR()
+	end
+
+	self:Auto()
+	self:KillSteal()
+
+	local Mode = GetMode()
+	if Mode == "Combo" then
+		self:Combo()
+	elseif Mode == "Harass" then
+		self:Harass()
+	elseif Mode == "LaneClear" then
+		self:FarmHarass()
+		self:LaneClear()
+		self:JungleClear()
+	elseif Mode == "Flee" then
+		self:Flee()
+	end
+end
+
+function Caitlyn:OneKeyCastR()
+	local Rtarget = GetTarget(RSpell.Range)
+	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
+		Control.CastSpell(HK_R, Rtarget)
+	end
+end
+
+local lastWcc = 0
+local lastWgap = 0
+local lastWtp = 0
+function Caitlyn:Auto()
+	if Menu.Misc.Qcc:Value() and IsReady(_Q) and GetMode() ~= "Combo" and GetMode() ~= "Harass" then
+		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pos2D.onScreen and IsImmobile(target) then
+				if not IsReady(_W) then
+					self:CastGGPred(HK_Q, target)
+				else
+					if myHero.pos:DistanceTo(target.pos) > WSpell.Range then
+						self:CastGGPred(HK_Q, target)
+					end
+				end
+			end
+		end
+	end
+	
+	if Menu.Misc.Wcc:Value() and IsReady(_W) and lastWcc + 3000 < GetTickCount() then
+		for i, target in ipairs(GetEnemyHeroes()) do
+			if target and myHero.pos:DistanceTo(target.pos) <= WSpell.Range then
+				if
+					(not HaveBuff(target, "caitlynwsight") and GetImmobileDuration(target) > 0.5)
+					or IsInvulnerable(target)
+					or HaveBuff(target, "Meditate")
+					or HaveBuff(target, "ChronoRevive")
+				then
+					Control.CastSpell(HK_W, target)
+					lastWcc = GetTickCount()
+				end
+				for j, slot in ipairs(slots) do
+					local Data = target:GetSpellData(slot)
+					if Data.name == "GuardianAngel" and Data.currentCd == 0 and target.health == 0 then
+						Control.CastSpell(HK_W, target)
+						lastWcc = GetTickCount()
+					end
+				end
+			end
+		end
+	end
+	
+	if Menu.Misc.Wgap:Value() and IsReady(_W) and lastWgap + 1500 < GetTickCount() then
+		local enemies = ObjectManager:GetEnemyHeroes(WSpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pathing.isDashing then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
+					Control.CastSpell(HK_W, target.pathing.endPos)
+					lastWgap = GetTickCount()
+				end
+			end	
+		end
+	end
+
+	if Menu.Misc.Egap:Value() and IsReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pathing.isDashing then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
+					self:CastGGPred(HK_E, target)
+				end
+			end	
+		end
+	end
+
+	if Menu.Misc.Wtp:Value() and IsReady(_W) and lastWtp + 4000 < GetTickCount() then
+		local obj = nil
+		local trapNear = false
+		for i = GameParticleCount(), 1, -1 do
+			local par1 = GameParticle(i)
+				if
+				par1 and par1.pos:DistanceTo(myHero.pos) <= WSpell.Range
+ 				and ((par1.name:lower():find("teleport") and par1.name:lower():find("_red")) or par1.name:lower():find("gatemarker_red")) -- TP or TF-R
+			then
+				obj = par1
+				break
+			end
+		end
+		if obj == nil then return end
+		--for i = GameParticleCount(), 1, -1 do
+			--local par2 = GameParticle(i)
+			--if par2 and par2.name:lower():find("trap") and par2.pos:DistanceTo(obj.pos) <= 150 then
+				--trapNear = true
+				--break
+			--end
+		--end
+		--if trapNear then return end
+
+		Control.CastSpell(HK_W, obj)
+		lastWtp = GetTickCount()
+	end
+end
+
+function Caitlyn:KillSteal()
+	if Menu.KillSteal.Q:Value() and IsReady(_Q) then
+		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and (target.health + target.shieldAD) < self:GetQDmg(target) then
+				if Data:IsInAutoAttackRange(myHero, target) and target.health <= Damage:GetAutoAttackDamage(myHero, target) then
+					return
+				end
+				self:CastGGPred(HK_Q, target)
+			end
+		end
+	end
+end
+
+function Caitlyn:Combo()
+	local target = GetTarget(QSpell.Range)
+	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < ESpell.Range then
+			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, ESpell.Speed, ESpell.Delay, ESpell.Radius, ESpell.CollisionTypes, target.networkID)
+			if collisionCount == 0 then
+				if Menu.Combo.Q:Value() and IsReady(_Q) then
+					self:CastGGPred(HK_E, target)
+					DelayAction(function() self:CastGGPred(HK_Q, target) end, ESpell.Delay)
+				else
+					self:CastGGPred(HK_E, target)
+				end
+			else
+				if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) > Menu.Combo.QRange:Value() then
+					self:CastGGPred(HK_Q, target)
+					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, QSpell.Speed, QSpell.Delay, 90, {GGPrediction.COLLISION_ENEMYHERO}, nil)
+					if collisionCount >= Menu.Combo.QCount:Value() then
+						self:CastGGPred(HK_Q, target)
+					end
+				end
+			end
+		end
+
+		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) > Menu.Combo.QRange:Value() then
+			self:CastGGPred(HK_Q, target)
+			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, QSpell.Speed, QSpell.Delay, 90, {GGPrediction.COLLISION_ENEMYHERO}, nil)
+			if collisionCount >= Menu.Combo.QCount:Value() then
+				self:CastGGPred(HK_Q, target)
+			end
+		end
+
+		if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range and myHero:GetSpellData(_W).ammo > Menu.Combo.WCount:Value() then
+			self:CastGGPred(HK_W, target)
+		end
+	end
+
+	if Menu.Combo.R:Value() and IsReady(_R) and lastQ + 1500 < GetTickCount() and lastE + 1500 < GetTickCount() then
+		local Rtarget = GetTarget(RSpell.Range)
+		if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
+			if Menu.Combo.RSafe:Value() and (IsUnderTurret(myHero) or GetEnemyCount(Menu.Combo.RRange:Value(), myHero.pos) > 0) then
+				return
+			end
+			if myHero.pos:DistanceTo(Rtarget.pos) < Menu.Combo.RRange:Value() then
+				return
+			end
+			if (Rtarget.health + Rtarget.shieldAD + Rtarget.hpRegen * 3) > self:GetRDmg(Rtarget) then
+				return
+			end
+			if GetEnemyCount(400, Rtarget.pos) > 1 then
+				return
+			end
+			Control.CastSpell(HK_R, Rtarget)
+		end
+	end
+end
+
+function Caitlyn:Harass()
+	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+		if Menu.Harass.Q:Value() and IsReady(_Q) then
+			local target = GetTarget(QSpell.Range)
+			if IsValid(target) and target.pos2D.onScreen then
+				self:CastGGPred(HK_Q, target)
+			end
+		end
+	end
+end
+
+function Caitlyn:FarmHarass()
+	if Menu.Clear.SpellHarass:Value() then
+		self:Harass()
+	end
+end
+
+function Caitlyn:LaneClear()
+	if IsUnderTurret(myHero) then return end
+	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
+			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+			for i, minion in ipairs(minions) do
+				if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
+					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+					if collisionCount >= Menu.Clear.LaneClear.QCount:Value() then
+						Control.CastSpell(HK_Q, minion)
+						lastQ = GetTickCount()
+					end
+				end
+			end
+		end
+	end
+end
+
+function Caitlyn:JungleClear()
+	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
+			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+			for i, minion in ipairs(minions) do
+				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
+					Control.CastSpell(HK_Q, minion)
+					lastQ = GetTickCount()
+				end
+			end
+		end
+	end
+end
+
+function Caitlyn:Flee()
+	if Menu.Flee.E:Value() and IsReady(_E) then
+		local castPos = myHero.pos - (mousePos - myHero.pos):Normalized() * 200
+		if castPos:To2D().onScreen then
+			Control.CastSpell(HK_E, castPos)
+			lastE = GetTickCount()
+		end
+	end
+end
+
+function Caitlyn:OneKeyEQ()
+	if IsReady(_E) and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
+		local target = GetTarget(ESpell.Range)
+		if IsValid(target) and target.pos2D.onScreen then
+			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, ESpell.Speed, ESpell.Delay, ESpell.Radius, ESpell.CollisionTypes, target.networkID)
+			if collisionCount == 0 then
+				self:CastGGPred(HK_E, target)
+				DelayAction(function() self:CastGGPred(HK_Q, target) end, ESpell.Delay)
+			end
+		end
+	end
+end
+
+function Caitlyn:CastGGPred(spell, unit)
+	if spell == HK_Q then
+		local QPrediction = GGPrediction:SpellPrediction(QSpell)
+		QPrediction:GetPrediction(unit, myHero)
+		if QPrediction:CanHit(3) then
+			Control.CastSpell(HK_Q, QPrediction.CastPosition)
+			lastQ = GetTickCount()
+		end
+	elseif spell == HK_W then
+		local WPrediction = GGPrediction:SpellPrediction(WSpell)
+		WPrediction:GetPrediction(unit, myHero)
+		if WPrediction:CanHit(3) and lastW + 1500 < GetTickCount() then
+			if IsFacingMe(unit) then
+				if unit.range < 300 and myHero.pos:DistanceTo(unit.pos) < Data:GetAutoAttackRange(unit, myHero) + 100 then
+					Control.CastSpell(HK_W, myHero.pos)
+					lastW = GetTickCount()
+				else
+					Control.CastSpell(HK_W, WPrediction.CastPosition)
+					lastW = GetTickCount()
+				end
+			else
+				local castPos = WPrediction.CastPosition + (unit.pos - myHero.pos):Normalized() * 100
+				if myHero.pos:DistanceTo(castPos) <= WSpell.Range then
+					Control.CastSpell(HK_W, castPos)
+					lastW = GetTickCount()
+				end
+			end
+		end
+	elseif spell == HK_E then
+		local EPrediction = GGPrediction:SpellPrediction(ESpell)
+		EPrediction:GetPrediction(unit, myHero)
+		if EPrediction:CanHit(3) then
+			Control.CastSpell(HK_E, EPrediction.CastPosition)
+			lastE = GetTickCount()
+		end	
+	end
+end
+
+function Caitlyn:GetQDmg(target)
+		local level = myHero:GetSpellData(_Q).level
+		local QDmg = ({50, 90, 130, 170, 210})[level] + ({1.25, 1.45, 1.65, 1.85, 2.05})[level] * myHero.totalDamage
+		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
+end
+
+function Caitlyn:GetRDmg(target)
+	local level = myHero:GetSpellData(_R).level
+		local RDmg = (({300, 500, 700})[level] + 1.7 * myHero.bonusDamage) * (1 + 0.5 * myHero.critChance)
+		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
+end
+
+function Caitlyn:Draw()
+	if myHero.dead then return end
+
+	if Menu.Draw.DrawFarm:Value() then
+		if Menu.Clear.SpellFarm:Value() then
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.DrawHarass:Value() then
+		if Menu.Clear.SpellHarass:Value() then
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.Q:Value() and IsReady(_Q) then
+		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+	if Menu.Draw.R:Value() and IsReady(_R) then
+		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+	end
+	if Menu.Draw.Rmin:Value() and IsReady(_R) then
+		Draw.CircleMinimap(myHero.pos, RSpell.Range, 1, Draw.Color(200, 14, 194, 255))
 	end
 end
