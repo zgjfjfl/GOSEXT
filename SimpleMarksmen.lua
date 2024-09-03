@@ -1,4 +1,4 @@
-local Version = 2024.47
+local Version = 2024.48
 
 --[ AutoUpdate ]
 
@@ -4455,6 +4455,7 @@ function Caitlyn:LoadMenu()
 	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "WCount", name = "Use W| Keep Ammo Count == x", value = 1, min = 1, max = 3, step = 1})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "ERange", name = "Use E| Max Range <= x", value = 750, min = 250, max = 750, step = 50})
 	Menu.Combo:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "RSafe", name = "Use R| Safe Check?", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "RRange", name = "Use R| Min Range >= x", value = 900, min = 500, max = 1500, step = 100})
@@ -4479,6 +4480,7 @@ function Caitlyn:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
 	Menu.KillSteal:MenuElement({id = "Q", name = "Auto Q KillSteal", toggle = true, value = true})
+	Menu.KillSteal:MenuElement({id = "E", name = "E + AA KillSteal", toggle = true, value = false})
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "Qcc", name = "Auto Q on CC", toggle = true, value = true})
@@ -4648,12 +4650,20 @@ function Caitlyn:KillSteal()
 			end
 		end
 	end
+	if Menu.KillSteal.E:Value() and IsReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and (target.health + target.shieldAD) < (self:GetEDmg(target) + Damage:GetAutoAttackDamage(myHero, target)) then
+				self:CastGGPred(HK_E, target)
+			end
+		end
+	end
 end
 
 function Caitlyn:Combo()
 	local target = GetTarget(QSpell.Range)
 	if IsValid(target) and target.pos2D.onScreen then
-		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < ESpell.Range then
+		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.ERange:Value() then
 			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, ESpell.Speed, ESpell.Delay, ESpell.Radius, ESpell.CollisionTypes, target.networkID)
 			if collisionCount == 0 then
 				if Menu.Combo.Q:Value() and IsReady(_Q) then
@@ -4819,15 +4829,21 @@ function Caitlyn:CastGGPred(spell, unit)
 end
 
 function Caitlyn:GetQDmg(target)
-		local level = myHero:GetSpellData(_Q).level
-		local QDmg = ({50, 90, 130, 170, 210})[level] + ({1.25, 1.45, 1.65, 1.85, 2.05})[level] * myHero.totalDamage
-		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
+	local level = myHero:GetSpellData(_Q).level
+	local QDmg = ({50, 90, 130, 170, 210})[level] + ({1.25, 1.45, 1.65, 1.85, 2.05})[level] * myHero.totalDamage
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 
 function Caitlyn:GetRDmg(target)
 	local level = myHero:GetSpellData(_R).level
-		local RDmg = (({300, 500, 700})[level] + 1.7 * myHero.bonusDamage) * (1 + 0.5 * myHero.critChance)
-		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
+	local RDmg = (({300, 500, 700})[level] + 1.7 * myHero.bonusDamage) * (1 + 0.5 * myHero.critChance)
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
+end
+
+function Caitlyn:GetEDmg(target)
+	local level = myHero:GetSpellData(_E).level
+	local EDmg = ({80, 130, 180, 230, 280})[level] + 0.8 * myHero.ap
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
 end
 
 function Caitlyn:Draw()
