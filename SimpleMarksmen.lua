@@ -1,4 +1,4 @@
-local Version = 2024.48
+local Version = 2024.49
 
 --[ AutoUpdate ]
 
@@ -355,7 +355,7 @@ local function IsFacingMe(unit)
 	local V = Vector((unit.pos - myHero.pos))
 	local D = Vector(unit.dir)
 	local Angle = 180 - MathDeg(math.acos(V*D/(V:Len()*D:Len())))
-	if MathAbs(Angle) < 90 then 
+	if MathAbs(Angle) < 80 then 
 		return true
 	end
 	return false
@@ -4485,8 +4485,8 @@ function Caitlyn:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "Qcc", name = "Auto Q on CC", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Wcc", name = "Auto W on CC", toggle = true, value = true})
-	Menu.Misc:MenuElement({id = "Wgap", name = "Auto W Anti Gapcloser", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Wtp", name = "Auto W on TP", toggle = true, value = false})
+	Menu.Misc:MenuElement({id = "Wgap", name = "Auto W Anti Gapcloser", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Rsm", name = "Semi-manual R Key", key = string.byte("T")})
 	Menu.Misc:MenuElement({id = "EQKey", name = "One Key EQ target(In E Range)", key = string.byte("G")})
@@ -4520,7 +4520,7 @@ function Caitlyn:OnTick()
 	if Menu.Misc.Rsm:Value() and IsReady(_R) then
 		self:OneKeyCastR()
 	end
-
+	self:AntiGapcloser()
 	self:Auto()
 	self:KillSteal()
 
@@ -4548,6 +4548,30 @@ end
 local lastWcc = 0
 local lastWgap = 0
 local lastWtp = 0
+function Caitlyn:AntiGapcloser()
+	if Menu.Misc.Egap:Value() and IsReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pathing.isDashing then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
+					self:CastGGPred(HK_E, target)
+				end
+			end	
+		end
+	end
+	if Menu.Misc.Wgap:Value() and IsReady(_W) and lastWgap + 1500 < GetTickCount() then
+		local enemies = ObjectManager:GetEnemyHeroes(WSpell.Range)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pathing.isDashing then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
+					Control.CastSpell(HK_W, target.pathing.endPos)
+					lastWgap = GetTickCount()
+				end
+			end	
+		end
+	end
+end
+
 function Caitlyn:Auto()
 	if Menu.Misc.Qcc:Value() and IsReady(_Q) and GetMode() ~= "Combo" and GetMode() ~= "Harass" then
 		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
@@ -4584,29 +4608,6 @@ function Caitlyn:Auto()
 					end
 				end
 			end
-		end
-	end
-	
-	if Menu.Misc.Wgap:Value() and IsReady(_W) and lastWgap + 1500 < GetTickCount() then
-		local enemies = ObjectManager:GetEnemyHeroes(WSpell.Range)
-		for i, target in ipairs(enemies) do
-			if IsValid(target) and target.pathing.isDashing then
-				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
-					Control.CastSpell(HK_W, target.pathing.endPos)
-					lastWgap = GetTickCount()
-				end
-			end	
-		end
-	end
-
-	if Menu.Misc.Egap:Value() and IsReady(_E) then
-		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
-		for i, target in ipairs(enemies) do
-			if IsValid(target) and target.pathing.isDashing then
-				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
-					self:CastGGPred(HK_E, target)
-				end
-			end	
 		end
 	end
 
