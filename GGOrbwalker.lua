@@ -1460,7 +1460,7 @@ Damage = {
 			args.RawPhysical = args.RawTotal
 			local level = args.From.levelData.lvl
 			if Buff:HasBuff(myHero, "zeriqpassiveready") then
-				args.RawMagical = 90 + (110 / 17) * (level - 1) * (0.7025 + 0.0175 * (level - 1)) + args.From.ap * 1.1
+				args.RawMagical = 70 + 5 * level + args.From.ap * 1.1
 			else
 				args.RawMagical = 10 + (15 / 17) * (level - 1) * (0.7025 + 0.0175 * (level-1)) + args.From.ap * 0.03
 			end
@@ -1700,10 +1700,10 @@ Damage = {
 			local level = args.From.levelData.lvl
 			if Buff:HasBuff(myHero, "zeriqpassiveready") then
 				args.RawMagical = args.RawMagical
-					+ (1 + (14 / 17) * (level - 1) * (0.7025 + 0.0175 * (level - 1))) / 100 * args.Target.maxHealth
+					+ (1 + (10 / 17) * (level - 1)) / 100 * args.Target.maxHealth
 			else
 				if args.Target.health < 60 + (90 / 17) * (level - 1) + args.From.ap * 0.18 then
-					args.RawMagical = 60 + (90 / 17) * (level - 1) + args.From.ap * 0.18  --args.RawMagical * 6
+					args.RawMagical = 9999 --(Execute targets, < this health)
 				end
 			end
 			if args.Target.team == 300 then

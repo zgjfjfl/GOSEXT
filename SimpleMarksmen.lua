@@ -1,4 +1,4 @@
-local Version = 2024.49
+local Version = 2024.50
 
 --[ AutoUpdate ]
 
@@ -978,7 +978,7 @@ end
 function Smolder:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	if level > 0 then
-		local QDmg = (({20, 30, 40, 50, 60})[level] + myHero.totalDamage + 0.15 * myHero.ap) * (1 + 0.75 * myHero.critChance)
+		local QDmg = (({15, 25, 35, 45, 55})[level] + myHero.totalDamage + 0.15 * myHero.ap) * (1 + 0.75 * myHero.critChance)
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 	else
 		return 0
@@ -4488,6 +4488,7 @@ function Caitlyn:LoadMenu()
 	Menu.Misc:MenuElement({id = "Wtp", name = "Auto W on TP", toggle = true, value = false})
 	Menu.Misc:MenuElement({id = "Wgap", name = "Auto W Anti Gapcloser", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "EgapRange", name = "AntiGap E Range(dash endPos form self < X)", value = 300, min = 0, max = 600, step = 50})
 	Menu.Misc:MenuElement({id = "Rsm", name = "Semi-manual R Key", key = string.byte("T")})
 	Menu.Misc:MenuElement({id = "EQKey", name = "One Key EQ target(In E Range)", key = string.byte("G")})
 
@@ -4553,7 +4554,8 @@ function Caitlyn:AntiGapcloser()
 		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing then
-				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
+				local endPos = Vector(target.pathing.endPos)
+				if myHero.pos:DistanceTo(endPos) < Menu.Misc.EgapRange:Value() and IsFacingMe(target) then
 					self:CastGGPred(HK_E, target)
 				end
 			end	
