@@ -1,4 +1,4 @@
-local Version = 2024.50
+local Version = 2024.51
 
 --[ AutoUpdate ]
 
@@ -94,7 +94,7 @@ local lastW = 0
 local lastE = 0
 local lastR = 0
 
-local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data, Cursor
+local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, ItemManager, Attack, Damage, Spell, Data, Cursor
 
 Callback.Add("Load", function()
 
@@ -102,6 +102,7 @@ Callback.Add("Load", function()
 	TargetSelector = _G.SDK.TargetSelector
 	ObjectManager = _G.SDK.ObjectManager
 	HealthPrediction = _G.SDK.HealthPrediction
+	ItemManager = _G.SDK.ItemManager
 	Attack = _G.SDK.Attack
 	Damage = _G.SDK.Damage
 	Spell = _G.SDK.Spell
@@ -668,7 +669,7 @@ end
 
 function Nilah:GetEDmg(target)
 	local elvl = myHero:GetSpellData(_E).level
-	local ebaseDmg = 40 + elvl * 25
+	local ebaseDmg = 50 + elvl * 10
 	local eadDmg = myHero.bonusDamage * 0.2
 	local eDmg = ebaseDmg + eadDmg
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg)
@@ -826,7 +827,7 @@ function Smolder:OnPreAttack(args)
 	local target = args.Target
 	local QTotalDmg = self:GetQDmg(target) + self:GetPQDmg(target)
 	if target.type == Obj_AI_Minion then
-		if (Mode == "LaneClear" or Mode == "Harass" or Mode == "LastHit") and target.health < QTotalDmg * 1.1 and IsReady(_Q) then
+		if (Mode == "LaneClear" or Mode == "Harass" or Mode == "LastHit") and target.health < QTotalDmg and IsReady(_Q) then
 			args.Process = false
 		else
 			args.Process = true
@@ -978,7 +979,7 @@ end
 function Smolder:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	if level > 0 then
-		local QDmg = (({15, 25, 35, 45, 55})[level] + myHero.totalDamage + 0.15 * myHero.ap) * (1 + 0.75 * myHero.critChance)
+		local QDmg = (({65, 80, 95, 110, 125})[level] + 1.3 * myHero.bonusDamage) * (1 + 0.75 * myHero.critChance)
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 	else
 		return 0
@@ -988,7 +989,7 @@ end
 function Smolder:GetPQDmg(target)
 	local PassiveStacks = GetBuffData(myHero, "SmolderQPassive").stacks
 	if PassiveStacks then
-		local Dmg = (0.4 * (1 + 0.75 * myHero.critChance)) * PassiveStacks
+		local Dmg = (0.3 * (1 + 0.75 * myHero.critChance)) * PassiveStacks
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
 	else
 		return 0
@@ -1002,7 +1003,7 @@ function Smolder:LastHit()
 			if IsValid(minion) and minion.pos2D.onScreen then
 				local QTotalDmg = self:GetQDmg(minion) + self:GetPQDmg(minion)
 				local hp = HealthPrediction:GetPrediction(minion, QSpell.Delay + myHero.pos:DistanceTo(minion.pos)/QSpell.Speed)
-				if QTotalDmg * 1.1 > hp then
+				if QTotalDmg > hp then
 					Control.CastSpell(HK_Q, minion)
 				end
 			end
@@ -2346,7 +2347,7 @@ end
 
 function Jinx:GetWDmg(target)
 	local level = myHero:GetSpellData(_W).level
-	local WDmg = ({10, 60, 110, 160, 210})[level] + 1.6 * myHero.totalDamage
+	local WDmg = ({10, 60, 110, 160, 210})[level] + 1.4 * myHero.totalDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, WDmg)
 end
 
@@ -2491,7 +2492,7 @@ end
 
 function Tristana:OnTick()
 
-	AAERRange = 517 + (8 * myHero.levelData.lvl) + myHero.boundingRadius
+	AAERRange = 550 + (150 / 17 * (myHero.levelData.lvl - 1)) + myHero.boundingRadius
 	--E.Delay = myHero.attackData.windUpTime
 	
 	self:ForceE()
@@ -2587,20 +2588,21 @@ function Tristana:GetEDmg(unit)
 	local Edmg = 0
 	local hasbuff = HaveBuff(unit, "tristanaecharge")
 	local count = GetBuffData(unit, "tristanaecharge").count
+	local hasIE = ItemManager:HasItem(myHero, 3031)
 
 	if hasbuff then
-		local EbaseDmg = ({70, 80, 90, 100,110})[myHero:GetSpellData(_E).level]
-		local Ead = myHero.bonusDamage * ({0.5, 0.75, 1, 1.25, 1.5})[myHero:GetSpellData(_E).level]
+		local EbaseDmg = ({60, 70, 80, 90, 100})[myHero:GetSpellData(_E).level]
+		local Ead = myHero.bonusDamage * ({1.0, 1.1, 1.2, 1.3, 1.4})[myHero:GetSpellData(_E).level]
 		local Eap = myHero.ap * 0.5
-		local Evalue = (EbaseDmg + Ead+ Eap) * (count * 0.3 + 1) * (myHero.critChance * 0.3333 + 1)
+		local Evalue = (EbaseDmg + Ead+ Eap) * (count * 0.25 + 1) * (myHero.critChance * (hasIE and 1.15 or 0.75) + 1)
 		Edmg = Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_PHYSICAL, Evalue)
 	end
 	return Edmg
 end
 
 function Tristana:GetRDmg(unit)
-	local baseDmg = ({300, 400, 500})[myHero:GetSpellData(_R).level]
-	local bonusDmg = myHero.ap * 1
+	local baseDmg = ({275, 325, 375})[myHero:GetSpellData(_R).level]
+	local bonusDmg = myHero.bonusDamage * 0.7 + myHero.ap * 1
 	local Rvalue = baseDmg + bonusDmg
 	local Rdmg = Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_MAGICAL, Rvalue)
 	return Rdmg
@@ -4839,7 +4841,7 @@ end
 
 function Caitlyn:GetRDmg(target)
 	local level = myHero:GetSpellData(_R).level
-	local RDmg = (({300, 500, 700})[level] + 1.7 * myHero.bonusDamage) * (1 + 0.5 * myHero.critChance)
+	local RDmg = (({300, 500, 700})[level] + 1.0 * myHero.bonusDamage) * (1 + 0.5 * myHero.critChance)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
 end
 

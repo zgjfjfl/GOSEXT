@@ -1,4 +1,4 @@
-local Version = 2024.18
+local Version = 2024.19
 
 --[ AutoUpdate ]
 
@@ -72,7 +72,7 @@ local GameMinionCount = Game.MinionCount
 local GameMinion = Game.Minion
 local GameMissileCount = Game.MissileCount
 local GameMissile = Game.Missile
-local IsWall = Game.isWall
+local GameIsWall = Game.isWall
 local TableInsert = table.insert
 local TableRemove = table.remove
 
@@ -813,12 +813,20 @@ function JarvanIV:Combo()
 			local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), offset)
 			if Menu.Combo.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
 				if myHero.pos:DistanceTo(castPos) <= self.eSpell.Range then
-					Control.CastSpell(HK_E, castPos)
-					Orbwalker:SetMovement(false)
-					Orbwalker:SetAttack(false)
-					DelayAction(function() Control.CastSpell(HK_Q, castPos) end, 0.1)
-					Orbwalker:SetMovement(true)
-					Orbwalker:SetAttack(true)
+					Control.SetCursorPos(castPos)
+					DelayAction(function() 
+						Control.KeyDown(HK_E)
+						Control.KeyUp(HK_E)
+						Orbwalker:SetMovement(false)
+						Orbwalker:SetAttack(false)
+						DelayAction(function()
+							Control.KeyDown(HK_Q)
+							Control.KeyUp(HK_Q)
+							Control.SetCursorPos(mousePos)
+							Orbwalker:SetMovement(true)
+							Orbwalker:SetAttack(true)
+						end, 0.05)
+					end, 0.05)
 				end
 			end
 		end
@@ -926,8 +934,16 @@ end
 function JarvanIV:Flee()
 	if Menu.Flee.EQ:Value() and isSpellReady(_Q) and isSpellReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
 		local pos = myHero.pos + (mousePos - myHero.pos):Normalized() * self.eSpell.Range
-		Control.CastSpell(HK_E, pos)
-		DelayAction(function() Control.CastSpell(HK_Q, pos) end, 0.1)
+		Control.SetCursorPos(pos)
+		DelayAction(function() 
+			Control.KeyDown(HK_E)
+			Control.KeyUp(HK_E)
+			DelayAction(function()
+				Control.KeyDown(HK_Q)
+				Control.KeyUp(HK_Q)
+				Control.SetCursorPos(mousePos)
+			end, 0.05)
+		end, 0.05)
 	end
 
 	local target = TargetSelector:GetTarget(self.wSpell.Range)
@@ -1034,13 +1050,13 @@ function Poppy:Combo()
 		for dis = 20, Menu.Combo.ED:Value(), 20 do
 			local endPos = target.pos:Extended(myHero.pos, -dis)
 			if Menu.Combo.E:Value() and isSpellReady(_E) and lastE + 250 < GetTickCount() and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
-				if IsWall == nil then
+				if GameIsWall == nil then
 					if MapPosition:inWall(endPos) then
 						Control.CastSpell(HK_E, target)
 						lastE = GetTickCount()
 					end
 				else
-					if IsWall(endPos) then
+					if GameIsWall(endPos) then
 						Control.CastSpell(HK_E, target)
 						lastE = GetTickCount()
 					end
@@ -1974,7 +1990,7 @@ end
 
 function Nasus:getqDmg(target)
 	local qlvl = myHero:GetSpellData(_Q).level
-	local qbaseDmg = 20 * qlvl + 20
+	local qbaseDmg = 20 * qlvl + 15
 	local qDmg = qbaseDmg + getBuffData(myHero, "NasusQStacks").stacks + myHero.totalDamage
 return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
@@ -3410,7 +3426,7 @@ function KSante:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:onTick() end)
-	self.q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.45, Radius = 75, Range = 450, Speed = math.huge, Collision = false}
+	self.q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.45, Radius = 50, Range = 450, Speed = math.huge, Collision = false}
 	self.q3Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.45, Radius = 70, Range = 800, Speed = 1600, Collision = false}
 	self.wSpell = { Range = 600 }
 	self.e1Spell = { Range = 250 }
@@ -3457,12 +3473,14 @@ function KSante:onTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
 		return
 	end
-	local baseHP, hpPerLevel = myHero.baseHP, myHero.hpPerLevel
-	local bonusHealth = math.min(math.floor(myHero.maxHealth - (baseHP + hpPerLevel * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1600)
-	local time = math.floor(bonusHealth / 8000 * 100) / 100
+	-- local baseHP, hpPerLevel = myHero.baseHP, myHero.hpPerLevel
+	-- local bonusHealth = math.min(math.floor(myHero.maxHealth - (baseHP + hpPerLevel * (myHero.levelData.lvl - 1) * (0.7025 + 0.0175 * (myHero.levelData.lvl - 1)))), 1600)
+	-- local time = math.floor(bonusHealth / 8000 * 100) / 100
+	local bonusResist = myHero.bonusArmor + myHero.bonusMagicResist
+	local time = math.floor((math.min(bonusResist, 120) * 0.00083) * 100) / 100
 	--print(time)
-	self.q1Spell.Delay = 0.45 - time
-	self.q3Spell.Delay = 0.45 - time
+	self.q1Spell.Delay = math.max(0.35, 0.45 - time)
+	self.q3Spell.Delay = math.max(0.35, 0.45 - time)
 	if doesMyChampionHaveBuff("KSanteQ3") then
 		self.qSpell = self.q3Spell
 	else
@@ -3667,10 +3685,9 @@ end
 
 function KSante:getqDmg(unit)
 	local qlvl = myHero:GetSpellData(_Q).level
-	local qbaseDmg = 25 * qlvl + 5
-	local qadDmg = myHero.totalDamage * 0.4
-	local qextDmg = myHero.bonusArmor * 0.3 + myHero.bonusMagicResist * 0.3
-	local qDmg = qbaseDmg + qadDmg + qextDmg
+	local qbaseDmg = 30 * qlvl + 40
+	local qextDmg = myHero.bonusArmor * 0.40 + myHero.bonusMagicResist * 0.40
+	local qDmg = qbaseDmg + qextDmg
 return Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
 
@@ -5326,8 +5343,8 @@ function Aurora:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 90, Range = 850, Speed = 1600, Collision = false}
-	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 80, Range = 850, Speed = MathHuge, Collision = false}
+	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 90, Range = 900, Speed = 1600, Collision = false}
+	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 80, Range = 825, Speed = MathHuge, Collision = false}
 end
 
 function Aurora:LoadMenu()
@@ -5335,9 +5352,9 @@ function Aurora:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo(when spell ready)", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "Qrange", name = "Q Max Range", value = 800, min = 550, max = 850, step = 10})
+	Menu.Combo:MenuElement({id = "Qrange", name = "Q Max Range", value = 850, min = 550, max = 900, step = 10})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "Erange", name = "E Max Range", value = 750, min = 550, max = 850, step = 10})
+	Menu.Combo:MenuElement({id = "Erange", name = "E Max Range", value = 775, min = 550, max = 825, step = 10})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -5412,7 +5429,7 @@ function Aurora:AntiGapcloser()
 				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
 					self:CastE(target)
 				end
-			end	
+			end
 		end
 	end
 end

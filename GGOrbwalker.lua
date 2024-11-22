@@ -1,4 +1,4 @@
-local __version__ = 3.048
+local __version__ = 3.049
 local __name__ = "GGOrbwalker"
 
 if _G.GGUpdate then
@@ -1580,7 +1580,7 @@ Damage = {
 		["Varus"] = function(args)
 			local level = args.From:GetSpellData(_W).level
 			if level > 0 then
-				args.RawMagical = args.RawMagical + 5 * level + 0.35 * args.From.ap
+				args.RawMagical = args.RawMagical + (5 * level + 3) + 0.35 * args.From.ap
 			end
 		end,
 		["Viktor"] = function(args)
@@ -1610,11 +1610,12 @@ Damage = {
 			-- args.RawMagical = args.RawMagical + 30
 		-- end,
 		[3091] = function(args)
-			local t = { 15, 15, 15, 15, 15, 15, 15, 15, 25, 35, 45, 55, 65, 75, 76.25, 77.5, 78.75, 80 }
-			args.RawMagical = args.RawMagical + t[math_max(math_min(args.From.levelData.lvl, 18), 1)]
+			-- local t = { 15, 15, 15, 15, 15, 15, 15, 15, 25, 35, 45, 55, 65, 75, 76.25, 77.5, 78.75, 80 }
+			-- args.RawMagical = args.RawMagical + t[math_max(math_min(args.From.levelData.lvl, 18), 1)]
+			args.RawMagical = args.RawMagical + 45
 		end,
 		[3115] = function(args)
-			args.RawMagical = args.RawMagical + 15 + 0.2 * args.From.ap
+			args.RawMagical = args.RawMagical + 15 + 0.15 * args.From.ap
 		end,
 		[3124] = function(args)
 			args.RawMagical = args.RawMagical + 30
@@ -1643,7 +1644,7 @@ Damage = {
 		-- end,
 		[3094] = function(args)
 			if Buff:GetBuffStacks(args.From, "itemstatikshankcharge") == 100 then
-				args.RawMagical = args.RawMagical + 60
+				args.RawMagical = args.RawMagical + 40
 			end
 		end,
 		-- [3095] = function(args)
@@ -1678,7 +1679,7 @@ Damage = {
 		-- end,
 		[3100] = function(args)
 			if Buff:HasBuff(args.From, "lichbane") then
-				args.RawMagical = args.RawMagical + 0.75 * args.From.baseDamage + 0.45 * args.From.ap
+				args.RawMagical = args.RawMagical + 0.75 * args.From.baseDamage + 0.4 * args.From.ap
 			end
 		end,
 	},
@@ -2254,13 +2255,14 @@ Data = {
 		end,
 	},
 
-	--14.09
+	--14.22
 	HEROES = {
 		Aatrox = { 3, true, 0.651 },
 		Ahri = { 4, false, 0.668 },
 		Akali = { 4, true, 0.625 },
 		Akshan = { 5, false, 0.638 },
 		Alistar = { 1, true, 0.625 },
+		Ambessa = { 2, true, 0.625 },
 		Amumu = { 1, true, 0.736 },
 		Anivia = { 4, false, 0.625 },
 		Annie = { 4, false, 0.61 },
@@ -2354,7 +2356,7 @@ Data = {
 		Orianna = { 4, false, 0.658 },
 		Ornn = { 2, true, 0.625 },
 		Pantheon = { 3, true, 0.658 },
-		Poppy = { 2, true, 0.625 },
+		Poppy = { 2, true, 0.658 },
 		Pyke = { 4, true, 0.667 },
 		Qiyana = { 4, true, 0.688 },
 		Quinn = { 5, false, 0.668 },
@@ -2445,7 +2447,7 @@ Data = {
 	},
 
 	IsAttackSpell = {
-		["CaitlynHeadshotMissile"] = true,
+		["CaitlynPassiveMissile"] = true,
 		["GarenQAttack"] = true,
 		["KennenMegaProc"] = true,
 		["QuinnWEnhanced"] = true,
