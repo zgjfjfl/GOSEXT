@@ -1,4 +1,4 @@
-local Version = 2024.51
+local Version = 2024.52
 
 --[ AutoUpdate ]
 
@@ -2302,7 +2302,7 @@ function Jinx:AutoE()
 				par and par.pos:DistanceTo(myHero.pos) <= ESpell.Range
  				and ((par.name:lower():find("teleport") and par.name:lower():find("_red")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
 			then
-				Control.CastSpell(HK_W, par)
+				Control.CastSpell(HK_E, par)
 				break
 			end
 		end
@@ -4616,30 +4616,17 @@ function Caitlyn:Auto()
 	end
 
 	if Menu.Misc.Wtp:Value() and IsReady(_W) and lastWtp + 4000 < GetTickCount() then
-		local obj = nil
-		local trapNear = false
 		for i = GameParticleCount(), 1, -1 do
-			local par1 = GameParticle(i)
+			local par = GameParticle(i)
 				if
-				par1 and par1.pos:DistanceTo(myHero.pos) <= WSpell.Range
- 				and ((par1.name:lower():find("teleport") and par1.name:lower():find("_red")) or par1.name:lower():find("gatemarker_red")) -- TP or TF-R
+				par and par.pos:DistanceTo(myHero.pos) <= WSpell.Range
+ 				and ((par.name:lower():find("teleport") and par.name:lower():find("_red")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
 			then
-				obj = par1
+				Control.CastSpell(HK_W, par)
+				lastWtp = GetTickCount()
 				break
 			end
 		end
-		if obj == nil then return end
-		--for i = GameParticleCount(), 1, -1 do
-			--local par2 = GameParticle(i)
-			--if par2 and par2.name:lower():find("trap") and par2.pos:DistanceTo(obj.pos) <= 150 then
-				--trapNear = true
-				--break
-			--end
-		--end
-		--if trapNear then return end
-
-		Control.CastSpell(HK_W, obj)
-		lastWtp = GetTickCount()
 	end
 end
 
