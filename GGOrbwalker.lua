@@ -1,4 +1,4 @@
-local __version__ = 3.049
+local __version__ = 3.050
 local __name__ = "GGOrbwalker"
 
 if _G.GGUpdate then
@@ -1584,9 +1584,9 @@ Damage = {
 			end
 		end,
 		["Viktor"] = function(args)
-			if Buff:HasBuff(args.From, "ViktorPowerTransferReturn") then
+			if Buff:HasBuff(args.From, "ViktorQReturn") then
 				args.DamageType = DAMAGE_TYPE_MAGICAL
-				args.RawMagical = args.RawMagical + 20 * args.From:GetSpellData(_Q).level + 0.5 * args.From.ap
+				args.RawMagical = args.RawMagical + (25 * args.From:GetSpellData(_Q).level - 5) + 0.6 * args.From.ap
 			end
 		end,
 		["Vayne"] = function(args)
@@ -2218,7 +2218,7 @@ Data = {
 			return nil
 		end,
         ["Viktor"] = function()
-            if Buff:HasBuff(myHero, "ViktorPowerTransferReturn") then
+            if Buff:HasBuff(myHero, "ViktorQReturn") then
                 return 5000
             end
             return nil
@@ -2447,6 +2447,7 @@ Data = {
 	},
 
 	IsAttackSpell = {
+		["ViktorQBuff"] = true,
 		["CaitlynPassiveMissile"] = true,
 		["GarenQAttack"] = true,
 		["KennenMegaProc"] = true,
