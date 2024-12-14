@@ -1,4 +1,4 @@
-local Version = 2024.52
+local Version = 2024.53
 
 --[ AutoUpdate ]
 
@@ -384,6 +384,22 @@ local function FindFirstWallCollision(startPos, endPos)
 			return checkPos
 		end
 	end
+	return nil
+end
+
+local function FindFirstWallCollisionInRectangle(startPos, endPos, width)
+	local direction = (endPos - startPos):Normalized()
+	local distance = startPos:DistanceTo(endPos)
+	local perpDirection = direction:Perpendicular()
+	for i = 0, distance, 10 do
+		local centerPos = startPos + direction * i
+		for j = -width/2, width/2, 10 do
+			local checkPos = centerPos + perpDirection * j
+			if GameIsWall(checkPos) then
+				return checkPos
+			end
+		end
+	end 
 	return nil
 end
 
@@ -1407,7 +1423,7 @@ function Zeri:CastW(target)
 		if GameIsWall == nil then
 			wallColPos = MapPosition:getIntersectionPoint3D(myHero.pos, predPos)
 		else
-			wallColPos = FindFirstWallCollision(myHero.pos, predPos)
+			wallColPos = FindFirstWallCollisionInRectangle(myHero.pos, predPos, WSpell.Radius)
 		end
 	end
 
@@ -2428,6 +2444,7 @@ function Tristana:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "ForceE", name = "Focus target with E", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Rgap", name = "Auto R Anti Gapcloser", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "RgapRange", name = "AntiGap R Range(dash endPos form self < X)", value = 300, min = 0, max = 600, step = 50})
 	Menu.Misc:MenuElement({id = "SemiR", name = "Semi-manual R Key", key = string.byte("T")})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
@@ -2536,11 +2553,11 @@ function Tristana:ForceE()
 		if IsValid(enemy) and enemy.pos2D.onScreen then
 			if Menu.Misc.ForceE:Value() and HaveBuff(enemy, "tristanaechargesound") and myHero.pos:DistanceTo(enemy.pos) <= AAERRange + enemy.boundingRadius then
 				Orbwalker.ForceTarget = enemy
-			else
-				Orbwalker.ForceTarget = nil
+				return
 			end
 		end
 	end
+	Orbwalker.ForceTarget = nil
 end
 
 function Tristana:AntiGapcloser()
@@ -2548,7 +2565,7 @@ function Tristana:AntiGapcloser()
 		local enemies = ObjectManager:GetEnemyHeroes(1000)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing then
-				if myHero.pos:DistanceTo(target.pathing.endPos) < 300 then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < Menu.Misc.RgapRange:Value() and IsFacingMe(target) then
 					Control.CastSpell(HK_R, target)
 				end
 			end	
@@ -2784,7 +2801,7 @@ function MissFortune:newTarget()
 						break
 					end
 				end
-				if ta and Data:IsInAutoAttackRange(myHero, ta) then
+				if ta then
 					Orbwalker.ForceTarget = ta
 				else
 					Orbwalker.ForceTarget = nil
@@ -2794,6 +2811,9 @@ function MissFortune:newTarget()
 			end
 		end
 	else
+		Orbwalker.ForceTarget = nil
+	end
+	if Orbwalker.ForceTarget and not Data:IsInAutoAttackRange(myHero, Orbwalker.ForceTarget) then
 		Orbwalker.ForceTarget = nil
 	end
 end
