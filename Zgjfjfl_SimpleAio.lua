@@ -1,4 +1,4 @@
-local Version = 2024.20
+local Version = 2024.21
 
 --[ AutoUpdate ]
 
@@ -5489,7 +5489,7 @@ end
 class "Ambessa"
 
 function Ambessa:__init()
-	print("zgjfjfl Ambessa Loaded") 
+	print("Simple Ambessa Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
