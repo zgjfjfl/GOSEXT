@@ -1,4 +1,4 @@
-local Version = 2024.19
+local Version = 2024.20
 
 --[ AutoUpdate ]
 
@@ -51,7 +51,7 @@ end
 
 local Heroes = {"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", 
 				"Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai", "Gragas", "Milio", "AurelionSol", "Heimerdinger", 
-				"Briar", "Urgot", "Aurora"}
+				"Briar", "Urgot", "Aurora", "Ambessa"}
 
 if not table.contains(Heroes, myHero.charName) then
 	print('SimpleAio not supported ' .. myHero.charName)
@@ -5481,5 +5481,181 @@ function Aurora:Draw()
 	end
 	if Menu.Draw.E:Value() and isSpellReady(_E) then
 		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+end
+
+----------------------------
+
+class "Ambessa"
+
+function Ambessa:__init()
+	print("zgjfjfl Ambessa Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	Q1Spell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.225, Radius = 100, Range = 375, Speed = MathHuge, Collision = false}
+	Q2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.225, Radius = 15, Range = 650, Speed = MathHuge, Collision = false}
+	WSpell = { Range = 325 }
+	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.225, Radius = 100, Range = 325, Speed = MathHuge, Collision = false}
+	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 15, Range = 1250, Speed = MathHuge, Collision = false}
+end
+
+function Ambessa:LoadMenu()
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Q2", name = "Use Q2", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Rsm", name = "Semi-manual R Key", key = string.byte("T")})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "Q2", name = "Use Q2", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+	Menu.Flee:MenuElement({id = "Q", name = "Use Q Dash to Mouse", toggle = true, value = true})
+	Menu.Flee:MenuElement({id = "W", name = "Use W Dash to Mouse", toggle = true, value = true})
+	Menu.Flee:MenuElement({id = "E", name = "Use E Dash to Mouse", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw Q Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
+end
+
+function Ambessa:OnTick()
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
+		return
+	end
+
+	if Menu.Combo.Rsm:Value() and isSpellReady(_R) then
+		self:OneKeyCastR()
+	end
+
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		self:Combo()
+	elseif Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	elseif Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+		self:Flee()
+	end
+end
+
+function Ambessa:OneKeyCastR()
+	local Rtarget = TargetSelector:GetTarget(RSpell.Range)
+	if isValid(Rtarget) and Rtarget.pos2D.onScreen then
+		Control.CastSpell(HK_R, Rtarget)
+	end
+end
+
+function Ambessa:Combo()
+	local target = TargetSelector:GetTarget(Data:GetAutoAttackRange(myHero))
+	local hasPassiveAA = isValid(target) and haveBuff(target, "AmbessaPassiveAttackEmpower")
+	if hasPassiveAA then
+		return
+	end
+	if Menu.Combo.W:Value() and isSpellReady(_W) then
+		local target = TargetSelector:GetTarget(WSpell.Range)
+		if isValid(target) and target.pos2D.onScreen then
+			Control.CastSpell(HK_W, target)
+		end
+	end
+	if Menu.Combo.E:Value() and isSpellReady(_E) then
+	local target = TargetSelector:GetTarget(ESpell.Range)
+		if isValid(target) and target.pos2D.onScreen then
+			self:CastGGPred(HK_E, target)
+		end
+	end
+	if Menu.Combo.Q:Value() and isSpellReady(_Q) then
+		local target = TargetSelector:GetTarget(Q1Spell.Range)
+		if isValid(target) and target.pos2D.onScreen then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+	if Menu.Combo.Q2:Value() and isSpellReady(_Q) and haveBuff(myHero, "AmbessaQEmpowerReady") then
+		local target = TargetSelector:GetTarget(Q2Spell.Range)
+		if isValid(target) and target.pos2D.onScreen then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+end
+
+function Ambessa:Harass()
+	if Menu.Harass.Q:Value() and isSpellReady(_Q) then
+		local target = TargetSelector:GetTarget(Q1Spell.Range)
+		if isValid(target) and target.pos2D.onScreen then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+	if Menu.Harass.Q2:Value() and isSpellReady(_Q) and haveBuff(myHero, "AmbessaQEmpowerReady") then
+		local target = TargetSelector:GetTarget(Q2Spell.Range)
+		if isValid(target) and target.pos2D.onScreen then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+end
+
+local lastCastTime = 0
+local CAST_DELAY = 0.5
+function Ambessa:Flee()
+	local currentTime = Game.Timer()
+	if currentTime - lastCastTime < CAST_DELAY then
+		return
+	end
+	if Menu.Flee.Q:Value() and isSpellReady(_Q) then
+		Control.CastSpell(HK_Q, mousePos)
+		lastCastTime = currentTime
+		return 
+	end
+	if Menu.Flee.W:Value() and isSpellReady(_W) then
+		Control.CastSpell(HK_W, mousePos)
+		lastCastTime = currentTime
+		return 
+	end
+	if Menu.Flee.E:Value() and isSpellReady(_E) then
+		Control.CastSpell(HK_E, mousePos)
+		lastCastTime = currentTime
+		return 
+	end
+end
+
+function Ambessa:CastGGPred(spell, unit)
+	if spell == HK_Q then
+		local QPrediction = GGPrediction:SpellPrediction(haveBuff(myHero, "AmbessaQEmpowerReady") and Q2Spell or Q1Spell)
+		QPrediction:GetPrediction(unit, myHero)
+		if QPrediction:CanHit(3) then
+			Control.CastSpell(HK_Q, QPrediction.CastPosition)
+		end
+	elseif spell == HK_E then
+		local EPrediction = GGPrediction:SpellPrediction(ESpell)
+		EPrediction:GetPrediction(unit, myHero)
+		if EPrediction:CanHit(3) then
+			Control.CastSpell(HK_E, EPrediction.CastPosition)
+		end
+	elseif spell == HK_R then
+		local RPrediction = GGPrediction:SpellPrediction(RSpell)
+		RPrediction:GetPrediction(unit, myHero)
+		if RPrediction:CanHit(3) then
+			Control.CastSpell(HK_R, RPrediction.CastPosition)
+		end	
+	end
+end
+
+function Ambessa:Draw()
+	if myHero.dead then return end
+	if Menu.Draw.Q:Value() and isSpellReady(_Q) then
+		Draw.Circle(myHero.pos, haveBuff(myHero, "AmbessaQEmpowerReady") and Q2Spell.Range or Q1Spell.Range, 1, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.W:Value() and isSpellReady(_W) then
+		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+	end
+	if Menu.Draw.E:Value() and isSpellReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+	end
+	if Menu.Draw.R:Value() and isSpellReady(_R) then
+		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 end
