@@ -1,4 +1,4 @@
-local Version = 2024.21
+local Version = 2025.01
 
 --[ AutoUpdate ]
 
@@ -19,9 +19,10 @@ do
 
 	local function AutoUpdate()
 
-		local function DownloadFile(url, path, fileName)
-			DownloadFileAsync(url, path .. fileName, function() end)
-			while not FileExist(path .. fileName) do end
+		local function DownloadFile(url, path, fileName, callback)
+			DownloadFileAsync(url, path .. fileName, function(success)
+				if callback then callback(success) end
+			end)
 		end
 
 		local function ReadFile(path, fileName)
@@ -31,17 +32,15 @@ do
 			return result
 		end
 
-		DownloadFile(Files.Version.Url, Files.Version.Path, Files.Version.Name)
-		DelayAction(function()
+		DownloadFile(Files.Version.Url, Files.Version.Path, Files.Version.Name, function(success)
 			local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
 			if NewVersion > Version then
 				print("SimpleAio: Found update! Downloading...")
-				DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name)
-				DelayAction(function()
+				DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name, function(success)
 					print("SimpleAio: Successfully updated. Press 2x F6!")
-				end, 3)
+				end)
 			end
-		end, 3)
+		end)
 
 	end
 

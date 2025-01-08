@@ -1,4 +1,4 @@
-local Version = 2024.53
+local Version = 2025.01
 
 --[ AutoUpdate ]
 
@@ -19,9 +19,10 @@ do
 
 	local function AutoUpdate()
 
-		local function DownloadFile(url, path, fileName)
-			DownloadFileAsync(url, path .. fileName, function() end)
-			while not FileExist(path .. fileName) do end
+		local function DownloadFile(url, path, fileName, callback)
+			DownloadFileAsync(url, path .. fileName, function(success)
+				if callback then callback(success) end
+			end)
 		end
 
 		local function ReadFile(path, fileName)
@@ -31,17 +32,15 @@ do
 			return result
 		end
 
-		DownloadFile(Files.Version.Url, Files.Version.Path, Files.Version.Name)
-		DelayAction(function() 
+		DownloadFile(Files.Version.Url, Files.Version.Path, Files.Version.Name, function(success)
 			local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
 			if NewVersion > Version then
 				print("SimpleMarksmen: Found update! Downloading...")
-				DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name)
-				DelayAction(function()
+				DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name, function(success)
 					print("SimpleMarksmen: Successfully updated. Press 2x F6!")
-				end, 3)
+				end)
 			end
-		end, 3)
+		end)
 
 	end
 
@@ -3879,7 +3878,7 @@ end
 function Kalista:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	if level > 0 then
-		local QDmg = ({20, 85, 150, 215, 280})[level] + 1.05 * myHero.totalDamage
+		local QDmg = ({10, 75, 140, 205, 270})[level] + 1.05 * myHero.totalDamage
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 	else
 		return 0
@@ -3891,7 +3890,7 @@ function Kalista:GetEDmg(target)
 	local level = myHero:GetSpellData(_E).level
 	if buff.count > 0 and level > 0 then
 		local baseDmg = ({10, 20, 30, 40, 50})[level] + 0.7 * myHero.totalDamage + 0.2 * myHero.ap
-		local bonusDmg = (buff.count - 1) * (({8, 12, 16, 20, 24})[level] + ({0.25, 0.3, 0.35, 0.4, 0.45})[level] * myHero.totalDamage + 0.2 * myHero.ap)
+		local bonusDmg = (buff.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.25, 0.3, 0.35, 0.4})[level] * myHero.totalDamage + 0.2 * myHero.ap)
 		local totalDmg = baseDmg + bonusDmg
 		if HasBuffContainsName(myHero, "PressTheAttackLockout") then
 			totalDmg = totalDmg * 1.08
