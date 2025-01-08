@@ -1,15 +1,12 @@
-local Version = 2025.02
-
---[ AutoUpdate ]
-
+local Version = 2025.03
+--[[ AutoUpdate ]]
 do
-
 	local Files = {
 		Lua = {
 			Path = SCRIPT_PATH,
 			Name = "SimpleSupports.lua",
 			Url = "https://raw.githubusercontent.com/zgjfjfl/GOSEXT/main/SimpleSupports.lua"
-		},
+	   },
 		Version = {
 			Path = SCRIPT_PATH,
 			Name = "SimpleSupports.version",
@@ -17,51 +14,15 @@ do
 		}
 	}
 
-	local function AutoUpdate()
-
-		local function DownloadFile(url, path, fileName, callback)
-			DownloadFileAsync(url, path .. fileName, function(success)
-				if callback then callback(success) end
+	DownloadFileAsync(Files.Version.Url, Files.Version.Path .. Files.Version.Name, function()
+		local NewVersion = tonumber(io.open(Files.Version.Path .. Files.Version.Name, "r"):read("*a"))
+		if NewVersion > Version then
+			print("SimpleSupports: Found update! Downloading...")
+			DownloadFileAsync(Files.Lua.Url, Files.Lua.Path .. Files.Lua.Name, function()
+				print("SimpleSupports: Successfully updated. Press 2x F6!")
 			end)
 		end
-
-		local function ReadFile(path, fileName)
-			local file = io.open(path .. fileName, "r")
-			local result = file:read()
-			file:close()
-			return result
-		end
-		
-		DownloadFile(Files.Version.Url, Files.Version.Path, Files.Version.Name, function(success)
-			if not success then
-				print("SimpleSupports: Failed to download version file. Using current version.")
-				return
-			end
-
-			local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
-			if not NewVersion then
-				print("SimpleSupports: Failed to read version file. Using current version.")
-				return
-			end
-
-			if NewVersion > Version then
-				print("SimpleSupports: Found update! Downloading...")
-				DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name, function(success)
-					if success then
-						print("SimpleSupports: Successfully updated. Press 2x F6!")
-					else
-						print("SimpleSupports: Failed to download the update. Using current version.")
-					end
-				end)
-			else
-				print("SimpleSupports: No update found. Using current version.")
-			end
-		end)
-
-	end
-
-	AutoUpdate()
-
+	end)
 end
 
 local Heroes = {"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko"}
