@@ -1,4 +1,4 @@
-local Version = 2025.01
+local Version = 2025.02
 
 --[ AutoUpdate ]
 
@@ -33,12 +33,28 @@ do
 		end
 
 		DownloadFile(Files.Version.Url, Files.Version.Path, Files.Version.Name, function(success)
+			if not success then
+				print("SimpleAio: Failed to download version file. Using current version.")
+				return
+			end
+
 			local NewVersion = tonumber(ReadFile(Files.Version.Path, Files.Version.Name))
+			if not NewVersion then
+				print("SimpleAio: Failed to read version file. Using current version.")
+				return
+			end
+
 			if NewVersion > Version then
 				print("SimpleAio: Found update! Downloading...")
 				DownloadFile(Files.Lua.Url, Files.Lua.Path, Files.Lua.Name, function(success)
-					print("SimpleAio: Successfully updated. Press 2x F6!")
+					if success then
+						print("SimpleAio: Successfully updated. Press 2x F6!")
+					else
+						print("SimpleAio: Failed to download the update. Using current version.")
+					end
 				end)
+			else
+				print("SimpleAio: No update found. Using current version.")
 			end
 		end)
 
