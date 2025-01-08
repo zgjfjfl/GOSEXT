@@ -1,4 +1,4 @@
-local Version = 2025.03
+local Version = 2025.04
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -15,8 +15,13 @@ do
 	}
 
 	DownloadFileAsync(Files.Version.Url, Files.Version.Path .. Files.Version.Name, function()
-		local NewVersion = tonumber(io.open(Files.Version.Path .. Files.Version.Name, "r"):read("*a"))
-		if NewVersion > Version then
+		local file = io.open(Files.Version.Path .. Files.Version.Name, "r")
+		if not file then
+			return
+		end
+		local NewVersion = tonumber(file:read("*a"))
+		file:close()
+		if NewVersion and NewVersion > Version then
 			print("SimpleMarksmen: Found update! Downloading...")
 			DownloadFileAsync(Files.Lua.Url, Files.Lua.Path .. Files.Lua.Name, function()
 				print("SimpleMarksmen: Successfully updated. Press 2x F6!")
