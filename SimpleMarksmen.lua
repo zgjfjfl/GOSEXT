@@ -1,4 +1,4 @@
-local Version = 2025.04
+local Version = 2025.05
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1553,9 +1553,12 @@ function Zeri:QObject()
 	local plants = ObjectManager:GetPlants(QRange)
 	for i = 1, #plants do
 		local plant = plants[i]
-		if plant and plant.charName:lower() ~= "sennasoul" and plant.charName:lower() ~= "gangplankbarrel" then
-			if Menu.Clear.QPlants:Value() or plant.team ~= 300 then
-				table.insert(targets, plant)
+		if plant then
+			local objName = plant.charName:lower()
+			if objName ~= "sennasoul" and objName ~= "gangplankbarrel" then
+				if Menu.Clear.QPlants:Value() or plant.team ~= 300 or objName == "sru_plant_demon" then
+					table.insert(targets, plant)
+				end
 			end
 		end
 	end
