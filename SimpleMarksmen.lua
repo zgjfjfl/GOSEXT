@@ -1,4 +1,4 @@
-local Version = 2025.05
+local Version = 2025.06
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2300,7 +2300,7 @@ function Jinx:AutoE()
 			local par = GameParticle(i)
 			if
 				par and par.pos:DistanceTo(myHero.pos) <= ESpell.Range
- 				and ((par.name:lower():find("teleport") and par.name:lower():find("_red")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
+ 				and ((par.name:lower():find("teledash") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
 			then
 				Control.CastSpell(HK_E, par)
 				break
@@ -4624,7 +4624,7 @@ function Caitlyn:Auto()
 			local par = GameParticle(i)
 				if
 				par and par.pos:DistanceTo(myHero.pos) <= WSpell.Range
- 				and ((par.name:lower():find("teleport") and par.name:lower():find("_red")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
+ 				and ((par.name:lower():find("teledash") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
 			then
 				Control.CastSpell(HK_W, par)
 				lastWtp = GetTickCount()
