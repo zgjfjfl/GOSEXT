@@ -1,4 +1,4 @@
-local Version = 2025.06
+local Version = 2025.07
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2300,7 +2300,7 @@ function Jinx:AutoE()
 			local par = GameParticle(i)
 			if
 				par and par.pos:DistanceTo(myHero.pos) <= ESpell.Range
- 				and ((par.name:lower():find("teledash") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
+ 				and ((par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
 			then
 				Control.CastSpell(HK_E, par)
 				break
@@ -2815,7 +2815,9 @@ function MissFortune:Combo()
 	local Etarget = GetTarget(ESpell.Range)
 	if IsValid(Etarget) and Etarget.pos2D.onScreen then
 		if Menu.Combo.E:Value() and IsReady(_E) then
-			self:CastGGPred(HK_E, Etarget)
+			if not Data:IsInAutoAttackRange(myHero, Etarget) then
+				self:CastGGPred(HK_E, Etarget)
+			end
 		end
 	end
 end
@@ -4624,7 +4626,7 @@ function Caitlyn:Auto()
 			local par = GameParticle(i)
 				if
 				par and par.pos:DistanceTo(myHero.pos) <= WSpell.Range
- 				and ((par.name:lower():find("teledash") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
+ 				and ((par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
 			then
 				Control.CastSpell(HK_W, par)
 				lastWtp = GetTickCount()
