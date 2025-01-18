@@ -1,4 +1,4 @@
-local Version = 2025.07
+local Version = 2025.08
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -396,22 +396,19 @@ local function IsWall(pos)
 	end
 end
 
-local function EpicMonster(unit)
-	if unit.charName == "SRU_Baron"
-		or unit.charName == "SRU_Horde"
-		or unit.charName == "SRU_RiftHerald"
-		or unit.charName == "SRU_Dragon_Water"
-		or unit.charName == "SRU_Dragon_Fire"
-		or unit.charName == "SRU_Dragon_Earth"
-		or unit.charName == "SRU_Dragon_Air"
-		or unit.charName == "SRU_Dragon_Chemtech"
-		or unit.charName == "SRU_Dragon_Hextech"
-		or unit.charName == "SRU_Dragon_Elder" then
-		return true
-	else
-		return false
-	end
-end
+local epicMonsters = {
+	["sru_baron"] = true,
+	["sru_atakhan"] = true,
+	["sru_riftherald"] = true,
+	["sru_horde"] = true,
+	["sru_dragon_water"] = true,
+	["sru_dragon_fire"] = true,
+	["sru_dragon_earth"] = true,
+	["sru_dragon_air"] = true,
+	["sru_dragon_chemtech"] = true,
+	["sru_dragon_hextech"] = true,
+	["sru_dragon_elder"] = true
+}
 
 local slots = {}
 	TableInsert(slots, ITEM_1);
@@ -2639,6 +2636,7 @@ function MissFortune:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
+	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
 	QSpell = {Delay = 0.25, Range = 550, Speed = 1400}
 	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 200, Range = 1150, Speed = MathHuge, Collision = false}
@@ -2665,6 +2663,7 @@ function MissFortune:LoadMenu()
 	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "ECount", name = "If E CanHit Counts >= ", value = 3, min = 1, max = 5, step = 1})
 	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
@@ -2679,7 +2678,7 @@ function MissFortune:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "Qangle", name = "Bounce Q's Angle", value = 60, min = 60, max = 80, step = 5})
-	Menu.Misc:MenuElement({id = "newTarget", name = "Try change focus after attack(Combo)", toggle = true, value = true})
+	-- Menu.Misc:MenuElement({id = "newTarget", name = "Try change focus after attack(Combo)", toggle = true, value = false})
 	Menu.Misc:MenuElement({id = "R", name = "Semi-manual R Key", key = string.byte("T")})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
@@ -2706,7 +2705,7 @@ function MissFortune:OnTick()
 	Orbwalker:SetAttack(true)
 	Orbwalker:SetMovement(true)
 	
-	self:newTarget()
+	-- self:newTarget()
 
 	if myHero.activeSpell.valid then return end
 
@@ -2725,30 +2724,30 @@ function MissFortune:OnTick()
 	end
 end
 
-function MissFortune:OnPostAttack()
-	local target = Orbwalker:GetTarget()
-	if target then LastAttackId = target.networkID end
-	if GetMode() == "Combo" then
-		if IsValid(target) and target.type == Obj_AI_Hero then
-			if Menu.Combo.Q:Value() and IsReady(_Q) then
-				Control.CastSpell(HK_Q, target)
-			end
-			if Menu.Combo.W:Value() and IsReady(_W) then
+function MissFortune:OnPreAttack(args)
+	local target = args.Target
+	local manaPercentage = myHero.mana / myHero.maxMana
+	if GetMode() == "Combo" and IsValid(target) and target.type == Obj_AI_Hero then
+		if Menu.Combo.W:Value() and IsReady(_W) then
+			Control.CastSpell(HK_W)
+		end
+	end
+	if GetMode() == "LaneClear" and IsValid(target) and target.type == Obj_AI_Minion then
+		local isJungleMinion = target.team == 300
+		local isLaneMinion = target.team ~= 300
+		local minMana = isJungleMinion and Menu.Clear.JungleClear.Mana:Value() or Menu.Clear.LaneClear.Mana:Value()
+		if manaPercentage >= minMana / 100 and Menu.Clear.SpellFarm:Value() then
+			if (isJungleMinion and Menu.Clear.JungleClear.W:Value() or isLaneMinion and Menu.Clear.LaneClear.W:Value()) and IsReady(_W) then
 				Control.CastSpell(HK_W)
 			end
 		end
 	end
-	if GetMode() == "LaneClear" then
-		if IsValid(target) and target.type == Obj_AI_Minion and target.team == 300 then
-			if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
-				if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
-					Control.CastSpell(HK_Q, target)
-				end
-				if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
-					Control.CastSpell(HK_W)
-				end
-			end
-		end
+end
+
+function MissFortune:OnPostAttack()
+	local target = Orbwalker:GetTarget()
+	if target then
+		LastAttackId = target.networkID
 	end
 end
 
@@ -2772,35 +2771,35 @@ function MissFortune:KillSteal()
 	end
 end
 
-function MissFortune:newTarget()
-	if Menu.Misc.newTarget:Value() and GetMode() == "Combo" then
-		local orbT = Orbwalker:GetTarget()
-		if IsValid(orbT) and orbT.type == Obj_AI_Hero and orbT.networkID == LastAttackId then
-			if orbT.health > Damage:GetAutoAttackDamage(myHero, orbT) * 2 then
-				local ta = nil
-				local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range) --aarange == qrange
-				for _, enemy in ipairs(enemies) do
-					if IsValid(enemy) and enemy.networkID ~= LastAttackId then
-						ta = enemy
-						break
-					end
-				end
-				if ta then
-					Orbwalker.ForceTarget = ta
-				else
-					Orbwalker.ForceTarget = nil
-				end
-			else
-				Orbwalker.ForceTarget = nil
-			end
-		end
-	else
-		Orbwalker.ForceTarget = nil
-	end
-	if Orbwalker.ForceTarget and not Data:IsInAutoAttackRange(myHero, Orbwalker.ForceTarget) then
-		Orbwalker.ForceTarget = nil
-	end
-end
+-- function MissFortune:newTarget()
+	-- if Menu.Misc.newTarget:Value() and GetMode() == "Combo" then
+		-- local orbT = Orbwalker:GetTarget()
+		-- if IsValid(orbT) and orbT.type == Obj_AI_Hero and orbT.networkID == LastAttackId then
+			-- if orbT.health > Damage:GetAutoAttackDamage(myHero, orbT) * 2 then
+				-- local ta = nil
+				-- local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)				--aarange == qrange
+				-- for _, enemy in ipairs(enemies) do
+					-- if IsValid(enemy) and enemy.networkID ~= LastAttackId then
+						-- ta = enemy
+						-- break
+					-- end
+				-- end
+				-- if ta then
+					-- Orbwalker.ForceTarget = ta
+				-- else
+					-- Orbwalker.ForceTarget = nil
+				-- end
+			-- else
+				-- Orbwalker.ForceTarget = nil
+			-- end
+		-- end
+	-- else
+		-- Orbwalker.ForceTarget = nil
+	-- end
+	-- if Orbwalker.ForceTarget and not Data:IsInAutoAttackRange(myHero, Orbwalker.ForceTarget) then
+		-- Orbwalker.ForceTarget = nil
+	-- end
+-- end
 
 function MissFortune:Combo()
 	if IsReady(_Q) then
@@ -2814,8 +2813,8 @@ function MissFortune:Combo()
 
 	local Etarget = GetTarget(ESpell.Range)
 	if IsValid(Etarget) and Etarget.pos2D.onScreen then
-		if Menu.Combo.E:Value() and IsReady(_E) then
-			if not Data:IsInAutoAttackRange(myHero, Etarget) then
+		if Menu.Combo.E:Value() and IsReady(_E) and not Data:IsInAutoAttackRange(myHero, Etarget) then
+			if myHero.mana > myHero:GetSpellData(_R).mana + myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_W).mana + myHero:GetSpellData(_E).mana then
 				self:CastGGPred(HK_E, Etarget)
 			end
 		end
@@ -2872,11 +2871,11 @@ end
 
 function MissFortune:JungleClear()
 	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
-		if Menu.Clear.JungleClear.E:Value() and IsReady(_E) then
-			local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
-			MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
-			for i, minion in ipairs(minions) do
-				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
+		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
+				if Menu.Clear.JungleClear.E:Value() and IsReady(_E) then
 					if not minion.name:lower():find("mini") then
 						Control.CastSpell(HK_E, minion)
 					else
@@ -2884,6 +2883,9 @@ function MissFortune:JungleClear()
 							Control.CastSpell(HK_E, minion)
 						end
 					end
+				end
+				if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
+					Control.CastSpell(HK_Q, minion)
 				end
 			end
 		end
@@ -3815,7 +3817,8 @@ function Kalista:JungleClear()
 		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and HaveBuff(minion, "kalistaexpungemarker") then
-				if not EpicMonster(minion) then
+				local minionName = minion.charName:lower()
+				if not epicMonsters[minionName] then
 					local EDmg = self:GetEDmg(minion)
 					if EDmg >= minion.health then
 						Control.CastSpell(HK_E)
@@ -3831,12 +3834,13 @@ function Kalista:AutoKillEpicMonster()
 		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and HaveBuff(minion, "kalistaexpungemarker") then
-				if EpicMonster(minion) then
+				local minionName = minion.charName:lower()
+				if epicMonsters[charName] then
 					local EDmg = self:GetEDmg(minion) * 0.5
-					if minion.charName == "SRU_Baron" and HaveBuff(myHero, "BaronTarget") then
+					if minionName == "sru_baron" and HaveBuff(myHero, "BaronTarget") then
 						EDmg = EDmg * 0.5
 					end
-					if minion.name:find("SRU_Dragon") and minion.name ~= "SRU_Dragon_Elder" then
+					if minionName:find("sru_dragon") and minionName ~= "sru_dragon_elder" then
 						local buffNums = HaveBuffContainsNameNums(myHero, "SRX_DragonBuff")
 						EDmg = EDmg * (1 - 0.07 * buffNums)
 					end
