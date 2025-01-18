@@ -1,4 +1,4 @@
-local Version = 2025.08
+local Version = 2025.09
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2637,7 +2637,7 @@ function MissFortune:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
+	-- Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
 	QSpell = {Delay = 0.25, Range = 550, Speed = 1400}
 	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 200, Range = 1150, Speed = MathHuge, Collision = false}
 	RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.375, Radius = 40, Range = 1350, Speed = 2000, Collision = false}
@@ -2744,12 +2744,12 @@ function MissFortune:OnPreAttack(args)
 	end
 end
 
-function MissFortune:OnPostAttack()
-	local target = Orbwalker:GetTarget()
-	if target then
-		LastAttackId = target.networkID
-	end
-end
+-- function MissFortune:OnPostAttack()
+	-- local target = Orbwalker:GetTarget()
+	-- if target then
+		-- LastAttackId = target.networkID
+	-- end
+-- end
 
 function MissFortune:SemiRLogic()
 	if Menu.Misc.R:Value() and IsReady(_R) then
