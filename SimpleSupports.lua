@@ -1,4 +1,4 @@
-local Version = 2025.06
+local Version = 2025.07
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2444,7 +2444,7 @@ function Soraka:AutoW()
 		for _, ally in ipairs(allies) do
 			if Menu.Heal.WHealTarget[ally.charName] and Menu.Heal.WHealTarget[ally.charName]:Value() then
 				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Wmin:Value()/100 then
-					if not Menu.Heal.Enemy:Value() or GetEnemyCount(1500, ally.pos) > 0  then
+					if not Menu.Heal.Enemy:Value() or GetEnemyCount(1500, ally.pos) > 0 then
 						Control.CastSpell(HK_W, ally)
 						lastW = GetTickCount()
 					end
@@ -2458,8 +2458,8 @@ function Soraka:AutoR()
 	if Menu.Heal.R:Value() and IsReady(_R) and lastR + 350 < GetTickCount() then
 		for _, ally in ipairs(GetAllyHeroes()) do
 			if Menu.Heal.WHealTarget[ally.charName] and Menu.Heal.WHealTarget[ally.charName]:Value() then		
-				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Rmin:Value()/100 and GetEnemyCount(1500, ally.pos) > 0 then
-					if not Menu.Heal.Enemy:Value() or GetEnemyCount(1500, ally.pos) > 0  then
+				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Rmin:Value()/100 then
+					if not Menu.Heal.Enemy:Value() or GetEnemyCount(1500, ally.pos) > 0 then
 						Control.CastSpell(HK_R)
 						lastR = GetTickCount()
 					end
