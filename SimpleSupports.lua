@@ -1,4 +1,4 @@
-local Version = 2025.05
+local Version = 2025.06
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2358,6 +2358,7 @@ function Soraka:LoadMenu()
 	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Heal", name = "Heal Settings"})
+	Menu.Heal:MenuElement({id = "Enemy", name = "Healing Only When Enemies Nearby", toggle = true, value = true})
 	Menu.Heal:MenuElement({id = "W", name = "Auto [W] Heal", toggle = true, value = true})
 	Menu.Heal:MenuElement({id = "Wmin", name = "Auto [W] Ally < HP%", value = 50, min = 0, max = 100, step = 5})
 	Menu.Heal:MenuElement({id = "WMmin", name = "Auto [W] My > HP%", value = 20, min = 0, max = 100, step = 5})
@@ -2442,9 +2443,11 @@ function Soraka:AutoW()
 		local allies = ObjectManager:GetAllyHeroes(WSpell.Range)
 		for _, ally in ipairs(allies) do
 			if Menu.Heal.WHealTarget[ally.charName] and Menu.Heal.WHealTarget[ally.charName]:Value() then
-				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Wmin:Value()/100 and GetEnemyCount(1500, ally.pos) > 0 then
-					Control.CastSpell(HK_W, ally)
-					lastW = GetTickCount()
+				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Wmin:Value()/100 then
+					if not Menu.Heal.Enemy:Value() or GetEnemyCount(1500, ally.pos) > 0  then
+						Control.CastSpell(HK_W, ally)
+						lastW = GetTickCount()
+					end
 				end
 			end
 		end
@@ -2456,8 +2459,10 @@ function Soraka:AutoR()
 		for _, ally in ipairs(GetAllyHeroes()) do
 			if Menu.Heal.WHealTarget[ally.charName] and Menu.Heal.WHealTarget[ally.charName]:Value() then		
 				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Rmin:Value()/100 and GetEnemyCount(1500, ally.pos) > 0 then
-					Control.CastSpell(HK_R)
-					lastR = GetTickCount()
+					if not Menu.Heal.Enemy:Value() or GetEnemyCount(1500, ally.pos) > 0  then
+						Control.CastSpell(HK_R)
+						lastR = GetTickCount()
+					end
 				end
 			end
 		end
