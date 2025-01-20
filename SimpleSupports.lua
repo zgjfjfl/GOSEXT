@@ -1,4 +1,4 @@
-local Version = 2025.04
+local Version = 2025.05
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -30,7 +30,7 @@ do
 	end)
 end
 
-local Heroes = {"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko"}
+local Heroes = {"Lux", "Zyra", "Brand", "Velkoz", "Ziggs", "Swain", "Seraphine", "Neeko", "Soraka"}
 
 if not table.contains(Heroes, myHero.charName) then 
 	print('SimpleSupports not supported ' .. myHero.charName)
@@ -38,8 +38,6 @@ if not table.contains(Heroes, myHero.charName) then
 end
 
 require "GGPrediction"
-require "2DGeometry"
-require "MapPositionGOS"
 
 local GameParticleCount = Game.ParticleCount
 local GameParticle = Game.Particle
@@ -51,6 +49,7 @@ local GameMinionCount = Game.MinionCount
 local GameMinion = Game.Minion
 local GameMissileCount = Game.MissileCount
 local GameMissile = Game.Missile
+local GameIsWall = Game.isWall
 
 local TableInsert = table.insert
 local TableRemove = table.remove
@@ -404,7 +403,7 @@ end
 
 --------------------------------------
 
-Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.5.1/img/champion/"..myHero.charName..".png"})
+Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/15.1.1/img/champion/"..myHero.charName..".png"})
 	Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
 	Menu:MenuElement({id = "SupportMode", name = "Support Mode (Disable Harass Lasthit)",value = true})
 
@@ -438,7 +437,7 @@ function Lux:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
 	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] on 'CC'", toggle = true, value = true})
 	Menu.Auto:MenuElement({id = "W", name = "Auto [W] Shield", toggle = true, value = true})
-	Menu.Auto:MenuElement({id = "Whp", name = "Auto [W] allies or self Low hp%", value = true, min = 0, max = 100, value = 30, step = 5})
+	Menu.Auto:MenuElement({id = "Whp", name = "Auto [W] allies or self Low hp%", value = 30, min = 0, max = 100, step = 5})
 	Menu.Auto:MenuElement({id = "E", name = "Auto [E] on 'CC'", toggle = true, value = true})
 	Menu.Auto:MenuElement({id = "R", name = "Auto [R] on 'CC'", toggle = true, value = true})
 
@@ -1689,7 +1688,7 @@ function Ziggs:CastQ(unit)
 			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(startPos, QPrediction.CastPosition, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius/2, {GGPrediction.COLLISION_MINION}, unit.networkID)
 			if collisionCount == 0 then
 				local endPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 850)
-				if Vector(QPrediction.CastPosition):To2D().onScreen and not MapPosition:inWall(endPos) and lastQ + 350 < GetTickCount() then
+				if Vector(QPrediction.CastPosition):To2D().onScreen and not GameIsWall(endPos) and lastQ + 350 < GetTickCount() then
 					Control.CastSpell(HK_Q, QPrediction.CastPosition)
 					lastQ = GetTickCount()
 				end
@@ -2005,7 +2004,7 @@ function Seraphine:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
 	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] on 'CC'", toggle = true, value = true})
 	Menu.Auto:MenuElement({id = "W", name = "Auto [W] Shield", toggle = true, value = true})
-	Menu.Auto:MenuElement({id = "Whp", name = "Auto [W] allies or self Low hp%", value = true, min = 0, max = 100, value = 30, step = 5})
+	Menu.Auto:MenuElement({id = "Whp", name = "Auto [W] allies or self Low hp%", value = 30, min = 0, max = 100, step = 5})
 	Menu.Auto:MenuElement({id = "E", name = "Auto [E] on 'CC'", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Kill", name = "Kills"})
@@ -2334,69 +2333,63 @@ end
 
 ---------------------------------
 
---[[class "Yuumi"
+class "Soraka"
 
-function Yuumi:__init()
-	print("Support Yuumi Loaded") 
+function Soraka:__init()
+	print("Support Soraka Loaded")
 	self:LoadMenu()
-	
+
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	Q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 35, Range = 1150, Speed = 1950, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	Q2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 60, Range = 1700, Speed = 1650, Collision = false}
-	WSpell = {Range = 700}
-	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 225, Range = 1100, Speed = 3000, Collision = false}
+	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 230, Range = 915, Speed = 1750, Collision = false}
+	WSpell = {Range = 550}
+	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 260, Range = 925, Speed = MathHuge, Collision = false}
 end
 
-function Yuumi:LoadMenu() 
+function Soraka:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo(when spell ready)", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "R", name = "Combo [R]", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "RCount", name = "Combo [R] When X Enemies in Range", value = 2, min = 1, max = 5, step = 1})
-	Menu.Combo:MenuElement({id = "RRange", name = "[R] Range set", value = 1100, min = 500, max = 1100, step = 10})
+	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "QMana", name = "Harass When > X Mana", value = 80, min = 5, max = 100, step = 5})
 
-	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
-	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] Harass(Only No Orb Mode)", toggle = true, value = true})	
-	Menu.Auto:MenuElement({id = "E", name = "Auto [E] Shield", toggle = true, value = true})
-	Menu.Auto:MenuElement({id = "R", name = "Auto [R]", toggle = true, value = true})
-	Menu.Auto:MenuElement({id = "RCount", name = "Auto [R] When X Enemies in Range", value = 3, min = 1, max = 5, step = 1})
-	
-	Menu:MenuElement({type = MENU, id = "WSet", name = "WSetting"})
-	Menu.WSet:MenuElement({id = "Wsm", name = "W Semi-Manual(attach ally mouse near)", key = string.byte("T")})
+	Menu:MenuElement({type = MENU, id = "Heal", name = "Heal Settings"})
+	Menu.Heal:MenuElement({id = "W", name = "Auto [W] Heal", toggle = true, value = true})
+	Menu.Heal:MenuElement({id = "Wmin", name = "Auto [W] Ally < HP%", value = 50, min = 0, max = 100, step = 5})
+	Menu.Heal:MenuElement({id = "WMmin", name = "Auto [W] My > HP%", value = 20, min = 0, max = 100, step = 5})
+	Menu.Heal:MenuElement({type = MENU,id = "WHealTarget", name = "UseW On"})
+		DelayAction(function()
+			for _, Hero in pairs(GetAllyHeroes()) do
+				if not Hero.isMe then
+					Menu.Heal.WHealTarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})
+				end
+			end		
+		end,0.2)
+	Menu.Heal:MenuElement({id = "R", name = "Auto [R] Heal", toggle = true, value = true})
+	Menu.Heal:MenuElement({id = "Rmin", name = "Auto [R] Ally < HP%", value = 20, min = 0, max = 100, step = 5})
+	Menu.Heal:MenuElement({type = MENU,id = "RHealTarget", name = "UseR On"})
+		DelayAction(function()
+			for _, Hero in pairs(GetAllyHeroes()) do
+				Menu.Heal.RHealTarget:MenuElement({id = Hero.charName, name = Hero.charName, value = true})		
+			end		
+		end,0.2)
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 	Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "W", name = "Draw [W] Range", toggle = true, value = false})
-	Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
 end
 
-function Yuumi:IsAttaching()
-	if myHero:GetSpellData(_W).name == "YuumiWEndWrapper" then
-		return true
-	end
-	return false
-end
-
-function Yuumi:OnTick()
-	if myHero.dead or Game.IsChatOpen() or Recalling() then
+function Soraka:OnTick()
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
 		return
 	end
-	
-	if self:IsAttaching() then
-		Orbwalker:SetAttack(false)
-		Orbwalker:SetMovement(false)
-	else
-		if HaveBuff(myHero, "YuumiR") then
-			Orbwalker:SetAttack(false)
-		else
-			Orbwalker:SetAttack(true)
-		end
-		Orbwalker:SetMovement(true) 
+	if not Orbwalker:CanMove() then
+		return
 	end
 
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
@@ -2405,218 +2398,104 @@ function Yuumi:OnTick()
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
 		self:Harass()
 	end
-	self:AutoQ()
-	self:AutoE()
+	self:AutoW()
 	self:AutoR()
-	
-	if Menu.WSet.Wsm:Value() then
-		self:SemiManualW()
+end
+
+function Soraka:OnPreAttack(args)
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		if Menu.Combo.DisableAA:Value() and (IsReady(_Q) or IsReady(_E)) then
+			args.Process = false
+		end
 	end
 end
 
-function Yuumi:Combo()
-	if Menu.Combo.Q:Value() then
-		if not self:IsAttaching() then
-			local target = TargetSelector:GetTarget(Q1Spell.Range)
-			if IsValid(target) and target.pos2D.onScreen then
-				self:CastGGPred(HK_Q, target)
-			end
-		elseif self:IsAttaching() then
-			self:CastQ2()
-		end
-	end
-	
-	if Menu.Combo.R:Value() and IsReady(_R) then
-		local target = TargetSelector:GetTarget(Menu.Combo.RRange:Value())
+function Soraka:Combo()
+	if Menu.Combo.Q:Value() and IsReady(_Q) then
+		local target = TargetSelector:GetTarget(QSpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
-			if GetEnemyCount(RSpell.Radius, target.pos) >= Menu.Combo.RCount:Value() then
-				if self:IsAttaching() then
-					local castPos = myHero.pos:Extended(target.pos, myHero.range)
-					Control.SetCursorPos(castPos)
-					Control.CastSpell(HK_R)
-					DelayAction(function() Control.SetCursorPos(mousePos) end, 3.5)
-				else
-					if lastR + 3600 < GetTickCount() then
-						Control.CastSpell(HK_R, target)
-						lastR = GetTickCount()
-					end
-				end
-			end
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+	if Menu.Combo.E:Value() and IsReady(_E) then
+		local target = TargetSelector:GetTarget(ESpell.Range)
+		if IsValid(target) and target.pos2D.onScreen then
+			self:CastGGPred(HK_E, target)
 		end
 	end
 end
 
-function Yuumi:Harass()
-	if Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana >= Menu.Harass.QMana:Value()/100 then
-		if not self:IsAttaching() then
-			local target = TargetSelector:GetTarget(Q1Spell.Range)
-			if IsValid(target) and target.pos2D.onScreen then
-				self:CastGGPred(HK_Q, target)
-			end
-		elseif self:IsAttaching() then
-			self:CastQ2()
-		end
-	end
-end
-
-function Yuumi:AutoQ()
-	if Menu.Auto.Q:Value() and not (Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] or Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS]) then
-		self:Harass()
-	end
-end
-
-function Yuumi:AutoE()
-	if not (Menu.Auto.E:Value() and IsReady(_E)) then return end
-
-	local allies = ObjectManager:GetAllyHeroes(myHero.range)
-	local enemies = ObjectManager:GetEnemyHeroes(2500)
-	local turrets = ObjectManager:GetEnemyTurrets(1500)
-	
-	for _, ally in ipairs(allies) do
-		if IsValid(ally) and (not self:IsAttaching() and ally.isMe or HaveBuff(ally, "YuumiWAlly")) then
-			for _, enemy in ipairs(enemies) do
-				if IsValid(enemy) then
-					local canUseE = false
-					if enemy.isChanneling and enemy.activeSpell.target == ally.handle then
-						canUseE = true
-					elseif enemy.activeSpell.isAutoAttack and enemy.activeSpell.target == ally.handle then
-						canUseE = true
-					elseif enemy.isChanneling then
-						local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(ally.pos, enemy.activeSpell.placementPos, enemy.pos)
-						local width = ally.boundingRadius + (enemy.activeSpell.width > 0 and enemy.activeSpell.width or 0)
-						if isOnSegment and GGPrediction:IsInRange(point, ally.pos, width) then
-							canUseE = true
-						end
-					end
-					
-					if canUseE then
-						Control.CastSpell(HK_E)
-						return
-					end
-				end
-			end
-			
-			for _, turret in ipairs(turrets) do
-				if turret and turret.targetID then
-					if turret.targetID == ally.networkID then
-						Control.CastSpell(HK_E)
-						return
-					end
-				end
-			end
-		end
-	end
-end
-
-function Yuumi:AutoR()
-	if Menu.Auto.R:Value() and IsReady(_R) then
-		if self:IsAttaching() then
-			local target = TargetSelector:GetTarget(Menu.Combo.RRange:Value())
-			if IsValid(target) and target.pos2D.onScreen then
-				if GetEnemyCount(RSpell.Radius, target.pos) >= Menu.Auto.RCount:Value() then
-					local castPos = myHero.pos:Extended(target.pos, myHero.range)
-					Control.SetCursorPos(castPos)
-					Control.CastSpell(HK_R)
-					DelayAction(function() Control.SetCursorPos(mousePos) end, 3.5)
-				end
-			end
-		end
-	end
-end
-
-function Yuumi:SemiManualW()
-	if IsReady(_W) then
-		local allies = ObjectManager:GetAllyHeroes(WSpell.Range)
-		for j, ally in ipairs(allies) do
-			if IsValid(ally) and not ally.isMe and not HaveBuff(ally, "YuumiWAlly") then
-				if ally.pos:DistanceTo(mousePos) < 350 then
-					Control.CastSpell(HK_W, ally.pos)
-				end
-			end
-		end
-	end
-end
-
-function Yuumi:CastGGPred(spell, unit)
-	if spell == HK_Q then
-		local QPrediction = GGPrediction:SpellPrediction(Q1Spell)
-		QPrediction:GetPrediction(unit, myHero)
-		if QPrediction:CanHit(3) and IsReady(_Q) then
-			Control.CastSpell(HK_Q, QPrediction.CastPosition)
-		end
-	end
-end
-
-function Yuumi:CastQ2()
-	local target = TargetSelector:GetTarget(1700)
+function Soraka:Harass()
+	local target = TargetSelector:GetTarget(QSpell.Range)
 	if IsValid(target) and target.pos2D.onScreen then
-		local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
-		if collisionCount == 0 then
-			if IsReady(_Q) then
-				Control.SetCursorPos(target.pos)
-				Control.CastSpell(HK_Q)
-			elseif Game.CanUseSpell(_Q) == 8 then
-				Control.SetCursorPos(target.pos)
-				DelayAction(function() Control.SetCursorPos(mousePos) end, 1.2)
-			end
-		else
-			local points = self:AimQ(target.pos)
-			for i = 1,#points do
-				local point = points[i]
-				local _, _, collisionCount1 = GGPrediction:GetCollision(myHero.pos, point, 850, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
-				local _, _, collisionCount2 = GGPrediction:GetCollision(point, target.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
-				if collisionCount1 == 0 and collisionCount2 == 0 then
-					if myHero.pos:DistanceTo(point) + target.pos:DistanceTo(point) < 1700 and myHero.pos:DistanceTo(target.pos) > 1000 then
-						if IsReady(_Q) then
-							Control.SetCursorPos(point)
-							Control.CastSpell(HK_Q)
-						elseif Game.CanUseSpell(_Q) == 8 then
-							Control.SetCursorPos(point)
-							DelayAction(function() Control.SetCursorPos(target.pos) end, 0.8)
-							DelayAction(function() Control.SetCursorPos(mousePos) end, 0.4)
-						end
-					end
+		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < QSpell.Range then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
+end
+
+function Soraka:AutoW()
+	if Menu.Heal.W:Value() and IsReady(_W) and lastW + 350 < GetTickCount() then
+		if myHero.health/myHero.maxHealth <= Menu.Heal.WMmin:Value()/100 then
+			return
+		end
+		local allies = ObjectManager:GetAllyHeroes(WSpell.Range)
+		for _, ally in ipairs(allies) do
+			if Menu.Heal.WHealTarget[ally.charName] and Menu.Heal.WHealTarget[ally.charName]:Value() then
+				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Wmin:Value()/100 and GetEnemyCount(1500, ally.pos) > 0 then
+					Control.CastSpell(HK_W, ally)
+					lastW = GetTickCount()
 				end
 			end
 		end
 	end
 end
 
-function Yuumi:AimQ(finalPos)
-	local startPos = Vector(myHero.pos)
-	local points = {}
-
-	for j = 10, 360, 10 do 
-		local rotatedVector = Vector(0, 0, 800):Rotated(0, j * math.pi / 180, 0)
-		local endPos = startPos + rotatedVector
-
-		if endPos:DistanceTo(myHero.pos:Extended(finalPos, 800)) < 400 then
-			TableInsert(points, endPos)
+function Soraka:AutoR()
+	if Menu.Heal.R:Value() and IsReady(_R) and lastR + 350 < GetTickCount() then
+		for _, ally in ipairs(GetAllyHeroes()) do
+			if Menu.Heal.WHealTarget[ally.charName] and Menu.Heal.WHealTarget[ally.charName]:Value() then		
+				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Rmin:Value()/100 and GetEnemyCount(1500, ally.pos) > 0 then
+					Control.CastSpell(HK_R)
+					lastR = GetTickCount()
+				end
+			end
 		end
-	end
-
-	table.sort(points, function(a, b)
-		return a:DistanceTo(finalPos) < b:DistanceTo(finalPos)
-	end)
-
-	TableRemove(points, 1)
-	TableRemove(points, 1)
-
-	return points
+	end	
 end
 
-function Yuumi:Draw()
-	if Menu.Draw.Q:Value() and IsReady(_Q) then
-		if not self:IsAttaching() then
-			Draw.Circle(myHero.pos, Q1Spell.Range, 1, Draw.Color(255, 66, 244, 113))
-		else
-			Draw.Circle(myHero.pos, Q2Spell.Range, 1, Draw.Color(255, 66, 244, 113))
+function Soraka:CastGGPred(spell, unit)
+	if spell == HK_Q then
+		local QPrediction = GGPrediction:SpellPrediction(QSpell)
+		QPrediction:GetPrediction(unit, myHero)
+		if QPrediction:CanHit(3) and lastQ + 350 < GetTickCount() then
+			local castPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 800)
+			if myHero.pos:DistanceTo(QPrediction.CastPosition) <= 800 then
+				Control.CastSpell(HK_Q, QPrediction.CastPosition)
+				lastQ = GetTickCount()
+			else
+				Control.CastSpell(HK_Q, castPos)
+				lastQ = GetTickCount()
+			end
 		end
+	elseif spell == HK_E then
+		local EPrediction = GGPrediction:SpellPrediction(ESpell)
+		EPrediction:GetPrediction(unit, myHero)
+		if EPrediction:CanHit(3) and lastE + 350 < GetTickCount() then
+			Control.CastSpell(HK_E, EPrediction.CastPosition)
+			lastE = GetTickCount()
+		end
+	end
+end
+
+function Soraka:Draw()
+	if Menu.Draw.Q:Value() and IsReady(_Q) then
+		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end
 	if Menu.Draw.W:Value() and IsReady(_W) then
 		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
 	end
-	if Menu.Draw.R:Value() and IsReady(_R) then
-		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+	if Menu.Draw.E:Value() and IsReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
-end]]
+end
