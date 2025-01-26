@@ -1,4 +1,4 @@
-local Version = 2025.04
+local Version = 2025.05
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -32,7 +32,7 @@ end
 
 local Heroes = {"Ornn", "JarvanIV", "Poppy", "Shyvana", "Trundle", "Rakan", "Belveth", "Nasus", "Singed", "Udyr", "Galio", "Yorick", "Ivern", 
 				"Bard", "Taliyah", "Lissandra", "Sejuani", "KSante", "Skarner", "Maokai", "Gragas", "Milio", "AurelionSol", "Heimerdinger", 
-				"Briar", "Urgot", "Aurora", "Ambessa"}
+				"Briar", "Urgot", "Aurora", "Ambessa", "Mel"}
 
 if not table.contains(Heroes, myHero.charName) then
 	print('SimpleAio not supported ' .. myHero.charName)
@@ -465,8 +465,8 @@ end
 
 ------------------------------------
 
-Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Simple "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.17.1/img/champion/"..myHero.charName..".png"})
-	Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
+Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Simple "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/15.2.1/img/champion/"..myHero.charName..".png"})
+	Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
 
 ------------------------------------
 
@@ -5393,7 +5393,7 @@ function Aurora:AutoQ2()
 			for i, enemy in ipairs(getEnemyHeroes()) do
 				if isValid(enemy) and haveBuff(enemy, "auroraqdebufftracker") then
 					local Q2Dmg = self:GetQ2Dmg(enemy) + self:GetPDmg(enemy)
-					if (enemy.health + enemy.shieldAD + enemy.shieldAP) <= Q2Dmg or GetBuffData(myHero, "AuroraQRecast").duration < 1 then
+					if (enemy.health + enemy.shieldAD + enemy.shieldAP) <= Q2Dmg or getBuffData(myHero, "AuroraQRecast").duration < 1 then
 						Control.CastSpell(HK_Q)
 					end
 				end
@@ -5638,5 +5638,277 @@ function Ambessa:Draw()
 	end
 	if Menu.Draw.R:Value() and isSpellReady(_R) then
 		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+	end
+end
+
+-------------------------------------
+
+class "Mel"
+
+function Mel:__init()
+	print("Simple Mel Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 250, Range = 1000, Speed = MathHuge, Collision = false}
+	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 150, Range = 1050, Speed = 1000, Collision = false}
+end
+
+function Mel:LoadMenu()
+
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "AutoW", name = "Auto W"})
+	Menu.AutoW:MenuElement({id = "W", name = "Auto W Reflect", toggle = true, value = true})
+	Menu.AutoW:MenuElement({name = " ", drop = {"Reflect Abilities: "}})
+	ObjectManager:OnEnemyHeroLoad(function(args)
+		champName = args.charName
+		enemy = args.unit
+		Menu.AutoW:MenuElement({id = champName, name = champName, type = MENU})
+		if champName == "Hwei" then
+			Menu.AutoW[champName]:MenuElement({id = HweiQQ, name = "QQ", value = false})
+			Menu.AutoW[champName]:MenuElement({id = HweiQW, name = "QW", value = false})
+			Menu.AutoW[champName]:MenuElement({id = HweiQE, name = "QE", value = false})
+			Menu.AutoW[champName]:MenuElement({id = HweiEQ, name = "EQ", value = false})
+			Menu.AutoW[champName]:MenuElement({id = HweiEW, name = "EW", value = false})
+			Menu.AutoW[champName]:MenuElement({id = HweiEE, name = "EE", value = false})
+			Menu.AutoW[champName]:MenuElement({id = enemy:GetSpellData(_R).name, name = "R", value = false})
+		else
+			Menu.AutoW[champName]:MenuElement({id = enemy:GetSpellData(_Q).name, name = "Q", value = false})
+			Menu.AutoW[champName]:MenuElement({id = enemy:GetSpellData(_W).name, name = "W", value = false})
+			Menu.AutoW[champName]:MenuElement({id = enemy:GetSpellData(_E).name, name = "E", value = false})
+			Menu.AutoW[champName]:MenuElement({id = enemy:GetSpellData(_R).name, name = "R", value = false})
+		end
+	end)
+	
+	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
+	Menu.Misc:MenuElement({id = "Qcc", name = "Auto Q on CC", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Egap", name = "Auto E AnitGap", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Rkill", name = "Auto R Kills", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "Q", name = "Draw Q Range", toggle = true, value = false})
+	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
+end
+
+function Mel:OnTick()
+	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or recalling() then
+		return
+	end
+	
+	self:AutoQ()
+	self:AutoW()
+	self:AutoR()
+	
+	if myHero.isChanneling or Attack:IsActive() then return end
+
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+		self:Combo()
+	elseif Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+		self:Harass()
+	elseif Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+		self:LaneClear()
+		self:JungleClear()
+	end
+end
+
+function Mel:AutoQ()	
+	if Menu.Misc.Qcc:Value() and isSpellReady(_Q) then
+		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		for _, target in ipairs(enemies) do
+			if isValid(target) and target.pos2D.onScreen and isImmobile(target) then
+				Control.CastSpell(HK_Q, target)
+			end
+		end
+	end
+end
+
+function Mel:AutoE()	
+	if Menu.Misc.Egap:Value() and isSpellReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		for _, target in ipairs(enemies) do
+			if isValid(target) and target.pathing.isDashing and target.posTo then
+				if myHero.pos:DistanceTo(enemy.posTo) < myHero.pos:DistanceTo(target.pos) then
+					self:CastGGPred(HK_E, target)
+				end
+			end
+		end
+	end
+end
+
+function Mel:GetPDmg(target)
+	local rlevel = myHero:GetSpellData(_R).level
+	local buffCount = getBuffData(target, "MelPassiveOverwhelm").stacks
+	local PDmg = 0
+	if buffCount > 0 then
+		if rlevel == 0 then
+			PDmg = (50 + 0.25 * myHero.ap) + (2 + 0.0075 * myHero.ap) * buffCount
+		else
+			PDmg = (({65, 80, 95})[rlevel] + 0.25 * myHero.ap) + (({3, 4, 5})[rlevel] + 0.0075 * myHero.ap) * buffCount
+		end
+	end
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, PDmg)
+end
+
+function Mel:GetRDmg(target)
+	local level = myHero:GetSpellData(_R).level
+	local buffCount = getBuffData(target, "MelPassiveOverwhelm").stacks
+	local RDmg = (({125, 175, 225})[level] + 0.40 * myHero.ap) + (({4, 7, 10})[level] + 0.025 * myHero.ap) * buffCount
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, RDmg)
+end
+
+function Mel:AutoR()	
+	if Menu.Misc.Rkill:Value() and isSpellReady(_R) then
+		for _, target in ipairs(getEnemyHeroes()) do
+			if isValid(target) and haveBuff(target, "MelPassiveOverwhelm") then
+				if self:GetRDmg(target) + self:GetPDmg(target) > target.health + target.shieldAD + target.shieldAP then
+					Control.CastSpell(HK_R)
+				end
+			end
+		end
+	end
+end
+
+function Mel:Combo()
+	local Etarget = TargetSelector:GetTarget(ESpell.Range)
+	if isValid(Etarget) and Etarget.pos2D.onScreen then
+		if Menu.Combo.E:Value() and isSpellReady(_E) then
+			self:CastGGPred(HK_E, Etarget)
+		end
+	end
+
+	local Qtarget = TargetSelector:GetTarget(QSpell.Range)
+	if isValid(Qtarget) and Qtarget.pos2D.onScreen then
+		if Menu.Combo.Q:Value() and isSpellReady(_Q) then
+			self:CastGGPred(HK_Q, Qtarget)
+		end
+	end
+end
+
+function Mel:Harass()
+	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+		local Qtarget = TargetSelector:GetTarget(QSpell.Range)
+		if isValid(Qtarget) and Qtarget.pos2D.onScreen then
+			if Menu.Harass.Q:Value() and isSpellReady(_Q) then
+				self:CastGGPred(HK_Q, Qtarget)
+			end
+		end
+	-- end
+end
+
+function Mel:AutoW()
+	if not (Menu.AutoW.W:Value() and isSpellReady(_W)) then return end
+
+	local enemies = ObjectManager:GetEnemyHeroes(2500)
+	for _, enemy in ipairs(enemies) do
+		if isValid(enemy) and enemy.isChanneling then
+			local spell = enemy.activeSpell
+			if spell and spell.valid and Menu.AutoW[enemy.charName][spell.name] and Menu.AutoW[enemy.charName][spell.name]:Value() then
+				if spell.target == myHero.handle then
+					Control.CastSpell(HK_W)
+					return
+				else
+					local endPos = spell.startPos:Extended(spell.placementPos, spell.range)
+					local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(myHero.pos, endPos, spell.startPos)
+					local width = myHero.boundingRadius + spell.width
+					if isOnSegment and GGPrediction:IsInRange(myHero.pos, point, width) then
+						Control.CastSpell(HK_W)
+						return
+					end
+				end
+			end
+		end
+	end
+end
+
+function Mel:LaneClear()
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
+		if Menu.Clear.LaneClear.Q:Value() and isSpellReady(_Q) then
+			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			for i, minion in ipairs(minions) do
+				if isValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
+					if getMinionCount(QSpell.Radius, minion.pos) >= Menu.Clear.LaneClear.QCount:Value() then
+						Control.CastSpell(HK_Q, minion)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Mel:JungleClear()
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
+		if Menu.Clear.JungleClear.E:Value() and isSpellReady(_E) then
+			local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+			table.sort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+			for i, minion in ipairs(minions) do
+				if isValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
+					Control.CastSpell(HK_E, minion)
+				end
+			end
+		end
+		if Menu.Clear.JungleClear.Q:Value() and isSpellReady(_Q) then
+			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			table.sort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+			for i, minion in ipairs(minions) do
+				if isValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
+					Control.CastSpell(HK_Q, minion)
+				end
+			end
+		end
+	end
+end
+
+function Mel:CastGGPred(spell, target)
+	if spell == HK_Q then
+		local QPrediction = GGPrediction:SpellPrediction(QSpell)
+		QPrediction:GetPrediction(target, myHero)
+		if QPrediction:CanHit(3) then
+			Control.CastSpell(HK_Q, QPrediction.CastPosition)
+		end
+	elseif spell == HK_E then
+		local EPrediction = GGPrediction:SpellPrediction(ESpell)
+		EPrediction:GetPrediction(target, myHero)
+		if EPrediction:CanHit(3) then
+			Control.CastSpell(HK_E, EPrediction.CastPosition)
+		end	
+	end
+end
+
+function Mel:Draw()
+	if myHero.dead then return end
+	
+	if Menu.Draw.DrawFarm:Value() then
+		if Menu.Clear.SpellFarm:Value() then
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.Q:Value() and isSpellReady(_Q) then
+		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+	end
+	if Menu.Draw.E:Value() and isSpellReady(_E) then
+		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 end
