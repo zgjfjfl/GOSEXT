@@ -1,4 +1,4 @@
-local Version = 2025.05
+local Version = 2025.06
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -3081,7 +3081,7 @@ function Lissandra:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 		Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-		Menu.Harass:MenuElement({id = "Mana", name = "Harass min Mana", value = 50, min = 1, max = 100, step = 5})
+		-- Menu.Harass:MenuElement({id = "Mana", name = "Harass min Mana", value = 50, min = 1, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
 		Menu.Flee:MenuElement({id = "E", name = "[E] to mouse", toggle = true, value = true})
@@ -3168,7 +3168,7 @@ function Lissandra:Harass()
 
 	local target = TargetSelector:GetTarget(1000)
 	if target and isValid(target) then
-		if Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana > Menu.Harass.Mana:Value()/100 then
+		if Menu.Harass.Q:Value() --[[and myHero.mana/myHero.maxMana > Menu.Harass.Mana:Value()/100 ]]then
 			self:CastQ(target)
 		end
 	end
@@ -4271,7 +4271,7 @@ function Milio:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 		Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-		Menu.Harass:MenuElement({id = "Mana", name = "Min Mana to Harass", value = 30, min = 0, max = 100})
+		-- Menu.Harass:MenuElement({id = "Mana", name = "Min Mana to Harass", value = 30, min = 0, max = 100})
 
 	Menu:MenuElement({type = MENU, id = "AutoW", name = "AutoW"})
 		Menu.AutoW:MenuElement({id = "W", name = "[W]Auto heal", toggle = true, value = true})
@@ -4382,7 +4382,7 @@ function Milio:Harass()
 	local target = TargetSelector:GetTarget(1500)
 	if isValid(target) and target.pos2D.onScreen then
 			
-		if Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value() / 100 then
+		if Menu.Harass.Q:Value() --[[and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value() / 100 ]]then
 			self:CastQ(target)
 		end
 	end
@@ -5701,7 +5701,7 @@ function Mel:LoadMenu()
 	
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "Qcc", name = "Auto Q on CC", toggle = true, value = true})
-	Menu.Misc:MenuElement({id = "Egap", name = "Auto E AnitGap", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Egap", name = "Auto E AntiGapcloser", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Rkill", name = "Auto R Kills", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})

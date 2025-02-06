@@ -1,4 +1,4 @@
-local Version = 2025.09
+local Version = 2025.11
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -450,7 +450,7 @@ function Nilah:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "Mana", name = "Min Mana to Harass", value = 20, min = 0, max = 100})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "Min Mana to Harass", value = 20, min = 0, max = 100})
 
 	Menu:MenuElement({type = MENU, id = "Auto", name = "AutoW"})
 	Menu.Auto:MenuElement({id = "W", name = "Auto W| when enemyattackself", toggle = true, value = true})
@@ -463,10 +463,10 @@ function Nilah:LoadMenu()
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 2, min = 1, max = 6, step = 1})
-	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
 	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 	
 	Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
 	Menu.LastHit:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -540,7 +540,7 @@ end
 function Nilah:Harass()
 	local target = TargetSelector:GetTarget(QSpell.Range)
 	if IsValid(target) then	
-		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value() / 100 then
+		if Menu.Harass.Q:Value() and IsReady(_Q) --[[and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value() / 100 ]]then
 			self:CastGGPred(HK_Q, target)
 		end
 	end
@@ -567,7 +567,7 @@ end
 
 function Nilah:LaneClear()
 	if IsUnderTurret(myHero) then return end
-	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 			MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
@@ -584,7 +584,7 @@ function Nilah:LaneClear()
 end
 
 function Nilah:JungleClear()
-	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 			MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
@@ -783,7 +783,7 @@ function Smolder:LoadMenu()
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	-- Menu.Harass:MenuElement({id = "Q2", name = "Use Q Ext", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
@@ -792,11 +792,11 @@ function Smolder:LoadMenu()
 	-- Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
-	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
 	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
-	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
 	Menu.LastHit:MenuElement({id = "Q", name = "Use Q(Clear/Harass/LastHit Modes)", toggle = true, value = true})
@@ -946,7 +946,7 @@ function Smolder:Combo()
 end
 
 function Smolder:Harass()
-	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		local Wtarget = GetTarget(WSpell.Range)
 		if IsValid(Wtarget) and Wtarget.pos2D.onScreen then
 			if Menu.Harass.W:Value() and IsReady(_W) then
@@ -961,7 +961,7 @@ function Smolder:Harass()
 				Control.CastSpell(HK_Q, Qtarget)
 			end
 		end
-	end
+	-- end
 end
 
 function Smolder:FarmHarass()
@@ -1007,7 +1007,7 @@ end
 
 function Smolder:LaneClear()
 	if IsUnderTurret(myHero) then return end
-	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
 			local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
 			MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
@@ -1024,7 +1024,7 @@ function Smolder:LaneClear()
 end
 
 function Smolder:JungleClear()
-	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
 			local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
 			MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
@@ -1633,7 +1633,7 @@ function Lucian:LoadMenu()
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "QExt", name = "Use Extended Q", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
@@ -1643,14 +1643,14 @@ function Lucian:LoadMenu()
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
-	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
 	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "Emode", name = "Use E | Mode", value = 1, drop = {"To Side", "To Mouse", "To Target"}})
 	Menu.Clear.JungleClear:MenuElement({id = "Priority", name = "JungleClear Abilities Priority", value = 3, drop = {"Q", "W", "E"}})
-	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "QhitChance", name = "Q | hitChance", value = 1, drop = {"Normal", "High"}})
@@ -1829,7 +1829,7 @@ function Lucian:CastQExt(target)
 end
 
 function Lucian:Harass()
-	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if IsValid(target) then
 			if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
@@ -1843,7 +1843,7 @@ function Lucian:Harass()
 				self:CastW(target)
 			end
 		end
-	end
+	-- end
 end
 
 function Lucian:FarmHarass()
@@ -1855,7 +1855,7 @@ end
 
 function Lucian:LaneClear()
 	if IsUnderTurret(myHero) then return end
-	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
 		MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
@@ -1882,7 +1882,7 @@ function Lucian:LaneClear()
 end
 
 function Lucian:JungleClear()
-	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
 		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
@@ -2001,7 +2001,7 @@ function Jinx:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
@@ -2009,11 +2009,11 @@ function Jinx:LoadMenu()
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
-	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
 	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
-	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 	
 	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
 	Menu.KillSteal:MenuElement({id = "W", name = "Auto W KillSteal", toggle = true, value = true})
@@ -2044,32 +2044,32 @@ function Jinx:OnPreAttack(args)
 			if target.type == Obj_AI_Minion then
 				if Menu.Clear.SpellFarm:Value() and IsReady(_Q) then
 					if target.team ~= 300 and Menu.Clear.LaneClear.Q:Value() then
-						if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 then
+						-- if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 then
 							if GetMinionCount(250, target.pos) >= Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "jinxqicon") then
 								Control.CastSpell(HK_Q)
 							end
 							if GetMinionCount(250, target.pos) < Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "JinxQ") then
 								Control.CastSpell(HK_Q)
 							end
-						else
-							if HaveBuff(myHero, "JinxQ") then
-								Control.CastSpell(HK_Q)
-							end
-						end
+						-- else
+							-- if HaveBuff(myHero, "JinxQ") then
+								-- Control.CastSpell(HK_Q)
+							-- end
+						-- end
 					end
 					if target.team == 300 and Menu.Clear.JungleClear.Q:Value() then
-						if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 then
+						-- if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 then
 							if GetMinionCount(250, target.pos) >= 2 and HaveBuff(myHero, "jinxqicon") then
 								Control.CastSpell(HK_Q)
 							end
 							if GetMinionCount(250, target.pos) < 2 and HaveBuff(myHero, "JinxQ") then
 								Control.CastSpell(HK_Q)
 							end
-						else
-							if HaveBuff(myHero, "JinxQ") then
-								Control.CastSpell(HK_Q)
-							end
-						end
+						-- else
+							-- if HaveBuff(myHero, "JinxQ") then
+								-- Control.CastSpell(HK_Q)
+							-- end
+						-- end
 					end
 				end
 			elseif target.type == Obj_AI_Nexus or target.type == Obj_AI_Barracks or target.type == Obj_AI_Turret then
@@ -2174,7 +2174,7 @@ function Jinx:CastR(target)
 end
 
 function Jinx:Harass()
-	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		local target = GetTarget(WSpell.Range)
 		if IsValid(target) then
 			if Menu.Harass.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) > self:QmaxRange(target) then
@@ -2191,7 +2191,7 @@ function Jinx:Harass()
 				end
 			end
 		end
-	end
+	-- end
 end
 
 function Jinx:FarmHarass()
@@ -2231,7 +2231,7 @@ end
 end ]]
 
 function Jinx:JungleClear()
-	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range + 130)
 		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
@@ -2393,7 +2393,7 @@ function Tristana:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	Orbwalker:OnPostAttackTick(function() self:OnPostAttackTick() end)
+	Orbwalker:OnPostAttack(function() self:OnPostAttack() end)
 end
 
 function Tristana:LoadMenu()
@@ -2404,7 +2404,7 @@ function Tristana:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
@@ -2413,11 +2413,11 @@ function Tristana:LoadMenu()
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "Use Q| Near Minion Counts >= ", value = 3, min = 1, max = 6, step = 1})
 	Menu.Clear.LaneClear:MenuElement({id = "E", name = "Use E On Turret", toggle = true, value = true})
-	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
 	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
-	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 	
 	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
 	Menu.KillSteal:MenuElement({id = "R", name = "Auto R KillSteal(E+R calculation)", toggle = true, value = true})
@@ -2442,24 +2442,24 @@ function Tristana:OnPreAttack(args)
 			end
 		end
 		if GetMode() == "Harass" then
-			if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+			-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 				if Menu.Harass.E:Value() and IsReady(_E) then
 					Control.CastSpell(HK_E, target)
 				end
-			end
+			-- end
 		end
 		if GetMode() == "LaneClear" then
-			if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+			-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 				if Menu.Clear.SpellHarass:Value() and Menu.Harass.E:Value() and IsReady(_E) then
 					Control.CastSpell(HK_E, target)
 				end
-			end
+			-- end
 		end
 	end
 
 	if target and target.type == Obj_AI_Turret then
 		if GetMode() == "LaneClear" then
-			if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+			if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 				if Menu.Clear.LaneClear.E:Value() and IsReady(_E) then
 					Control.CastSpell(HK_E, target)
 				end
@@ -2468,7 +2468,7 @@ function Tristana:OnPreAttack(args)
 	end
 end
 
-function Tristana:OnPostAttackTick()
+function Tristana:OnPostAttack()
 	local target = Orbwalker:GetTarget()
 	if IsValid(target) and target.type == Obj_AI_Hero then
 		if GetMode() == "Combo" then
@@ -2479,7 +2479,7 @@ function Tristana:OnPostAttackTick()
 	end
 	if IsValid(target) and target.type == Obj_AI_Minion and target.team ~= 300 then
 		if GetMode() == "LaneClear" then
-			if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+			if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) and GetMinionCount(700, myHero.pos) >= Menu.Clear.LaneClear.QCount:Value() then
 					Control.CastSpell(HK_Q)
 				end
@@ -2510,7 +2510,7 @@ function Tristana:OnTick()
 end
 
 function Tristana:JungleClear()
-	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(AAERRange)
 		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
@@ -2641,7 +2641,7 @@ function MissFortune:__init()
 	QSpell = {Delay = 0.25, Range = 550, Speed = 1400}
 	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 200, Range = 1150, Speed = MathHuge, Collision = false}
 	RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.375, Radius = 40, Range = 1350, Speed = 2000, Collision = false}
-	LastAttackId = 0
+	-- LastAttackId = 0
 end
 
 function MissFortune:LoadMenu()
@@ -2656,7 +2656,7 @@ function MissFortune:LoadMenu()
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "Q2", name = "Use Bounce Q", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "E", name = "Use E", toggle = true, value = false})
-	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
@@ -2666,12 +2666,12 @@ function MissFortune:LoadMenu()
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "ECount", name = "If E CanHit Counts >= ", value = 3, min = 1, max = 5, step = 1})
-	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
 	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
-	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
 	Menu.KillSteal:MenuElement({id = "Q", name = "Auto Q KillSteal", toggle = true, value = true})
@@ -2726,7 +2726,7 @@ end
 
 function MissFortune:OnPreAttack(args)
 	local target = args.Target
-	local manaPercentage = myHero.mana / myHero.maxMana
+	-- local manaPercentage = myHero.mana / myHero.maxMana
 	if GetMode() == "Combo" and IsValid(target) and target.type == Obj_AI_Hero then
 		if Menu.Combo.W:Value() and IsReady(_W) then
 			Control.CastSpell(HK_W)
@@ -2735,8 +2735,8 @@ function MissFortune:OnPreAttack(args)
 	if GetMode() == "LaneClear" and IsValid(target) and target.type == Obj_AI_Minion then
 		local isJungleMinion = target.team == 300
 		local isLaneMinion = target.team ~= 300
-		local minMana = isJungleMinion and Menu.Clear.JungleClear.Mana:Value() or Menu.Clear.LaneClear.Mana:Value()
-		if manaPercentage >= minMana / 100 and Menu.Clear.SpellFarm:Value() then
+		-- local minMana = isJungleMinion and Menu.Clear.JungleClear.Mana:Value() or Menu.Clear.LaneClear.Mana:Value()
+		if --[[manaPercentage >= minMana / 100 and ]]Menu.Clear.SpellFarm:Value() then
 			if (isJungleMinion and Menu.Clear.JungleClear.W:Value() or isLaneMinion and Menu.Clear.LaneClear.W:Value()) and IsReady(_W) then
 				Control.CastSpell(HK_W)
 			end
@@ -2822,7 +2822,7 @@ function MissFortune:Combo()
 end
 
 function MissFortune:Harass()
-	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+	--if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if IsReady(_Q) then
 			local Qtarget = GetTarget(QSpell.Range+500)
 			if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
@@ -2838,7 +2838,7 @@ function MissFortune:Harass()
 				self:CastGGPred(HK_E, Etarget)
 			end
 		end
-	end
+	--end
 end
 
 function MissFortune:FarmHarass()
@@ -2849,7 +2849,7 @@ end
 
 function MissFortune:LaneClear()
 	if IsUnderTurret(myHero) then return end
-	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
 		MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
@@ -2870,7 +2870,7 @@ function MissFortune:LaneClear()
 end
 
 function MissFortune:JungleClear()
-	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
 		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
@@ -2884,7 +2884,7 @@ function MissFortune:JungleClear()
 						end
 					end
 				end
-				if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
+				if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) < QSpell.Range then
 					Control.CastSpell(HK_Q, minion)
 				end
 			end
@@ -3044,7 +3044,7 @@ function Jayce:LoadMenu()
 	Menu.R:MenuElement({id = "Rm", name = "Use R melee", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
-	Menu.Harass:MenuElement({id = "Mana", name = "Harass Mana", value = 80, min = 0, max = 100, step = 5})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "Harass Mana", value = 80, min = 0, max = 100, step = 5})
 	
 	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
 	Menu.Flee:MenuElement({id = "Enable", name = "Flee Mode(A)", toggle = true, value = true})
@@ -3054,7 +3054,7 @@ function Jayce:LoadMenu()
 	Menu.Farm:MenuElement({id = "farmQ", name = "Lane clear Q + E range", toggle = true, value = true})
 	Menu.Farm:MenuElement({id = "farmW", name = "Lane clear W range && melee", toggle = true, value = true})
 	Menu.Farm:MenuElement({id = "LCminions", name = "Lane clear minimum minions", value = 3, min = 0, max = 10, step = 1})
-	Menu.Farm:MenuElement({id = "Mana", name = "LaneClear Mana", value = 50, min = 0, max = 100, step = 5})
+	-- Menu.Farm:MenuElement({id = "Mana", name = "LaneClear Mana", value = 50, min = 0, max = 100, step = 5})
 	Menu.Farm:MenuElement({id = "jungleC", name = "Jungle Clear Key toggle", toggle = true, value = false, key = string.byte("M")})
 	Menu.Farm:MenuElement({id = "jungleQ", name = "Jungle clear Q", toggle = true, value = true})
 	Menu.Farm:MenuElement({id = "jungleW", name = "Jungle clear W", toggle = true, value = true})
@@ -3277,7 +3277,7 @@ function Jayce:Q1Logic()
 			self:CastQ1(target)
 		elseif GetMode() == "Combo" and myHero.mana > Q1mana + E1mana then
 			self:CastQ1(target)
-		elseif GetMode() == "Harass" and myHero.mana/myHero.maxMana > Menu.Harass.Mana:Value()/100 then
+		elseif GetMode() == "Harass" --[[and myHero.mana/myHero.maxMana > Menu.Harass.Mana:Value()/100 ]]then
 			self:CastQ1(target)
 		end
 	end
@@ -3407,7 +3407,7 @@ end
 function Jayce:LaneClear()
 	if GetMode() ~= "LaneClear" then return end
 	if IsUnderTurret(myHero) then return end
-	if Menu.Farm.spellFarm:Value() and myHero.mana/myHero.maxMana > Menu.Farm.Mana:Value()/100 then
+	if Menu.Farm.spellFarm:Value() --[[and myHero.mana/myHero.maxMana > Menu.Farm.Mana:Value()/100 ]]then
 		if self:IsRange() and IsReady(_Q) and IsReady(_E) and Menu.Farm.farmQ:Value() then
 			local minions = ObjectManager:GetEnemyMinions(Q1Spell.Range)
 			for i, minion in ipairs(minions) do
@@ -3573,7 +3573,7 @@ function Kalista:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "E", name = "Use E| If Can Kill Minion And Slow Target", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "Mana", name = "Harass When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "Harass When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = true, key = 4})
@@ -3581,7 +3581,7 @@ function Kalista:LoadMenu()
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanKill Counts >= ", value = 2, min = 1, max = 6, step = 1})
-	Menu.Clear.LaneClear:MenuElement({id = "QMana", name = "UseQ When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Clear.LaneClear:MenuElement({id = "QMana", name = "UseQ When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear.LaneClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "ECount", name = "If E CanKill Counts >= ", value = 2, min = 1, max = 6, step = 1})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
@@ -3720,7 +3720,7 @@ end
 
 function Kalista:Harass()
 	if IsUnderTurret(myHero) then return end
-	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
 			local Qtarget = GetTarget(QSpell.Range)
 			if IsValid(Qtarget) and Qtarget.pos2D.onScreen and not Data:IsInAutoAttackRange(myHero, Qtarget) then
@@ -3744,7 +3744,7 @@ function Kalista:Harass()
 				end
 			end
 		end
-	end
+	-- end
 end
 
 function Kalista:FarmHarass()
@@ -3777,7 +3777,7 @@ function Kalista:LaneClear()
 				end
 			end
 		end
-		if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.QMana:Value()/100 and Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
+		if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.QMana:Value()/100 and ]]Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and not myHero.activeSpell.valid and not myHero.pathing.isDashing then
@@ -3935,7 +3935,7 @@ function Ashe:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	Orbwalker:OnPostAttackTick(function() self:OnPostAttackTick() end)
+	Orbwalker:OnPostAttack(function() self:OnPostAttack() end)
 	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 20, Range = 1200, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 130, Range = 12500, Speed = 1600, Collision = false}
 end
@@ -3950,7 +3950,7 @@ function Ashe:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "Mana", name = "Harass When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "Harass When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
@@ -3959,11 +3959,11 @@ function Ashe:LoadMenu()
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "Count", name = "If LaneClear Counts >= ", value = 2, min = 1, max = 6, step = 1})
-	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
 	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
-	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
 	Menu.KillSteal:MenuElement({id = "W", name = "Auto W KillSteal", toggle = true, value = true})
@@ -3979,20 +3979,20 @@ function Ashe:LoadMenu()
 	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
 end
 
-function Ashe:OnPostAttackTick()
+function Ashe:OnPostAttack()
 	local target = Orbwalker:GetTarget()
 	if IsValid(target) and IsReady(_Q) then
 		if target.type == Obj_AI_Hero then
-			if GetMode() == "Combo" and Menu.Combo.Q:Value() or (GetMode() == "Harass" and Menu.Harass.Q:Value() and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100) then
+			if GetMode() == "Combo" and Menu.Combo.Q:Value() or (GetMode() == "Harass" and Menu.Harass.Q:Value()--[[ and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100]]) then
 				Control.CastSpell(HK_Q)
 			end
 		elseif target.type == Obj_AI_Minion then
 			if GetMode() == "LaneClear" and Menu.Clear.SpellFarm:Value() then
-				if target.team ~= 300 and myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.LaneClear.Q:Value() then
+				if target.team ~= 300 and --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.LaneClear.Q:Value() then
 					if GetMinionCount(600, myHero.pos) > Menu.Clear.LaneClear.Count:Value() then
 						Control.CastSpell(HK_Q)
 					end
-				elseif target.team == 300 and myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.JungleClear.Q:Value() then
+				elseif target.team == 300 and --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.JungleClear.Q:Value() then
 					Control.CastSpell(HK_Q)
 				end
 			end
@@ -4076,7 +4076,7 @@ end
 
 function Ashe:Harass()
 	if IsUnderTurret(myHero) then return end
-	if Menu.Harass.W:Value() and IsReady(_W) and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+	if Menu.Harass.W:Value() and IsReady(_W) --[[and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 ]]then
 		local target = GetTarget(WSpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
 			self:CastW(target)
@@ -4092,7 +4092,7 @@ end
 
 function Ashe:LaneClear()
 	if Menu.Clear.SpellFarm:Value() then
-		if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
+		if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
 			local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 then
@@ -4179,7 +4179,7 @@ function Corki:LoadMenu()
 	Menu.Harass:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "Rammo", name = "Minimum R ammo harass", value = 2, min = 0, max = 3, step = 1})
-	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
@@ -4189,11 +4189,11 @@ function Corki:LoadMenu()
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 2, min = 1, max = 6, step = 1})
 	Menu.Clear.LaneClear:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "RCount", name = "If R CanHit Counts >= ", value = 2, min = 1, max = 6, step = 1})
-	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
 	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
-	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "QhitChance", name = "Q | hitChance", value = 1, drop = {"Normal", "High"}})
@@ -4215,7 +4215,7 @@ function Corki:OnPreAttack(args)
 		if GetMode() == "Combo" and Menu.Combo.E:Value() and IsReady(_E) then
 			Control.CastSpell(HK_E, target)
 		end
-		if GetMode() == "Harass" and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then 
+		if GetMode() == "Harass" --[[and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 ]]then 
 			if Menu.Harass.E:Value() and IsReady(_E) then
 				Control.CastSpell(HK_E, target)
 			end
@@ -4322,7 +4322,7 @@ function Corki:CastR(target)
 end
 
 function Corki:Harass()
-	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if Menu.Harass.Q:Value() and IsReady(_Q) then
 			local target = GetTarget(QSpell.Range)
 			if IsValid(target) and target.pos2D.onScreen then
@@ -4336,7 +4336,7 @@ function Corki:Harass()
 				self:CastR(target)
 			end
 		end
-	end
+	-- end
 end
 
 function Corki:FarmHarass()
@@ -4349,7 +4349,7 @@ end
 function Corki:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if myHero.activeSpell.valid then return end
-	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
@@ -4374,7 +4374,7 @@ end
 
 function Corki:JungleClear()
 	if myHero.activeSpell.valid then return end
-	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
@@ -4474,7 +4474,7 @@ function Caitlyn:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
@@ -4482,10 +4482,10 @@ function Caitlyn:LoadMenu()
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 5, step = 1})
-	Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
 	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
 	Menu.Flee:MenuElement({id = "E", name = "Use E Dash to Mouse", toggle = true, value = true})
@@ -4719,14 +4719,14 @@ function Caitlyn:Combo()
 end
 
 function Caitlyn:Harass()
-	if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if Menu.Harass.Q:Value() and IsReady(_Q) then
 			local target = GetTarget(QSpell.Range)
 			if IsValid(target) and target.pos2D.onScreen then
 				self:CastGGPred(HK_Q, target)
 			end
 		end
-	end
+	-- end
 end
 
 function Caitlyn:FarmHarass()
@@ -4737,7 +4737,7 @@ end
 
 function Caitlyn:LaneClear()
 	if IsUnderTurret(myHero) then return end
-	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 			MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
@@ -4755,7 +4755,7 @@ function Caitlyn:LaneClear()
 end
 
 function Caitlyn:JungleClear()
-	if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 			MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
