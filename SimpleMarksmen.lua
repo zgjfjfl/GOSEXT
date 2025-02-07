@@ -1,4 +1,4 @@
-local Version = 2025.11
+local Version = 2025.12
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -346,7 +346,7 @@ end
 local function CircleCircleIntersection(c1, c2, r1, r2)
 	local D = GetDistance(c1,c2)
 	if D > r1 + r2 or D <= MathAbs(r1 - r2) then return nil end
-	local A = (r1 * r2 - r2 * r1 + D * D) / (2 * D)
+	local A = (r1 * r1 - r2 * r2 + D * D) / (2 * D)
 	local H = MathSqrt(r1 * r1 - A * A)
 	local Direction = (c2 - c1):Normalized()
 	local PA = c1 + A * Direction
