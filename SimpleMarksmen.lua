@@ -1,4 +1,4 @@
-local Version = 2025.13
+local Version = 2025.14
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -57,6 +57,7 @@ local GameCampCount = Game.CampCount
 local GameCamp = Game.Camp
 local GameWardCount = Game.WardCount
 local GameWard = Game.Ward
+local GameTimer = Game.Timer
 local GameIsWall = Game.isWall
 
 local TableInsert = table.insert
@@ -396,6 +397,17 @@ local function IsWall(pos)
 	end
 end
 
+local function IsCasting()
+    if myHero.activeSpell.valid then
+        if myHero.activeSpell.isCharging or
+			(GameTimer() >= myHero.activeSpell.startTime and GameTimer() <= myHero.activeSpell.castEndTime)
+		then
+            return true
+        end
+    end
+    return false
+end
+
 local epicMonsters = {
 	["sru_baron"] = true,
 	["sru_atakhan"] = true,
@@ -492,7 +504,7 @@ function Nilah:OnTick()
 		return
 	end
 	self:AutoW()
-	if myHero.activeSpell.valid then return end
+	if IsCasting() then return end
 	self:KillSteal()
 	local Mode = GetMode()
 	if Mode == "Combo" then
@@ -853,7 +865,7 @@ function Smolder:OnTick()
 		self:OneKeyCastR()
 	end
 	
-	if myHero.activeSpell.valid then return end
+	if IsCasting() then return end
 	
 	if Menu.Misc.E:Value() and HaveBuff(myHero, "SmolderE") then return end
 
@@ -1261,12 +1273,11 @@ function Zeri:OnTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
-
+	if IsCasting() then return end
 	local Mode = GetMode()
 	if Mode == "Combo" then
 		self:QBarrel()
 		self:Combo()
-		-- self:AAkills()
 	elseif Mode == "Harass" then
 		self:LastHit()
 		self:Harass()
@@ -1281,21 +1292,6 @@ function Zeri:OnTick()
 		self:LastHit()
 	end
 end
-
---[[ function Zeri:AAkills()
-	if not Menu.Misc.AAkills:Value() or myHero.activeSpell.valid then return end
-
-	local targets = ObjectManager:GetEnemyHeroes(Data:GetAutoAttackRange(myHero))
-	for i, target in ipairs(targets) do
-		if IsValid(target) then
-			local AADamage = Damage:GetAutoAttackDamage(myHero, target)
-			if target.health < AADamage and not IsReady(_Q) then
-				_G.Control.Attack(target)
-				return
-			end
-		end
-	end
-end ]]
 
 function Zeri:QBarrel()
 	if not Menu.Misc.QBarrel:Value() or not IsReady(_Q) then
@@ -1387,8 +1383,6 @@ function Zeri:Combo()
 end
 
 function Zeri:CastW(target)
-	if myHero.activeSpell.valid then return end
-
 	local predPos = nil
 	local pred = GGPrediction:SpellPrediction(W2Spell)
 	pred:GetPrediction(target, myHero)
@@ -1669,7 +1663,6 @@ end
 
 
 function Lucian:OnTick()
-
 	QSpell.Delay = 0.4 - 0.15 / 17 * (myHero.levelData.lvl - 1)
 	Q2Spell.Delay = QSpell.Delay
 	
@@ -1680,8 +1673,7 @@ function Lucian:OnTick()
 	Dashing = myHero.pathing.isDashing
 	CastingR = HaveBuff(myHero, "LucianR")
 	if lastQ + QSpell.Delay * 2 > Game.Timer() then return end
-	if HavePassive or myHero.activeSpell.valid or Dashing or CastingR then return end
-	
+	if HavePassive or IsCasting() or Dashing or CastingR then return end
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
@@ -2088,7 +2080,7 @@ function Jinx:OnTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
-	if myHero.activeSpell.valid then return end
+	if IsCasting() then return end
 
 	self:AutoE()
 	self:SemiR()
@@ -2494,13 +2486,12 @@ function Tristana:OnTick()
 	--E.Delay = myHero.attackData.windUpTime
 	
 	self:ForceE()
-	self:AntiGapcloser()
 
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
-	if myHero.activeSpell.valid then return end
-
+	if IsCasting() then return end
+	self:AntiGapcloser()
 	self:SemiR()
 	self:KillSteal()
 
@@ -2707,7 +2698,7 @@ function MissFortune:OnTick()
 	
 	-- self:newTarget()
 
-	if myHero.activeSpell.valid then return end
+	if IsCasting() then return end
 
 	self:SemiRLogic()
 	self:KillSteal()
@@ -3168,7 +3159,7 @@ function Jayce:OnTick()
 		self:Flee()
 	end
 
-	if myHero.activeSpell.valid then return end
+	if IsCasting() then return end
 
 	if self:IsRange() then
 		if Menu.W.Wmove:Value() and Orbwalker:GetTarget() ~= nil and HaveBuff(myHero, "jaycehypercharge") then
@@ -3670,7 +3661,7 @@ end
 function Kalista:CastQ(target)
 	local QPrediction = GGPrediction:SpellPrediction(QSpell)
 	QPrediction:GetPrediction(target, myHero)
-	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) and not myHero.activeSpell.valid and not myHero.pathing.isDashing then
+	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) and not IsCasting() and not myHero.pathing.isDashing then
 		local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, QPrediction.CastPosition, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 		if collisionCount > 0 then
 			local allColCanKill = true
@@ -3780,7 +3771,7 @@ function Kalista:LaneClear()
 		if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.QMana:Value()/100 and ]]Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 			for i, minion in ipairs(minions) do
-				if IsValid(minion) and minion.team ~= 300 and not myHero.activeSpell.valid and not myHero.pathing.isDashing then
+				if IsValid(minion) and minion.team ~= 300 and not IsCasting() and not myHero.pathing.isDashing then
 					local QDmg = self:GetQDmg(minion)
 					if minion.health <= QDmg then
 						local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
@@ -4005,7 +3996,7 @@ function Ashe:OnTick()
 		return
 	end
 	self:SemiManualR()
-	if myHero.activeSpell.valid then return end
+	if IsCasting() then return end
 	self:KillSteal()
 	local Mode = GetMode()
 	if Mode == "Combo" then
@@ -4227,7 +4218,7 @@ function Corki:OnTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
-	-- if myHero.activeSpell.valid then return end
+	if IsCasting() then return end
 	if self:HaveSheenBuff() then return end
 	self:SemiR()
 	self:AutoQ()
@@ -4273,14 +4264,12 @@ end
 function Corki:CastQ(target)
 	local QPrediction = GGPrediction:SpellPrediction(QSpell)
 	QPrediction:GetPrediction(target, myHero)
-	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) and lastQ + 330 < GetTickCount() and Orbwalker:CanMove() then
+	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
 		local castPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 825)
 		if myHero.pos:DistanceTo(QPrediction.CastPosition) <= 825 then
 			Control.CastSpell(HK_Q, QPrediction.CastPosition)
-			lastQ = GetTickCount()
 		elseif myHero.pos:DistanceTo(QPrediction.CastPosition) > 825 and myHero.pos:DistanceTo(QPrediction.CastPosition) <= 950 then
 			Control.CastSpell(HK_Q, castPos)
-			lastQ = GetTickCount()
 		end
 	end
 end
@@ -4289,33 +4278,29 @@ function Corki:CastR(target)
 	if HaveBuff(myHero, "mbcheck2") then
 		local R2Prediction = GGPrediction:SpellPrediction(R2Spell)
 		R2Prediction:GetPrediction(target, myHero)
-		if R2Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) and lastR + 250 < GetTickCount() and Orbwalker:CanMove() then
+		if R2Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
 			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R2Prediction.CastPosition, R2Spell.Speed, R2Spell.Delay, R2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 			if collisionCount > 0 then
 				local minion = collisionObjects[1]
 				if minion.pos:DistanceTo(R2Prediction.CastPosition) < 250 then
 					Control.CastSpell(HK_R, R2Prediction.CastPosition)
-					lastR = GetTickCount()
 				end
 			else
 				Control.CastSpell(HK_R, R2Prediction.CastPosition)
-				lastR = GetTickCount()
 			end
 		end
 	else
 		local R1Prediction = GGPrediction:SpellPrediction(R1Spell)
 		R1Prediction:GetPrediction(target, myHero)
-		if R1Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) and lastR + 250 < GetTickCount() and Orbwalker:CanMove() then
+		if R1Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
 			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R1Prediction.CastPosition, R1Spell.Speed, R1Spell.Delay, R1Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 			if collisionCount > 0 then
 				local minion = collisionObjects[1]
 				if minion.pos:DistanceTo(R1Prediction.CastPosition) < 100 then
 					Control.CastSpell(HK_R, R1Prediction.CastPosition)
-					lastR = GetTickCount()
 				end
 			else
 				Control.CastSpell(HK_R, R1Prediction.CastPosition)
-				lastR = GetTickCount()
 			end
 		end
 	end
@@ -4348,7 +4333,6 @@ end
 
 function Corki:LaneClear()
 	if IsUnderTurret(myHero) then return end
-	if myHero.activeSpell.valid then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 		for i, minion in ipairs(minions) do
@@ -4373,7 +4357,6 @@ function Corki:LaneClear()
 end
 
 function Corki:JungleClear()
-	if myHero.activeSpell.valid then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
 		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
@@ -4526,7 +4509,7 @@ function Caitlyn:OnTick()
 		Orbwalker:SetMovement(true)
 		Orbwalker:SetAttack(true)
 	end
-	if myHero.activeSpell.valid then return end
+	if IsCasting() then return end
 	if Menu.Misc.EQKey:Value() then
 		self:OneKeyEQ()
 	end
