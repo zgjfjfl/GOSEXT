@@ -1,4 +1,4 @@
-local Version = 2025.12
+local Version = 2025.13
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1623,9 +1623,9 @@ function Lucian:LoadMenu()
 	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Emode", name = "Use E | Mode", value = 1, drop = {"To Side", "To Mouse", "To Target"}})
+	Menu.Combo:MenuElement({id = "EsafeCheck", name = "E-dash Point Safe Check", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "enemyCheck", name = "Block E-dash in X enemies", value = 3, min = 0, max = 5, step = 1})	
 	Menu.Combo:MenuElement({id = "Echeck", name = "Block E-dash inWall / underTurret", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "EsafeCheck", name = "E-dash Point Safe Check", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Edis", name = "Use E | To Side - hold distance", value = 500, min = 300, max = 700, step = 50})
 	Menu.Combo:MenuElement({id = "Priority", name = "Combo Abilities Priority",	value = 1, drop = {"Q", "W", "E", "EW"}})
 
@@ -1759,8 +1759,8 @@ end
 function Lucian:CastE(target, mode, range)
 	local castPos = nil
 	if mode == 1 then
-		local targetPred = target:GetPrediction(MathHuge, 0.25)
-		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, targetPred, ESpell.Range, Menu.Combo.Edis:Value())
+		--local targetPred = target:GetPrediction(MathHuge, 0.25)
+		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, target.pos, ESpell.Range, Menu.Combo.Edis:Value())
 		if intPos1 and intPos2 then
 			local closest = GetDistance(intPos1, mousePos) < GetDistance(intPos2, mousePos) and intPos1 or intPos2
 			if IsFacingMe(target) then
@@ -1780,10 +1780,10 @@ function Lucian:CastE(target, mode, range)
 		local inWall = IsWall(castPos)
 		local enemyCheck = Menu.Combo.enemyCheck:Value()
 		local enemyCountCastPos = GetEnemyCount(600, castPos)
-		local enemyCountMyHero = GetEnemyCount(400, castPos)
+		local allyCountCastPos = GetAllyCount(400, castPos)
 
 		if Menu.Combo.Echeck:Value() and (underTurret or inWall) then return end
-		if Menu.Combo.EsafeCheck:Value() and (enemyCountCastPos >= enemyCheck or enemyCountCastPos > enemyCountMyHero) then return end
+		if Menu.Combo.EsafeCheck:Value() and (enemyCountCastPos >= enemyCheck or enemyCountCastPos > allyCountCastPos) then return end
 
 		Control.CastSpell(HK_E, castPos)
 	end
