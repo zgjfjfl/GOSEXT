@@ -1,4 +1,4 @@
-local Version = 2025.14
+local Version = 2025.15
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -398,14 +398,14 @@ local function IsWall(pos)
 end
 
 local function IsCasting()
-    if myHero.activeSpell.valid then
-        if myHero.activeSpell.isCharging or
+	if myHero.activeSpell.valid then
+		if myHero.activeSpell.isCharging or
 			(GameTimer() >= myHero.activeSpell.startTime and GameTimer() <= myHero.activeSpell.castEndTime)
 		then
-            return true
-        end
-    end
-    return false
+			return true
+		end
+	end
+	return false
 end
 
 local epicMonsters = {
@@ -433,7 +433,7 @@ local slots = {}
 ---------------------------------
 
 Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.5.1/img/champion/"..myHero.charName..".png"})
-	Menu:MenuElement({name = " ", drop = {"Version: " .. Version}})
+	Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
 
 ---------------------------------
 
@@ -1171,7 +1171,6 @@ function Zeri:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	-- Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
 	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 40, Range = 750, Speed = 2600, Collision = false}
 	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 40, Range = 1150, Speed = 2500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	W2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 100, Range = 2500, Speed = 2500, Collision = false}
@@ -1659,8 +1658,6 @@ function Lucian:LoadMenu()
 	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
 end
-
-
 
 function Lucian:OnTick()
 	QSpell.Delay = 0.4 - 0.15 / 17 * (myHero.levelData.lvl - 1)
@@ -2624,7 +2621,6 @@ class "MissFortune"
 function MissFortune:__init()
 	print("Marksmen MissFortune Loaded") 
 	self:LoadMenu()
-	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
@@ -2691,10 +2687,10 @@ function MissFortune:OnTick()
 	if HaveBuff(myHero, "missfortunebulletsound") then
 		Orbwalker:SetAttack(false)
 		Orbwalker:SetMovement(false)
-		return
+	else
+		Orbwalker:SetAttack(true)
+		Orbwalker:SetMovement(true)
 	end
-	Orbwalker:SetAttack(true)
-	Orbwalker:SetMovement(true)
 	
 	-- self:newTarget()
 
@@ -2743,10 +2739,11 @@ end
 -- end
 
 function MissFortune:SemiRLogic()
-	if Menu.Misc.R:Value() and IsReady(_R) then
+	if Menu.Misc.R:Value() and IsReady(_R) and lastR + 3000 < GetTickCount() then
 		local Rtarget = GetTarget(RSpell.Range)
 		if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 			Control.CastSpell(HK_R, Rtarget)
+			lastR = GetTickCount()
 		end
 	end
 end
@@ -2998,7 +2995,7 @@ function Jayce:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	Callback.Add("WndMsg", function(...) self:OnWndMsg(...) end)
+	-- Callback.Add("WndMsg", function(...) self:OnWndMsg(...) end)
 	Spell:OnSpellCast(function(spell) self:OnSpellCast(spell) end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	Q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1050, Speed = 1450, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
@@ -3025,7 +3022,7 @@ function Jayce:LoadMenu()
 	
 	Menu:MenuElement({type = MENU, id = "E", name = "E Config"})
 	Menu.E:MenuElement({id = "Er", name = "Use E range (Q + E)", toggle = true, value = true})
-	Menu.E:MenuElement({id = "Esm", name = "Use E When Manual RangeQ", toggle = true, value = false})
+	-- Menu.E:MenuElement({id = "Esm", name = "Use E When Manual RangeQ", toggle = true, value = false})
 	Menu.E:MenuElement({id = "Em", name = "Use E melee", toggle = true, value = true})
 	Menu.E:MenuElement({id = "Eks", name = "E melee ks only", toggle = true, value = false})
 	Menu.E:MenuElement({id = "gapE", name = "Gapcloser R + E", toggle = true, value = true})
@@ -3100,16 +3097,17 @@ function Jayce:SetValue()
 	E2cd = SetPlus(E2cdt - Game.Timer())
 end
 
-local isQmanualCast = false
-local QmanualTimer = nil
-function Jayce:OnWndMsg(msg, wParam)
-	if self:IsRange() and IsReady(_Q) then
-		if msg == KEY_DOWN and wParam == HK_Q then
-			isQmanualCast = true
-			QmanualTimer = GetTickCount()
-		end
-	end
-end
+-- local isQmanualCast = false
+-- local QmanualTimer = nil
+-- function Jayce:OnWndMsg(msg, wParam)
+	-- if self:IsRange() and Game.CanUseSpell(_Q) then
+		-- if msg == KEY_DOWN and wParam == HK_Q then
+		-- print('q')
+			-- isQmanualCast = true
+			-- QmanualTimer = GetTickCount()
+		-- end
+	-- end
+-- end
 
 function Jayce:OnSpellCast(spell)
 	if not self:IsRange() then
@@ -3138,20 +3136,20 @@ function Jayce:OnTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
-	if QmanualTimer and GetTickCount() > QmanualTimer + 1000 then
-		isQmanualCast = false
-		QmanualTimer = nil
-	end
+	-- if QmanualTimer and GetTickCount() > QmanualTimer + 1000 then
+		-- isQmanualCast = false
+		-- QmanualTimer = nil
+	-- end
 
-	if Menu.E.Esm:Value() and isQmanualCast == true or isQmanualCast == false then
+	-- if Menu.E.Esm:Value() and isQmanualCast == true or isQmanualCast == false then
 		if myHero.activeSpell.name == "JayceShockBlast" then
 			Etick = GetTickCount()
-			if self:IsRange() and IsReady(_E) and Menu.E.Er:Value() and GetTickCount() < Etick + 250 then -- + Game.Latency()
-				local EcastPos = Vector(myHero.pos):Extended(Vector(myHero.activeSpell.placementPos), 150) -- + Game.Latency()/2)
+			if self:IsRange() and IsReady(_E) and Menu.E.Er:Value() and GetTickCount() < Etick + 250 + Game.Latency() then
+				local EcastPos = Vector(myHero.pos):Extended(Vector(myHero.activeSpell.placementPos), 150 + Game.Latency()/2)
 				Control.CastSpell(HK_E, EcastPos)
 			end
 		end	
-	end
+	-- end
 
 	self:SetValue()
 	self:Gapcloser()
@@ -3483,13 +3481,13 @@ end
 
 function Jayce:GetQ1Dmg(target)
 	local level = myHero:GetSpellData(_Q).level
-	local QDmg = ({60, 115, 170, 225, 280, 335})[level] + 1.25 * myHero.bonusDamage
+	local QDmg = ({60, 110, 160, 210, 260, 310})[level] + 1.40 * myHero.bonusDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 
 function Jayce:GetQ2Dmg(target)
 	local level = myHero:GetSpellData(_Q).level
-	local QDmg = ({60, 110, 160, 210, 260, 310})[level] + 1.2 * myHero.bonusDamage
+	local QDmg = ({60, 105, 150, 195, 240, 285})[level] + 1.35 * myHero.bonusDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 
@@ -4219,9 +4217,9 @@ function Corki:OnTick()
 		return
 	end
 	if IsCasting() then return end
-	if self:HaveSheenBuff() then return end
 	self:SemiR()
 	self:AutoQ()
+	if self:HaveSheenBuff() then return end
 	local Mode = GetMode()
 	if Mode == "Combo" then
 		self:Combo()
@@ -4538,6 +4536,7 @@ function Caitlyn:OneKeyCastR()
 	local Rtarget = GetTarget(RSpell.Range)
 	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 		Control.CastSpell(HK_R, Rtarget)
+		print('R')
 	end
 end
 
@@ -4652,8 +4651,8 @@ function Caitlyn:Combo()
 			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, ESpell.Speed, ESpell.Delay, ESpell.Radius, ESpell.CollisionTypes, target.networkID)
 			if collisionCount == 0 then
 				if Menu.Combo.Q:Value() and IsReady(_Q) then
-					self:CastGGPred(HK_E, target)
-					DelayAction(function() self:CastGGPred(HK_Q, target) end, ESpell.Delay)
+					self:CastEQ(target)
+					--DelayAction(function() self:CastGGPred(HK_Q, target) end, ESpell.Delay)
 				else
 					self:CastGGPred(HK_E, target)
 				end
@@ -4768,10 +4767,19 @@ function Caitlyn:OneKeyEQ()
 		if IsValid(target) and target.pos2D.onScreen then
 			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, ESpell.Speed, ESpell.Delay, ESpell.Radius, ESpell.CollisionTypes, target.networkID)
 			if collisionCount == 0 then
-				self:CastGGPred(HK_E, target)
-				DelayAction(function() self:CastGGPred(HK_Q, target) end, ESpell.Delay)
+				self:CastEQ(target)
+				-- self:CastGGPred(HK_E, target)
+				-- DelayAction(function() self:CastGGPred(HK_Q, target) end, ESpell.Delay)
 			end
 		end
+	end
+end
+
+function Caitlyn:CastEQ(target)
+	local Prediction = GGPrediction:SpellPrediction(ESpell)
+	Prediction:GetPrediction(target, myHero)
+	if Prediction:CanHit(3) then
+		Control.CastSpell({HK_E, HK_Q}, Prediction.CastPosition)
 	end
 end
 
