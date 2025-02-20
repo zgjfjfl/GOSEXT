@@ -1,4 +1,4 @@
-local Version = 2025.07
+local Version = 2025.08
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -5315,7 +5315,7 @@ function Mel:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 250, Range = 1000, Speed = 5000, Collision = false}
+	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 250, Range = 950, Speed = 4500, Collision = false}
 	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 150, Range = 1050, Speed = 1000, Collision = false}
 end
 
