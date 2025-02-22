@@ -1,4 +1,4 @@
-local Version = 2025.08
+local Version = 2025.09
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2565,7 +2565,7 @@ function Ivern:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "AutoE", name = "AutoE"})
 		Menu.AutoE:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 		Menu.AutoE:MenuElement({type = MENU,id = "Etarget", name = "Use On"})
-			ObjectManager:OnEnemyHeroLoad(function(args)
+			ObjectManager:OnAllyHeroLoad(function(args)
 				Menu.AutoE.Etarget:MenuElement({id = args.charName, name = args.charName, value = true})				
 			end)
 	Menu:MenuElement({type = MENU, id = "Daisy", name = "Daisy Setting"})
@@ -2628,28 +2628,28 @@ end
 function Ivern:AutoE()
 	if IsReady(_E) and lastE + 250 < GetTickCount() then
 		local enemies = ObjectManager:GetEnemyHeroes(2500)
-		for i, enemy in ipairs(enemies) do
+		local bestAlly, minDist = nil, math.huge
+		for _, enemy in ipairs(enemies) do
 			if IsValid(enemy) then
 				local allies = ObjectManager:GetAllyHeroes(self.eSpell.Range)
-				for i, ally in ipairs(allies) do
-					if #allies == 1 and ally.isMe and Menu.AutoE.Etarget[ally.charName] and Menu.AutoE.Etarget[ally.charName]:Value() then
-						if ally.pos:DistanceTo(enemy.pos) < self.eSpell.Radius then
-							Control.CastSpell(HK_E, ally)
-							lastE = GetTickCount()
-						end
-					elseif #allies > 1 and not ally.isMe and Menu.AutoE.Etarget[ally.charName]:Value() then
-						if ally.pos:DistanceTo(enemy.pos) < self.eSpell.Radius then
-							if ally.pos:DistanceTo(enemy.pos) < myHero.pos:DistanceTo(enemy.pos) or (Menu.AutoE.Etarget[myHero.charName]:Value() == false) then
-								Control.CastSpell(HK_E, ally)
-								lastE = GetTickCount()
-							else
-								Control.CastSpell(HK_E, myHero)
-								lastE = GetTickCount()
-							end
-						end
+				local validAllies = {}
+				for _, ally in ipairs(allies) do
+					if Menu.AutoE.Etarget[ally.charName] and Menu.AutoE.Etarget[ally.charName]:Value() then
+						table.insert(validAllies, ally)
+					end
+				end
+				for _, ally in ipairs(validAllies) do
+					local dist = ally.pos:DistanceTo(enemy.pos)
+					if dist < self.eSpell.Radius and dist < minDist then
+						bestAlly = ally
+						minDist = dist
 					end
 				end
 			end
+		end
+		if bestAlly then
+			Control.CastSpell(HK_E, bestAlly)
+			lastE = GetTickCount()
 		end
 	end
 end
