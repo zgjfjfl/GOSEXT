@@ -1,4 +1,4 @@
-local Version = 2025.08
+local Version = 2025.09
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -401,17 +401,6 @@ local function GetEnemiesAtPos(checkrange, range, pos, target)
 	end
 	TableInsert(results, target)
 	return results
-end
-
-local function IsCasting()
-    if myHero.activeSpell.valid then
-        if myHero.activeSpell.isCharging or
-			(GameTimer() >= myHero.activeSpell.startTime and GameTimer() <= myHero.activeSpell.castEndTime)
-		then
-            return true
-        end
-    end
-    return false
 end
 
 local function IsCasting()
@@ -1508,6 +1497,7 @@ function Ziggs:__init()
 	WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 400, Range = 1200, Speed = 1750, Collision = false}
 	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 325, Range = 1000, Speed = 1750, Collision = false}
 	RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.375, Radius = 230, Range = 5000, Speed = 1750, Collision = false}
+	w2Timestamp = nil
 end
 
 function Ziggs:LoadMenu()
@@ -1524,7 +1514,7 @@ function Ziggs:LoadMenu()
 	Menu.Harass:MenuElement({id = "E", name = "Harass [E]", toggle = true, value = true})
 	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
 	Menu.Auto:MenuElement({id = "W2", name = "Auto [W2]", toggle = true, value = true})
-	Menu.Auto:MenuElement({id = "W2time", name = "Auto [W2] Delay X time(ms)", value = 500, min = 0,max = 1000,step = 50})
+	Menu.Auto:MenuElement({id = "W2time", name = "Auto [W2] Delay X time(ms)", value = 250, min = 0, max = 1000, step = 50})
 	Menu.Auto:MenuElement({id = "WTurret", name = "Auto [W] low turret", toggle = true, value = true})
 	Menu.Auto:MenuElement({id = "WPeel", name = "Auto [W] Peel", toggle = true, value = true})
 	Menu.Auto:MenuElement({id = "RCC", name = "Auto [R] On 'CC'", toggle = true, value = true})
@@ -1543,13 +1533,7 @@ function Ziggs:OnTick()
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling() then
 		return
 	end
-	if Menu.Auto.W2:Value() then
-		if myHero:GetSpellData(_W).name == "ZiggsWToggle" and IsReady(_W) then
-			if lastW + Menu.Auto.W2time:Value() < GetTickCount() then
-				Control.CastSpell(HK_W)
-			end
-		end
-	end
+	self:AutoW2()
 	if IsCasting() then return end
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
 		self:Combo()
@@ -1564,6 +1548,20 @@ function Ziggs:OnTick()
 		self:SemiManualR()
 	end
 	self:Auto()
+end
+
+function Ziggs:AutoW2()
+	if Menu.Auto.W2:Value() and myHero:GetSpellData(_W).name == "ZiggsWToggle" and Game.CanUseSpell(_W) == 0 then
+		if not w2Timestamp then
+			w2Timestamp = GetTickCount()
+		end
+		if GetTickCount() > w2Timestamp + Menu.Auto.W2time:Value() then
+			Control.CastSpell(HK_W)
+			w2Timestamp = nil
+		end
+	else
+		w2Timestamp = nil
+	end
 end
 
 function Ziggs:Combo()
