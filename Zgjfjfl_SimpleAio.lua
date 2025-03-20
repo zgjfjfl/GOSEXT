@@ -1,4 +1,4 @@
-local Version = 2025.09
+local Version = 2025.11
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -888,7 +888,7 @@ end
 function JarvanIV:getqDmg(target)
 	local qlvl = myHero:GetSpellData(_Q).level
 	local qbaseDmg = 40 * qlvl + 50
-	local qadDmg = myHero.bonusDamage * 1.4
+	local qadDmg = myHero.bonusDamage * 1.45
 	local qDmg = qbaseDmg + qadDmg
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
@@ -5481,13 +5481,13 @@ function Mel:AutoW()
 	for _, enemy in ipairs(enemies) do
 		if IsValid(enemy) and enemy.isChanneling then
 			local spell = enemy.activeSpell
-			if spell and spell.valid and Menu.AutoW[enemy.charName][spell.name] and Menu.AutoW[enemy.charName][spell.name]:Value() then
+			if spell and spell.valid and Menu.AutoW[enemy.charName] and Menu.AutoW[enemy.charName][spell.name] and Menu.AutoW[enemy.charName][spell.name]:Value() then
 				if spell.target == myHero.handle then
 					Control.CastSpell(HK_W)
 					lastW = GetTickCount()
 					return
 				else
-					local endPos = spell.startPos:Extended(spell.placementPos, spell.range)
+					local endPos = spell.startPos:Extended(spell.placementPos, spell.range + spell.width)
 					local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(myHero.pos, endPos, spell.startPos)
 					local width = myHero.boundingRadius + (spell.width > 0 and spell.width or 0)
 					if isOnSegment and GGPrediction:IsInRange(myHero.pos, point, width) then

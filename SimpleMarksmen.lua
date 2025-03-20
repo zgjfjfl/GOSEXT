@@ -1,4 +1,4 @@
-local Version = 2025.15
+local Version = 2025.16
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -38,8 +38,6 @@ if not table.contains(Heroes, myHero.charName) then
 end
 
 require "GGPrediction"
-require "2DGeometry"
-require "MapPositionGOS"
 
 local GameHeroCount = Game.HeroCount
 local GameHero = Game.Hero
@@ -67,7 +65,7 @@ local MathMin = math.min
 local MathMax = math.max
 local MathFloor = math.floor
 local MathSqrt = math.sqrt
-local MathSort = table.sort
+local TableSort = table.sort
 local MathDeg = math.deg
 local MathAbs = math.abs
 
@@ -582,7 +580,7 @@ function Nilah:LaneClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
-			MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+			TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.pos2D.onScreen and minion.team ~= 300 then
 					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
@@ -599,7 +597,7 @@ function Nilah:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
-			MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+			TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 					Control.CastSpell(HK_Q, minion)
@@ -1022,7 +1020,7 @@ function Smolder:LaneClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
 			local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
-			MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+			TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
@@ -1039,7 +1037,7 @@ function Smolder:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
 			local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
-			MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+			TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 					Control.CastSpell(HK_W, minion)
@@ -1048,7 +1046,7 @@ function Smolder:JungleClear()
 		end
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
-			MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+			TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 					Control.CastSpell(HK_Q, minion)
@@ -1104,7 +1102,7 @@ end
 			end
 
 			if #ExtFirstTar > 0 then
-				MathSort(ExtFirstTar, function(a, b) return a.tar.type == Obj_AI_Hero and b.tar.type ~= Obj_AI_Hero end)
+				TableSort(ExtFirstTar, function(a, b) return a.tar.type == Obj_AI_Hero and b.tar.type ~= Obj_AI_Hero end)
 				Control.CastSpell(HK_Q, ExtFirstTar[1].tar)
 			end
 		end
@@ -1336,7 +1334,6 @@ function Zeri:QBarrel()
 end
 
 function Zeri:Combo()
-
 	local Etarget = GetTarget(ESpell.Range + QSpell.Range - 50)
 	if IsValid(Etarget) and Etarget.pos2D.onScreen then
 		if Menu.Combo.E:Value() and IsReady(_E) then
@@ -1382,36 +1379,24 @@ function Zeri:Combo()
 end
 
 function Zeri:CastW(target)
-	local predPos = nil
 	local pred = GGPrediction:SpellPrediction(W2Spell)
 	pred:GetPrediction(target, myHero)
-	if pred:CanHit(Menu.Misc.WhitChance:Value() + 1) then
-		predPos = Vector(pred.CastPosition)
-	end
+	if not pred:CanHit(Menu.Misc.WhitChance:Value() + 1) then return end
+		
+	local predPos = Vector(pred.UnitPosition)
+	local castPos = Vector(pred.CastPosition)
+	local wallColPos = FindFirstWallCollisionInRectangle(myHero.pos, predPos, WSpell.Radius)
 
-	local wallColPos = nil
-	if predPos then
-		if GameIsWall == nil then
-			wallColPos = MapPosition:getIntersectionPoint3D(myHero.pos, predPos)
-		else
-			wallColPos = FindFirstWallCollisionInRectangle(myHero.pos, predPos, WSpell.Radius)
+	if wallColPos and myHero.pos:DistanceTo(wallColPos) < WSpell.Range and wallColPos:DistanceTo(castPos) < 1400 then
+		local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, wallColPos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+		if collisionCount == 0 then
+			Control.CastSpell(HK_W, castPos)
 		end
-	end
-
-	if wallColPos then
-		if myHero.pos:DistanceTo(wallColPos) < WSpell.Range and wallColPos:DistanceTo(predPos) < 1400 then
-			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, wallColPos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
-			if collisionCount == 0 then
-				Control.CastSpell(HK_W, predPos)
-			end
-		end
-	else
-		if not Menu.Combo.Wwall:Value() then
-			local WPrediction = GGPrediction:SpellPrediction(WSpell)
-			WPrediction:GetPrediction(target, myHero)
-			if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
-				Control.CastSpell(HK_W, WPrediction.CastPosition)
-			end
+	elseif not Menu.Combo.Wwall:Value() then
+		local WPrediction = GGPrediction:SpellPrediction(WSpell)
+		WPrediction:GetPrediction(target, myHero)
+		if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
+			Control.CastSpell(HK_W, WPrediction.CastPosition)
 		end
 	end
 end
@@ -1484,7 +1469,7 @@ function Zeri:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(750)
-		MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+		TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				Control.CastSpell(HK_Q, minion)
@@ -1496,7 +1481,7 @@ end
 function Zeri:JungleClear()
 	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(750)
-		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 				Control.CastSpell(HK_Q, minion)
@@ -1846,7 +1831,7 @@ function Lucian:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
-		MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+		TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
@@ -1873,7 +1858,7 @@ end
 function Lucian:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
-		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 				if Menu.Clear.JungleClear.Priority:Value() == 1 then
@@ -2195,7 +2180,7 @@ end
 	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range + 130)
-			MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+			TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 					if GetMinionCount(250, minion.pos) >= Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "jinxqicon") then
@@ -2222,7 +2207,7 @@ end ]]
 function Jinx:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range + 130)
-		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 				if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
@@ -2340,7 +2325,7 @@ end
 function Jinx:GetRDmg(target)
 	local d = target.pos:DistanceTo(myHero.pos)
 	local level = myHero:GetSpellData(_R).level
-	local RDmg = (({325, 475, 625})[level] + 0.165 * myHero.bonusDamage) * (0.06 * math.min(math.floor(d/100), 15) + 0.1) + ({0.25, 0.3, 0.35})[level] * (target.maxHealth - target.health)
+	local RDmg = (({300, 450, 600})[level] + 0.155 * myHero.bonusDamage) * (0.06 * math.min(math.floor(d/100), 15) + 0.1) + ({0.25, 0.3, 0.35})[level] * (target.maxHealth - target.health)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
 end
 
@@ -2500,7 +2485,7 @@ end
 function Tristana:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(AAERRange)
-		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 				if Menu.Clear.JungleClear.E:Value() and IsReady(_E) then
@@ -2544,7 +2529,7 @@ end
 
 function Tristana:SemiR()
 	local enemies = ObjectManager:GetEnemyHeroes(1000)
-	MathSort(enemies, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+	TableSort(enemies, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
 			if Menu.Misc.SemiR:Value() and IsReady(_R) and myHero.pos:DistanceTo(enemy.pos) <= AAERRange + enemy.boundingRadius then
@@ -2839,7 +2824,7 @@ function MissFortune:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
-		MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+		TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				if Menu.Clear.LaneClear.E:Value() and IsReady(_E) then
@@ -2860,7 +2845,7 @@ end
 function MissFortune:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
-		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 				if Menu.Clear.JungleClear.E:Value() and IsReady(_E) then
@@ -2927,7 +2912,7 @@ function MissFortune:QLogic(target, UseQBounce)
 			end
 
 			if #bounceFirstTar > 0 then
-				MathSort(bounceFirstTar, function(a, b) return a.dis < b.dis end)
+				TableSort(bounceFirstTar, function(a, b) return a.dis < b.dis end)
 				local starTar = bounceFirstTar[1].tar
 				local starPos = starTar.pos:Extended(tarPred, starTar.boundingRadius*2)
 				local _, _, collisionCount = GGPrediction:GetCollision(starPos, tarPred, QSpell.Speed, QSpell.Delay, 60, {GGPrediction.COLLISION_MINION}, target.networkID)
@@ -3226,7 +3211,7 @@ function Jayce:Flee()
 	else
 		if IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(Q2Spell.Range)
-			MathSort(minions, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
+			TableSort(minions, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
 			if #minions > 0 then
 				local best = minions[1]
 				if best.pos:DistanceTo(mousePos) + 200 < myHero.pos:DistanceTo(mousePos) then
@@ -3251,7 +3236,7 @@ function Jayce:Q1Logic()
 	
 	if Menu.Q.useQE:Value() then
 		local enemies = ObjectManager:GetEnemyHeroes(Qtype.Range)
-		MathSort(enemies, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
+		TableSort(enemies, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
 		if IsValid(enemies[1]) then
 			self:CastQ1(enemies[1])
 			return
@@ -4025,7 +4010,7 @@ end
 function Ashe:SemiManualR()
 	if Menu.Misc.Rsm:Value() and IsReady(_R) then
 		local enemies = ObjectManager:GetEnemyHeroes(RSpell.Range)
-		MathSort(enemies, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
+		TableSort(enemies, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
 		if IsValid(enemies[1]) and enemies[1].pos2D.onScreen then
 			self:CastR(enemies[1])
 		end
@@ -4357,7 +4342,7 @@ end
 function Corki:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
-		MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 				if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
@@ -4536,7 +4521,6 @@ function Caitlyn:OneKeyCastR()
 	local Rtarget = GetTarget(RSpell.Range)
 	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 		Control.CastSpell(HK_R, Rtarget)
-		print('R')
 	end
 end
 
@@ -4722,7 +4706,7 @@ function Caitlyn:LaneClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
-			MathSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+			TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
@@ -4740,7 +4724,7 @@ function Caitlyn:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
-			MathSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+			TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 					Control.CastSpell(HK_Q, minion)
@@ -4829,7 +4813,7 @@ end
 
 function Caitlyn:GetRDmg(target)
 	local level = myHero:GetSpellData(_R).level
-	local RDmg = (({300, 500, 700})[level] + 1.0 * myHero.bonusDamage) * (1 + 0.5 * myHero.critChance)
+	local RDmg = (({300, 475, 650})[level] + 1.0 * myHero.bonusDamage) * (1 + 0.5 * myHero.critChance)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
 end
 
