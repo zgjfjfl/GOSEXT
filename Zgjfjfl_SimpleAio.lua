@@ -1,4 +1,4 @@
-local Version = 2025.13
+local Version = 2025.14
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -498,6 +498,19 @@ local function FindFirstWallCollision(startPos, endPos)
 		end
 	end
 	return nil
+end
+
+local ItemSlots = { ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6, ITEM_7 }
+
+local function HasItem(unit, itemId)
+    for i = 1, #ItemSlots do
+        local slot = ItemSlots[i]
+        local item = unit:GetItemData(slot)
+        if item and item.itemID == itemId then
+            return true
+        end
+    end
+    return false
 end
 
 ------------------------------------
@@ -5441,7 +5454,7 @@ function Mel:AutoR()
 		for _, target in ipairs(GetEnemyHeroes()) do
 			if IsValid(target) and haveBuff(target, "MelPassiveOverwhelm") then
 				local Dmg = self:GetRDmg(target) + self:GetPDmg(target)
-				if ItemManager:HasItem(myHero, 4645) and target.health / target.maxHealth < 0.4 then
+				if HasItem(myHero, 4645) and target.health / target.maxHealth < 0.4 then
 					Dmg = Dmg * 1.2
 				end
 				if Dmg > target.health + target.shieldAD + target.shieldAP then
