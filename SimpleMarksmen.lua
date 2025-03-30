@@ -1,4 +1,4 @@
-local Version = 2025.16
+local Version = 2025.17
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -427,6 +427,17 @@ local slots = {}
 	TableInsert(slots, ITEM_4);
 	TableInsert(slots, ITEM_5);
 	TableInsert(slots, ITEM_6);
+	
+local function HasItem(unit, itemId)
+    for i = 1, #slots do
+        local slot = slots[i]
+        local item = unit:GetItemData(slot)
+        if item and item.itemID == itemId then
+            return true
+        end
+    end
+    return false
+end
 
 ---------------------------------
 
@@ -2105,10 +2116,8 @@ function Jinx:ComboQ()
 				if myHero.pos:DistanceTo(target.pos) <= self:QmaxRange(target) then
 					Control.CastSpell(HK_Q)
 				end
-			else
-				if myHero.pos:DistanceTo(target.pos) < self:QbaseRange(target) and HaveBuff(myHero, "JinxQ") then
-					Control.CastSpell(HK_Q)
-				end
+			elseif myHero.pos:DistanceTo(target.pos) < self:QbaseRange(target) and HaveBuff(myHero, "JinxQ") then
+				Control.CastSpell(HK_Q)
 			end
 		end
 	end
@@ -2559,7 +2568,7 @@ function Tristana:GetEDmg(unit)
 	local Edmg = 0
 	local hasbuff = HaveBuff(unit, "tristanaecharge")
 	local count = GetBuffData(unit, "tristanaecharge").count
-	local hasIE = ItemManager:HasItem(myHero, 3031)
+	local hasIE = HasItem(myHero, 3031)
 
 	if hasbuff then
 		local EbaseDmg = ({60, 70, 80, 90, 100})[myHero:GetSpellData(_E).level]
