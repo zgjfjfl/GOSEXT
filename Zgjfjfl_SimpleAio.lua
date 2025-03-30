@@ -1,4 +1,4 @@
-local Version = 2025.11
+local Version = 2025.12
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -5210,7 +5210,7 @@ function Ambessa:Combo()
 		end
 	end
 	if Menu.Combo.E:Value() and IsReady(_E) then
-	local target = TargetSelector:GetTarget(ESpell.Range)
+		local target = TargetSelector:GetTarget(ESpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
 			self:CastGGPred(HK_E, target)
 		end
@@ -5440,7 +5440,11 @@ function Mel:AutoR()
 	if Menu.Misc.Rkill:Value() and IsReady(_R) then
 		for _, target in ipairs(GetEnemyHeroes()) do
 			if IsValid(target) and haveBuff(target, "MelPassiveOverwhelm") then
-				if self:GetRDmg(target) + self:GetPDmg(target) > target.health + target.shieldAD + target.shieldAP then
+				local Dmg = self:GetRDmg(target) + self:GetPDmg(target)
+				if ItemManager:HasItem(myHero, 4645) then
+					Dmg = Dmg * 1.2
+				end
+				if Dmg > target.health + target.shieldAD + target.shieldAP then
 					Control.CastSpell(HK_R)
 				end
 			end
