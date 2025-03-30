@@ -1,4 +1,4 @@
-local Version = 2025.12
+local Version = 2025.13
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -5441,7 +5441,7 @@ function Mel:AutoR()
 		for _, target in ipairs(GetEnemyHeroes()) do
 			if IsValid(target) and haveBuff(target, "MelPassiveOverwhelm") then
 				local Dmg = self:GetRDmg(target) + self:GetPDmg(target)
-				if ItemManager:HasItem(myHero, 4645) then
+				if ItemManager:HasItem(myHero, 4645) and target.health / target.maxHealth < 0.4 then
 					Dmg = Dmg * 1.2
 				end
 				if Dmg > target.health + target.shieldAD + target.shieldAP then
