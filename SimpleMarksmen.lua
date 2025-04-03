@@ -1,4 +1,4 @@
-local Version = 2025.18
+local Version = 2025.19
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1686,9 +1686,11 @@ function Lucian:Combo()
 			if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
 				lastQ = Game.Timer()
-			elseif Menu.Combo.W:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+			end
+			if Menu.Combo.W:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
 				self:CastW(target)
-			elseif Menu.Combo.E:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
+			end
+			if Menu.Combo.E:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			end
 		end
@@ -1696,10 +1698,12 @@ function Lucian:Combo()
 		if Menu.Combo.Priority:Value() == 2 then
 			if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
 				self:CastW(target)
-			elseif Menu.Combo.Q:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+			end
+			if Menu.Combo.Q:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
 				lastQ = Game.Timer()
-			elseif Menu.Combo.E:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
+			end
+			if Menu.Combo.E:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			end
 		end
@@ -1707,10 +1711,12 @@ function Lucian:Combo()
 		if Menu.Combo.Priority:Value() == 3 then
 			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
-			elseif Menu.Combo.Q:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+			end
+			if Menu.Combo.Q:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
 				lastQ = Game.Timer()
-			elseif Menu.Combo.W:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+			end
+			if Menu.Combo.W:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
 				self:CastW(target)
 			end
 		end
@@ -1718,9 +1724,11 @@ function Lucian:Combo()
 		if Menu.Combo.Priority:Value() == 4 then
 			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
-			elseif Menu.Combo.W:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+			end
+			if Menu.Combo.W:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
 				self:CastW(target)
-			elseif Menu.Combo.Q:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+			end
+			if Menu.Combo.Q:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
 				lastQ = Game.Timer()
 			end
@@ -1733,7 +1741,7 @@ function Lucian:Combo()
 end
 
 function Lucian:CastERange(target)
-	local range = myHero.pos:DistanceTo(target.pos) < (myHero.range + myHero.boundingRadius) and 200 or 425
+	local range = myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() and 200 or 425
 	return range
 end
 
@@ -1760,11 +1768,10 @@ function Lucian:CastE(target, mode, range)
 		local underTurret = IsUnderTurret2(castPos)
 		local inWall = GameIsWall(castPos)
 		local enemyCheck = Menu.Combo.enemyCheck:Value()
-		local enemyCountCastPos = GetEnemyCount(600, castPos)
-		local allyCountCastPos = GetAllyCount(400, castPos)
+		local enemyCount = GetEnemyCount(600, castPos)
 
 		if Menu.Combo.Echeck:Value() and (underTurret or inWall) then return end
-		if Menu.Combo.EsafeCheck:Value() and (enemyCountCastPos >= enemyCheck or enemyCountCastPos > allyCountCastPos) then return end
+		if Menu.Combo.EsafeCheck:Value() and enemyCount >= enemyCheck then return end
 
 		Control.CastSpell(HK_E, castPos)
 	end
