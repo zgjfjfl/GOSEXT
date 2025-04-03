@@ -1,4 +1,4 @@
-local Version = 2025.17
+local Version = 2025.18
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -381,18 +381,6 @@ local function FindFirstWallCollisionInRectangle(startPos, endPos, width)
 		end
 	end 
 	return nil
-end
-
-local function IsWall(pos)
-	if GameIsWall == nil then
-		if MapPosition:inWall(pos) then
-			return true
-		else
-			return false
-		end
-	else
-		return GameIsWall(pos)
-	end
 end
 
 local function IsCasting()
@@ -1599,7 +1587,7 @@ function Lucian:__init()
 	Callback.Add("Tick", function() self:OnTick() end)
 	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 65, Range = 500, Speed = MathHuge, Collision = false}
 	Q2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 65, Range = 1100, Speed = MathHuge, Collision = false}
-	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 55, Range = 1000, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 55, Range = 1000, Speed = 1600, Collision = false}
 	ESpell = { Range = 425 }
 	RSpell = { Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 110, Range = 1200, Speed = 2800, Collision = false }
 end
@@ -1615,8 +1603,8 @@ function Lucian:LoadMenu()
 	Menu.Combo:MenuElement({id = "EsafeCheck", name = "E-dash Point Safe Check", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "enemyCheck", name = "Block E-dash in X enemies", value = 3, min = 0, max = 5, step = 1})	
 	Menu.Combo:MenuElement({id = "Echeck", name = "Block E-dash inWall / underTurret", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "Edis", name = "Use E | To Side - hold distance", value = 500, min = 300, max = 700, step = 50})
-	Menu.Combo:MenuElement({id = "Priority", name = "Combo Abilities Priority",	value = 1, drop = {"Q", "W", "E", "EW"}})
+	Menu.Combo:MenuElement({id = "Edis", name = "Use E | To Side - hold distance", value = 500, min = 300, max = 650, step = 50})
+	Menu.Combo:MenuElement({id = "Priority", name = "Combo Abilities Priority",	value = 1, drop = {"Q-W-E", "W-Q-E", "E-Q-W", "E-W-Q"}})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -1638,7 +1626,7 @@ function Lucian:LoadMenu()
 	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Clear.JungleClear:MenuElement({id = "Emode", name = "Use E | Mode", value = 1, drop = {"To Side", "To Mouse", "To Target"}})
-	Menu.Clear.JungleClear:MenuElement({id = "Priority", name = "JungleClear Abilities Priority", value = 3, drop = {"Q", "W", "E"}})
+	Menu.Clear.JungleClear:MenuElement({id = "Priority", name = "JungleClear Abilities Priority", value = 3, drop = {"Q-W-E", "W-Q-E", "E-Q-W"}})
 	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
@@ -1661,12 +1649,8 @@ function Lucian:OnTick()
 	
 	self:AntiGapcloser()
 
-	target = GetTarget(1200)
-	HavePassive = HaveBuff(myHero, "LucianPassiveBuff")
-	Dashing = myHero.pathing.isDashing
-	CastingR = HaveBuff(myHero, "LucianR")
 	if lastQ + QSpell.Delay * 2 > Game.Timer() then return end
-	if HavePassive or IsCasting() or Dashing or CastingR then return end
+	if IsCasting() or self:HavePassive() or self:Dashing() or self:CastingR() then return end
 	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
 		return
 	end
@@ -1682,8 +1666,21 @@ function Lucian:OnTick()
 		self:JungleClear()
 	end
 end
-
+function Lucian:CastingR()
+	return HaveBuff(myHero, "LucianR")
+end
+function Lucian:Dashing()
+	return myHero.pathing.isDashing
+end
+function Lucian:HavePassive()
+	return HaveBuff(myHero, "LucianPassiveBuff")
+end
+function Lucian:EToSideHoldDis()
+	local Edis = Menu.Combo.Edis:Value()
+	return myHero.range == 650 and Edis + 150 or Edis
+end
 function Lucian:Combo()
+	local target = GetTarget(Q2Spell.Range)
 	if IsValid(target) then
 		if Menu.Combo.Priority:Value() == 1 then
 			if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
@@ -1691,7 +1688,7 @@ function Lucian:Combo()
 				lastQ = Game.Timer()
 			elseif Menu.Combo.W:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
 				self:CastW(target)
-			elseif Menu.Combo.E:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
+			elseif Menu.Combo.E:Value() and (not Menu.Combo.Q:Value() or not IsReady(_Q)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			end
 		end
@@ -1702,13 +1699,13 @@ function Lucian:Combo()
 			elseif Menu.Combo.Q:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
 				lastQ = Game.Timer()
-			elseif Menu.Combo.E:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
+			elseif Menu.Combo.E:Value() and (not Menu.Combo.W:Value() or not IsReady(_W)) and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			end
 		end
 
 		if Menu.Combo.Priority:Value() == 3 then
-			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
+			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			elseif Menu.Combo.Q:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
@@ -1719,7 +1716,7 @@ function Lucian:Combo()
 		end
 
 		if Menu.Combo.Priority:Value() == 4 then
-			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Edis:Value() + ESpell.Range then
+			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
 				self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			elseif Menu.Combo.W:Value() and (not Menu.Combo.E:Value() or not IsReady(_E)) and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
 				self:CastW(target)
@@ -1728,10 +1725,9 @@ function Lucian:Combo()
 				lastQ = Game.Timer()
 			end
 		end
-		
+
 		if Menu.Combo.QExt:Value() and IsReady(_Q) then 
 			self:CastQExt(target)
-			lastQ = Game.Timer()
 		end
 	end	
 end
@@ -1745,7 +1741,7 @@ function Lucian:CastE(target, mode, range)
 	local castPos = nil
 	if mode == 1 then
 		--local targetPred = target:GetPrediction(MathHuge, 0.25)
-		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, target.pos, ESpell.Range, Menu.Combo.Edis:Value())
+		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, target.pos, ESpell.Range, self:EToSideHoldDis())
 		if intPos1 and intPos2 then
 			local closest = GetDistance(intPos1, mousePos) < GetDistance(intPos2, mousePos) and intPos1 or intPos2
 			if IsFacingMe(target) then
@@ -1755,14 +1751,14 @@ function Lucian:CastE(target, mode, range)
 			end
 		end
 	elseif mode == 2 then 
-		castPos = myHero.pos:Extended(mousePos, range) 
+		castPos = myHero.pos:Extended(mousePos, range)
 	elseif mode == 3 then 
 		castPos = myHero.pos:Extended(target.pos, range)
 	end
 	
 	if castPos ~= nil then
 		local underTurret = IsUnderTurret2(castPos)
-		local inWall = IsWall(castPos)
+		local inWall = GameIsWall(castPos)
 		local enemyCheck = Menu.Combo.enemyCheck:Value()
 		local enemyCountCastPos = GetEnemyCount(600, castPos)
 		local allyCountCastPos = GetAllyCount(400, castPos)
@@ -1778,7 +1774,10 @@ function Lucian:CastW(target)
 	local WPrediction = GGPrediction:SpellPrediction(WSpell)
 	WPrediction:GetPrediction(target, myHero)
 	if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
-		Control.CastSpell(HK_W, WPrediction.CastPosition)
+		local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, WPrediction.CastPosition, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+		if collisionCount == 0 or Data:IsInAutoAttackRange(myHero, target) then
+			Control.CastSpell(HK_W, WPrediction.CastPosition)
+		end
 	end
 end
 
@@ -1800,7 +1799,9 @@ function Lucian:CastQExt(target)
 		end
 		for i = 1, #enemies do
 			local enemy = enemies[i]
-			TableInsert(objTable, enemy)
+			if enemy.networkID ~= target.networkID then
+				TableInsert(objTable, enemy)
+			end
 		end
 
 		for i = 1, #objTable do
@@ -1808,6 +1809,7 @@ function Lucian:CastQExt(target)
 			local objPos = myHero.pos:Extended(obj.pos, GetDistance(myHero.pos, predPos))
 			if GetDistance(targetPos, objPos) < (Q2Spell.Radius/2 + target.boundingRadius) then
 				Control.CastSpell(HK_Q, obj.pos)
+				lastQ = Game.Timer()
 			end
 		end
 	end
@@ -1815,6 +1817,7 @@ end
 
 function Lucian:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
+		local target = GetTarget(Q2Spell.Range)
 		if IsValid(target) then
 			if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
@@ -1822,7 +1825,6 @@ function Lucian:Harass()
 			end
 			if Menu.Harass.QExt:Value() and IsReady(_Q) then 
 				self:CastQExt(target)
-				lastQ = Game.Timer()
 			end
 			if Menu.Harass.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
 				self:CastW(target)
