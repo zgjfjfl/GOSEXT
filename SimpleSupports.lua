@@ -1,4 +1,4 @@
-local Version = 2025.09
+local Version = 2025.11
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -441,10 +441,14 @@ end
 function Lux:LoadMenu() 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Combo [Q]", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "QRange", name = "Use Q| Max Range", min = 600, max = 1250, value = 1150, step = 50})	
 	Menu.Combo:MenuElement({id = "E", name = "Combo [E]", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "R", name = "Combo [R]", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "RCount", name = "Use R when hit X enemies", min = 1, max = 5, value = 3, step = 1})
+	Menu.Combo:MenuElement({id = "RRange", name = "Use R| Max Range", min = 1000, max = 3400, value = 3000, step = 100})	
+	Menu.Combo:MenuElement({id = "RCount", name = "Use R| when hit X enemies", min = 1, max = 5, value = 3, step = 1})
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Harass [Q]", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "QRange", name = "Use Q| Max Range", min = 600, max = 1250, value = 1150, step = 50})	
 	Menu.Harass:MenuElement({id = "E", name = "Harass [E]", toggle = true, value = true})
 	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
 	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] on 'CC'", toggle = true, value = true})
@@ -482,7 +486,7 @@ end
 
 function Lux:Combo()
 	if Menu.Combo.Q:Value() and IsReady(_Q) then
-		local target = TargetSelector:GetTarget(QSpell.Range)
+		local target = TargetSelector:GetTarget(Menu.Combo.QRange:Value())
 		if IsValid(target) and target.pos2D.onScreen then
 			self:CastGGPred(HK_Q, target)
 		end
@@ -502,7 +506,7 @@ function Lux:Combo()
 		local bestdistance = 1000
 		for i = 1, #aoeresult do
 			local aoe = aoeresult[i]
-			if aoe.HitChance >= minhitchance and aoe.TimeToHit <= 3 and aoe.Count >= Menu.Combo.RCount:Value() then
+			if aoe.HitChance >= minhitchance and aoe.TimeToHit <= 3 and aoe.Count >= Menu.Combo.RCount:Value() and GetDistance(myHero.pos, aoe.CastPosition) <= Menu.Combo.RRange:Value() then
 				if aoe.Count > bestcount or (aoe.Count == bestcount and aoe.Distance < bestdistance) then
 					bestdistance = aoe.Distance
 					bestcount = aoe.Count
@@ -517,9 +521,15 @@ function Lux:Combo()
 end
 
 function Lux:Harass()
+	local target = TargetSelector:GetTarget(Menu.Harass.QRange:Value())
+	if IsValid(target) and target.pos2D.onScreen then
+		if Menu.Harass.Q:Value() and IsReady(_Q) then
+			self:CastGGPred(HK_Q, target)
+		end
+	end
 	local target = TargetSelector:GetTarget(ESpell.Range)
 	if IsValid(target) and target.pos2D.onScreen then
-		if Menu.Harass.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < ESpell.Range then
+		if Menu.Harass.E:Value() and IsReady(_E) then
 			self:CastGGPred(HK_E, target)
 		end
 	end
@@ -527,7 +537,7 @@ end
 
 function Lux:AutoQ()
 	if IsReady(_Q) then
-		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(Menu.Combo.QRange:Value())
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pos2D.onScreen then
 				if Menu.Auto.Q:Value() and IsImmobile(target) then
@@ -582,7 +592,7 @@ end
 
 function Lux:AutoR()
 	if IsReady(_R) then
-		local enemies = ObjectManager:GetEnemyHeroes(RSpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(Menu.Combo.RRange:Value())
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pos2D.onScreen then
 				if Menu.Auto.R:Value() and IsImmobile(target) then
