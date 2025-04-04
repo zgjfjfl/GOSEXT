@@ -1,4 +1,4 @@
-local Version = 2025.19
+local Version = 2025.21
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -417,14 +417,20 @@ local slots = {}
 	TableInsert(slots, ITEM_6);
 	
 local function HasItem(unit, itemId)
-    for i = 1, #slots do
-        local slot = slots[i]
-        local item = unit:GetItemData(slot)
-        if item and item.itemID == itemId then
-            return true
-        end
-    end
-    return false
+	for i = 1, #slots do
+		local slot = slots[i]
+		local item = unit:GetItemData(slot)
+		if item and item.itemID == itemId then
+			return true
+		end
+	end
+	return false
+end
+
+local function GetDistanceToLine(point, lineStart, lineDirection)
+	local AP = point - lineStart
+	local crossProduct = AP:CrossProduct(lineDirection)
+	return crossProduct:Len() / lineDirection:Len()
 end
 
 ---------------------------------
@@ -1850,23 +1856,31 @@ end
 function Lucian:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(Q2Spell.Range)
 		TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
-					local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, Q2Spell.Speed, Q2Spell.Delay, Q2Spell.Radius, {GGPrediction.COLLISION_MINION}, nil)
-					if collisionCount >= Menu.Clear.LaneClear.QCount:Value() then
-						local obj = collisionObjects[1]
-						if myHero.pos:DistanceTo(obj.pos) <= (QSpell.Range + myHero.boundingRadius + obj.boundingRadius) then
-							Control.CastSpell(HK_Q, obj)
+					if myHero.pos:DistanceTo(minion.pos) <= (QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
+						local direction = (minion.pos - myHero.pos):Normalized()
+						local hitCount = 1
+						for j, otherMinion in ipairs(minions) do
+							if otherMinion.networkID ~= minion.networkID and IsValid(otherMinion) then
+								local pointToLineDistance = GetDistanceToLine(otherMinion.pos, myHero.pos, direction)
+								if pointToLineDistance <= Q2Spell.Radius/2 + otherMinion.boundingRadius then
+									hitCount = hitCount + 1
+								end
+							end
+						end
+						if hitCount >= Menu.Clear.LaneClear.QCount:Value() then
+							Control.CastSpell(HK_Q, minion)
 							lastQ = Game.Timer()
 						end
 					end
 				end
 
 				if Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
-					if GetMinionCount(250, minion.pos) >= Menu.Clear.LaneClear.WCount:Value() then
+					if Data:IsInAutoAttackRange(myHero, minion) and GetMinionCount(250, minion.pos) >= Menu.Clear.LaneClear.WCount:Value() then
 						Control.CastSpell(HK_W, minion)
 					end
 				end
