@@ -1,4 +1,4 @@
-local Version = 2025.22
+local Version = 2025.23
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -433,6 +433,15 @@ local function GetDistanceToLine(point, lineStart, lineDirection)
 	return crossProduct:Len() / lineDirection:Len()
 end
 
+local function ShouldWait() 
+	return myHero.dead or Game.IsChatOpen() or 
+			(_G.JustEvade and _G.JustEvade:Evading()) or 
+			(_G.ExtLibEvade and _G.ExtLibEvade.Evading) or 
+			Recalling(myHero) or 
+			Control.IsKeyDown(0x11) or 
+			Control.IsKeyDown(0x12)
+end
+
 ---------------------------------
 
 Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.5.1/img/champion/"..myHero.charName..".png"})
@@ -448,9 +457,9 @@ function Nilah:__init()
 
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 600, Speed = math.huge, Collision = false}
-	ESpell = { Range = 550 }
-	RSpell = { Range = 450 }
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 600, Speed = math.huge, Collision = false}
+	self.ESpell = { Range = 550 }
+	self.RSpell = { Range = 450 }
 end
 
 function Nilah:LoadMenu()
@@ -503,7 +512,7 @@ function Nilah:LoadMenu()
 end
 
 function Nilah:OnTick()
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	if ShouldWait() then
 		return
 	end
 	self:AutoW()
@@ -529,12 +538,12 @@ function Nilah:OnTick()
 end
 
 function Nilah:Combo()
-	local target = TargetSelector:GetTarget(QSpell.Range)
+	local target = TargetSelector:GetTarget(self.QSpell.Range)
 	if IsValid(target) then
 		if Menu.Combo.Q:Value() and IsReady(_Q) then
 			self:CastGGPred(HK_Q, target)
 		end
-		if Menu.Combo.E:Value() and IsReady(_E) and GetDistance(myHero.pos, target.pos) <= ESpell.Range and target.health/target.maxHealth <= Menu.Combo.ETHP:Value()/100 then
+		if Menu.Combo.E:Value() and IsReady(_E) and GetDistance(myHero.pos, target.pos) <= self.ESpell.Range and target.health/target.maxHealth <= Menu.Combo.ETHP:Value()/100 then
 			if Menu.Combo.Eammo:Value() then
 				if myHero:GetSpellData(_E).ammo > 1 then
 					Control.CastSpell(HK_E, target)
@@ -547,13 +556,13 @@ function Nilah:Combo()
 		end
 	end
 
-	if Menu.Combo.R:Value() and IsReady(_R) and GetEnemyCount(RSpell.Range-50, myHero.pos) >= Menu.Combo.RCount:Value() then
+	if Menu.Combo.R:Value() and IsReady(_R) and GetEnemyCount(self.RSpell.Range-50, myHero.pos) >= Menu.Combo.RCount:Value() then
 		Control.CastSpell(HK_R)
 	end
 end
 
 function Nilah:Harass()
-	local target = TargetSelector:GetTarget(QSpell.Range)
+	local target = TargetSelector:GetTarget(self.QSpell.Range)
 	if IsValid(target) then	
 		if Menu.Harass.Q:Value() and IsReady(_Q) --[[and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value() / 100 ]]then
 			self:CastGGPred(HK_Q, target)
@@ -584,11 +593,11 @@ function Nilah:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
-			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 			TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.pos2D.onScreen and minion.team ~= 300 then
-					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
 					if collisionCount >= Menu.Clear.LaneClear.QCount:Value() then
 						Control.CastSpell(HK_Q, minion)
 					end
@@ -601,7 +610,7 @@ end
 function Nilah:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
-			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 			TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -614,12 +623,12 @@ end
 
 function Nilah:LastHit()
 	if Menu.LastHit.Q:Value() and IsReady(_Q) then
-		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
 				local AARange = myHero.range + myHero.boundingRadius + minion.boundingRadius
 				local QDmg = self:GetQDmg(minion)
-				if QDmg >= HealthPrediction:GetPrediction(minion, QSpell.Delay) and GetDistance(myHero.pos, minion.pos) > AARange then
+				if QDmg >= HealthPrediction:GetPrediction(minion, self.QSpell.Delay) and GetDistance(myHero.pos, minion.pos) > AARange then
 					Control.CastSpell(HK_Q, minion)
 				end
 			end
@@ -629,19 +638,19 @@ end
 
 function Nilah:QBuildings()
 	if Menu.Clear.QT:Value() and IsReady(_Q) then
-		local turrets = ObjectManager:GetEnemyTurrets(QSpell.Range)
+		local turrets = ObjectManager:GetEnemyTurrets(self.QSpell.Range)
 		for i, turret in ipairs(turrets) do
 			if turret then
 				Control.CastSpell(HK_Q, turret)
 			end
 		end
-		local buildings = ObjectManager:GetEnemyBuildings(QSpell.Range+250)
+		local buildings = ObjectManager:GetEnemyBuildings(self.QSpell.Range+250)
 		for i, building in ipairs(buildings) do
 			if building and building.type == Obj_AI_Barracks then
 				Control.CastSpell(HK_Q, building)
 			end
 		end
-		local buildings = ObjectManager:GetEnemyBuildings(QSpell.Range+350)
+		local buildings = ObjectManager:GetEnemyBuildings(self.QSpell.Range+350)
 		for i, building in ipairs(buildings) do
 			if building and building.type == Obj_AI_Nexus then
 				Control.CastSpell(HK_Q, building)
@@ -651,17 +660,17 @@ function Nilah:QBuildings()
 end
 	
 function Nilah:KillSteal()
-	local target = TargetSelector:GetTarget(QSpell.Range)
+	local target = TargetSelector:GetTarget(self.QSpell.Range)
 	if IsValid(target) then
 		local QDmg = self:GetQDmg(target)
 		local EDmg = self:GetEDmg(target)		
 		if IsReady(_Q) and Menu.KS.Q:Value() then
-			if QDmg > target.health and GetDistance(myHero.pos, target.pos) <= QSpell.Range then
+			if QDmg > target.health and GetDistance(myHero.pos, target.pos) <= self.QSpell.Range then
 				self:CastGGPred(HK_Q, target)
 			end	
 		end
 		if IsReady(_E) and Menu.KS.E:Value() and not IsReady(_Q) then 
-			if target.health <= EDmg and GetDistance(myHero.pos, target.pos) <= ESpell.Range then
+			if target.health <= EDmg and GetDistance(myHero.pos, target.pos) <= self.ESpell.Range then
 				Control.CastSpell(HK_E, target)	
 			end	
 		end
@@ -697,7 +706,7 @@ end
 
 function Nilah:CastGGPred(spell, target)
 	if spell == HK_Q then
-		local QPrediction = GGPrediction:SpellPrediction(QSpell)
+		local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 		QPrediction:GetPrediction(target, myHero)
 		if QPrediction:CanHit(3) then
 			Control.CastSpell(HK_Q, QPrediction.CastPosition)
@@ -725,13 +734,13 @@ function Nilah:Draw()
 	end
 
 	if Menu.Draw.Q:Value() and IsReady(_Q)then
-		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 255, 255, 255))
+		Draw.Circle(myHero.pos, self.QSpell.Range, 1, Draw.Color(255, 255, 255, 255))
 	end
 	if Menu.Draw.E:Value() and IsReady(_E)then
-		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 0, 0, 0))
+		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 0, 0, 0))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R)then
-		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 255, 0, 0))
+		Draw.Circle(myHero.pos, self.RSpell.Range, 1, Draw.Color(255, 255, 0, 0))
 	end
 end
 
@@ -778,9 +787,9 @@ function Smolder:__init()
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	-- Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
-	QSpell = { Delay = 0.25, Range = 550, Speed = 1800}
-	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 115, Range = 1200, Speed = 2000, Collision = false}
-	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 300, Range = 3650, Speed = 1700, Collision = false}
+	self.QSpell = { Delay = 0.25, Range = 550, Speed = 1800}
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 115, Range = 1200, Speed = 2000, Collision = false}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 300, Range = 3650, Speed = 1700, Collision = false}
 end
 
 function Smolder:LoadMenu()
@@ -859,8 +868,8 @@ function Smolder:OnPreAttack(args)
 end
 
 function Smolder:OnTick()
-	QSpell.Range = myHero.range + myHero.boundingRadius * 2
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	self.QSpell.Range = myHero.range + myHero.boundingRadius * 2
+	if ShouldWait() then
 		return
 	end
 
@@ -920,7 +929,7 @@ end
 
 function Smolder:Auto()	
 	if Menu.Misc.Wcc:Value() and IsReady(_W) then
-		local enemies = ObjectManager:GetEnemyHeroes(WSpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.WSpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pos2D.onScreen and IsImmobile(target) then
 				self:CastGGPred(HK_W, target)
@@ -930,14 +939,14 @@ function Smolder:Auto()
 end
 
 function Smolder:Combo()
-	local Wtarget = GetTarget(WSpell.Range)
+	local Wtarget = GetTarget(self.WSpell.Range)
 	if IsValid(Wtarget) and Wtarget.pos2D.onScreen then
 		if Menu.Combo.W:Value() and IsReady(_W) then
 			self:CastGGPred(HK_W, Wtarget)	
 		end
 	end
 
-	local Qtarget = GetTarget(QSpell.Range)
+	local Qtarget = GetTarget(self.QSpell.Range)
 	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
 		if Menu.Combo.Q:Value() and IsReady(_Q) then
 			-- self:QLogic(target, Menu.Combo.Q2:Value())
@@ -948,10 +957,10 @@ function Smolder:Combo()
 	local Rtarget = GetTarget(Menu.Combo.RRange:Value())
 	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 		if Menu.Combo.R:Value() and IsReady(_R) then
-			if myHero.health/myHero.maxHealth < Menu.Combo.RHp:Value()/100 and myHero.pos:DistanceTo(Rtarget.pos) < WSpell.Range then
+			if myHero.health/myHero.maxHealth < Menu.Combo.RHp:Value()/100 and myHero.pos:DistanceTo(Rtarget.pos) < self.WSpell.Range then
 				self:CastGGPred(HK_R, Rtarget)
 			else
-				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, Rtarget.pos, RSpell.Speed, RSpell.Delay, RSpell.Radius, {GGPrediction.COLLISION_ENEMYHERO}, nil)
+				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, Rtarget.pos, self.RSpell.Speed, self.RSpell.Delay, self.RSpell.Radius, {GGPrediction.COLLISION_ENEMYHERO}, nil)
 				if collisionCount >= Menu.Combo.RCount:Value() then
 					self:CastGGPred(HK_R, Rtarget)
 				end
@@ -962,14 +971,14 @@ end
 
 function Smolder:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
-		local Wtarget = GetTarget(WSpell.Range)
+		local Wtarget = GetTarget(self.WSpell.Range)
 		if IsValid(Wtarget) and Wtarget.pos2D.onScreen then
 			if Menu.Harass.W:Value() and IsReady(_W) then
 				self:CastGGPred(HK_W, Wtarget)
 			end
 		end
 
-		local Qtarget = GetTarget(QSpell.Range)
+		local Qtarget = GetTarget(self.QSpell.Range)
 		if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
 			if Menu.Harass.Q:Value() and IsReady(_Q) then
 				-- self:QLogic(target, Menu.Harass.Q2:Value())
@@ -1007,11 +1016,11 @@ end
 
 function Smolder:LastHit()
 	if Menu.LastHit.Q:Value() and IsReady(_Q) then
-		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
 				local QTotalDmg = self:GetQDmg(minion) + self:GetPQDmg(minion)
-				local hp = HealthPrediction:GetPrediction(minion, QSpell.Delay + myHero.pos:DistanceTo(minion.pos)/QSpell.Speed)
+				local hp = HealthPrediction:GetPrediction(minion, self.QSpell.Delay + myHero.pos:DistanceTo(minion.pos)/self.QSpell.Speed)
 				if QTotalDmg > hp then
 					Control.CastSpell(HK_Q, minion)
 				end
@@ -1024,11 +1033,11 @@ function Smolder:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
-			local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.WSpell.Range)
 			TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
-					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.WSpell.Speed, self.WSpell.Delay, self.WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
 					if collisionCount >= Menu.Clear.LaneClear.WCount:Value() then
 						Control.CastSpell(HK_W, minion)
 					end
@@ -1041,7 +1050,7 @@ end
 function Smolder:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
-			local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.WSpell.Range)
 			TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -1050,7 +1059,7 @@ function Smolder:JungleClear()
 			end
 		end
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
-			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 			TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -1065,12 +1074,12 @@ end
 	if target == nil then return end
 	local PassiveStacks = GetBuffData(myHero, "SmolderQPassive").stacks
 	local Angles = (15 * (2 + MathFloor(0.01 * PassiveStacks+0.5)))/2
-	if myHero.pos:DistanceTo(target.pos) <= QSpell.Range then
+	if myHero.pos:DistanceTo(target.pos) <= self.QSpell.Range then
 		Control.CastSpell(HK_Q, target)
 	else
 		if UseQExt then
 			local ExtFirstTar = {}
-			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) then
 					local middlePos = myHero.pos:Extended(minion.pos, myHero.pos:DistanceTo(minion.pos) + 500)
@@ -1088,7 +1097,7 @@ end
 				end
 			end
 
-			local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+			local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 			for i, enemy in ipairs(enemies) do
 				if IsValid(enemy) and enemy.networkID ~= target.networkID then
 					local middlePos = myHero.pos:Extended(enemy.pos, myHero.pos:DistanceTo(enemy.pos) + 500)
@@ -1116,13 +1125,13 @@ end]]
 
 function Smolder:CastGGPred(spell, target)
 	if spell == HK_W then
-		local WPrediction = GGPrediction:SpellPrediction(WSpell)
+		local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 		WPrediction:GetPrediction(target, myHero)
 		if WPrediction:CanHit(3) then
 			Control.CastSpell(HK_W, WPrediction.CastPosition)
 		end
 	elseif spell == HK_R then
-		local RPrediction = GGPrediction:SpellPrediction(RSpell)
+		local RPrediction = GGPrediction:SpellPrediction(self.RSpell)
 		RPrediction:GetPrediction(target, myHero)
 		if RPrediction:CanHit(3) then
 			Control.CastSpell(HK_R, RPrediction.CastPosition)
@@ -1150,16 +1159,16 @@ function Smolder:Draw()
 	end
 
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
-		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+		Draw.Circle(myHero.pos, self.QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end
 	if Menu.Draw.W:Value() and IsReady(_W) then
 		Draw.Circle(myHero.pos, 1500, 1, Draw.Color(255, 66, 229, 244))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
-		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+		Draw.Circle(myHero.pos, self.RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 	if Menu.Draw.Rmin:Value() and IsReady(_R) then
-		Draw.CircleMinimap(myHero.pos, RSpell.Range, 1, Draw.Color(200, 14, 194, 255))
+		Draw.CircleMinimap(myHero.pos, self.RSpell.Range, 1, Draw.Color(200, 14, 194, 255))
 	end
 end
 
@@ -1174,11 +1183,11 @@ function Zeri:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 40, Range = 750, Speed = 2600, Collision = false}
-	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 40, Range = 1150, Speed = 2500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	W2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 100, Range = 2500, Speed = 2500, Collision = false}
-	ESpell = { Range = 300 }
-	RSpell = { Delay = 0.25, Range = 825 }
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 40, Range = 750, Speed = 2600, Collision = false}
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 40, Range = 1150, Speed = 2500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.W2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 100, Range = 2500, Speed = 2500, Collision = false}
+	self.ESpell = { Range = 300 }
+	self.RSpell = { Delay = 0.25, Range = 825 }
 end
 
 function Zeri:LoadMenu()
@@ -1212,6 +1221,7 @@ function Zeri:LoadMenu()
 	Menu.Misc:MenuElement({id = "WhitChance", name = "W | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "QRange", name = "Q Range = RealRange + X", value = 0, min = -50, max = 50, step = 5})
 	Menu.Misc:MenuElement({id = "QBarrel", name = "Q Attack GP's Barrel", toggle = true, value = true})
+	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
 	-- Menu.Misc:MenuElement({id = "AAkills", name = "Use PassiveAA kills target when no Q", toggle = true, value = false})
 	Menu.Misc:MenuElement({id = "ComboAA", name = "Disable AA when no Qpassive in combo", toggle = true, value = true, key = string.byte("T")})
 	Menu.Misc:MenuElement({id = "ClearAA", name = "Disable AA when in Clear(Mouse Scroll)", toggle = true, value = true, key = 4})	
@@ -1245,7 +1255,7 @@ function Zeri:OnPreAttack(args)
 				args.Process = true
 			end
 			if IsValid(target) and target.health < AADamage and Data:IsInAutoAttackRange(myHero, target) then
-				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 				if collisionCount > 0 or not IsReady(_Q) then
 					args.Process = true
 				end
@@ -1258,23 +1268,24 @@ end
 
 function Zeri:OnTick()
 	if myHero.range == 650 then
-		QSpell.Range = 900 + Menu.Misc.QRange:Value()
+		self.QSpell.Range = 900 + Menu.Misc.QRange:Value()
 	else
-		QSpell.Range = 750 + Menu.Misc.QRange:Value()
+		self.QSpell.Range = 750 + Menu.Misc.QRange:Value()
 	end
 
 	if HaveBuff(myHero, "ZeriR") then
-		QSpell.Speed = 3400
+		self.QSpell.Speed = 3400
 	else
-		QSpell.Speed = 2600
+		self.QSpell.Speed = 2600
 	end
 
-	WSpell.Delay = MathMax(MathFloor((0.55 - 0.09 * (myHero.attackSpeed - 1)) * 100) / 100, 0.3)
-	W2Spell.Delay = WSpell.Delay
+	self.WSpell.Delay = MathMax(MathFloor((0.55 - 0.09 * (myHero.attackSpeed - 1)) * 100) / 100, 0.3)
+	self.W2Spell.Delay = self.WSpell.Delay
 	
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	if ShouldWait() then
 		return
 	end
+	self:AntiGapcloser()
 	if IsCasting() then return end
 	local Mode = GetMode()
 	if Mode == "Combo" then
@@ -1292,6 +1303,22 @@ function Zeri:OnTick()
 		self:JungleClear()
 	elseif Mode == "LastHit" then
 		self:LastHit()
+	end
+end
+
+function Zeri:AntiGapcloser()
+	if Menu.Misc.Egap:Value() and IsReady(_E) then
+		local enemies = ObjectManager:GetEnemyHeroes(1500)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and target.pathing.isDashing then
+				if myHero.pos:DistanceTo(target.pathing.endPos) < 300 and IsFacingMe(target) then
+					local castPos = myHero.pos + (myHero.pos - target.pos):Normalized() * self.ESpell.Range
+					if castPos:To2D().onScreen then
+						Control.CastSpell(HK_E, castPos)
+					end
+				end
+			end	
+		end
 	end
 end
 
@@ -1324,7 +1351,7 @@ function Zeri:QBarrel()
 			local barrelHealth = obj.health
 			local barrelBuffData = GetBuffData(obj, "gangplankebarrelactive")
 			local barrelBuffStartTime = barrelBuffData.startTime
-			local time = obj.distance / QSpell.Speed
+			local time = obj.distance / self.QSpell.Speed
 
 			if barrelHealth <= 1 then
 				Control.CastSpell(HK_Q, obj)
@@ -1339,17 +1366,17 @@ function Zeri:QBarrel()
 end
 
 function Zeri:Combo()
-	local Etarget = GetTarget(ESpell.Range + QSpell.Range - 50)
+	local Etarget = GetTarget(self.ESpell.Range + self.QSpell.Range - 50)
 	if IsValid(Etarget) and Etarget.pos2D.onScreen then
 		if Menu.Combo.E:Value() and IsReady(_E) then
 			Control.CastSpell(HK_E, Etarget)
 		end
 	end
 
-	local Qtarget = GetTarget(QSpell.Range)
+	local Qtarget = GetTarget(self.QSpell.Range)
 	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
 		if Menu.Combo.Q:Value() and IsReady(_Q) then
-			local QPrediction = GGPrediction:SpellPrediction(QSpell)
+			local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 			QPrediction:GetPrediction(Qtarget, myHero)
 			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
 				Control.CastSpell(HK_Q, QPrediction.CastPosition)
@@ -1357,10 +1384,10 @@ function Zeri:Combo()
 		end
 	end
 
-	local Wtarget = GetTarget(W2Spell.Range)
+	local Wtarget = GetTarget(self.W2Spell.Range)
 	if IsValid(Wtarget) and Wtarget.pos2D.onScreen then
 		if Menu.Combo.W:Value() and IsReady(_W) then
-			if myHero.pos:DistanceTo(Wtarget.pos) > QSpell.Range and GetEnemyCount(QSpell.Range, myHero.pos) == 0 then
+			if myHero.pos:DistanceTo(Wtarget.pos) > self.QSpell.Range and GetEnemyCount(self.QSpell.Range, myHero.pos) == 0 then
 				self:CastW(Wtarget)
 			end
 		end
@@ -1370,8 +1397,8 @@ function Zeri:Combo()
 		local Count = 0
 		for i, enemy in ipairs(GetEnemyHeroes()) do
 			if IsValid(enemy) then
-				local enemyPred = enemy:GetPrediction(MathHuge, RSpell.Delay)
-				if myHero.pos:DistanceTo(enemyPred) < RSpell.Range - 50 then
+				local enemyPred = enemy:GetPrediction(MathHuge, self.RSpell.Delay)
+				if myHero.pos:DistanceTo(enemyPred) < self.RSpell.Range - 50 then
 					Count = Count + 1
 				end
 			end
@@ -1384,21 +1411,21 @@ function Zeri:Combo()
 end
 
 function Zeri:CastW(target)
-	local pred = GGPrediction:SpellPrediction(W2Spell)
+	local pred = GGPrediction:SpellPrediction(self.W2Spell)
 	pred:GetPrediction(target, myHero)
 	if not pred:CanHit(Menu.Misc.WhitChance:Value() + 1) then return end
 		
 	local predPos = Vector(pred.UnitPosition)
 	local castPos = Vector(pred.CastPosition)
-	local wallColPos = FindFirstWallCollisionInRectangle(myHero.pos, predPos, WSpell.Radius)
+	local wallColPos = FindFirstWallCollisionInRectangle(myHero.pos, predPos, self.WSpell.Radius)
 
-	if wallColPos and myHero.pos:DistanceTo(wallColPos) < WSpell.Range and wallColPos:DistanceTo(castPos) < 1400 then
-		local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, wallColPos, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+	if wallColPos and myHero.pos:DistanceTo(wallColPos) < self.WSpell.Range and wallColPos:DistanceTo(castPos) < 1400 then
+		local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, wallColPos, self.WSpell.Speed, self.WSpell.Delay, self.WSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
 		if collisionCount == 0 then
 			Control.CastSpell(HK_W, castPos)
 		end
 	elseif not Menu.Combo.Wwall:Value() then
-		local WPrediction = GGPrediction:SpellPrediction(WSpell)
+		local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 		WPrediction:GetPrediction(target, myHero)
 		if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
 			Control.CastSpell(HK_W, WPrediction.CastPosition)
@@ -1407,10 +1434,10 @@ function Zeri:CastW(target)
 end
 
 function Zeri:Harass()
-	local Qtarget = GetTarget(QSpell.Range)
+	local Qtarget = GetTarget(self.QSpell.Range)
 	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
 		if Menu.Harass.Q:Value() and IsReady(_Q) then
-			local QPrediction = GGPrediction:SpellPrediction(QSpell)
+			local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 			QPrediction:GetPrediction(Qtarget, myHero)
 			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
 				Control.CastSpell(HK_Q, QPrediction.CastPosition)
@@ -1459,9 +1486,9 @@ function Zeri:LastHit()
 		local minions = ObjectManager:GetEnemyMinions(750)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
-				local Hp = HealthPrediction:GetPrediction(minion, myHero.pos:DistanceTo(minion.pos) / QSpell.Speed)
+				local Hp = HealthPrediction:GetPrediction(minion, myHero.pos:DistanceTo(minion.pos) / self.QSpell.Speed)
 				local QDmg = self:GetQDmg(minion)
-				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
+				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
 				if QDmg > Hp and collisionCount == 0 then
 					Control.CastSpell(HK_Q, minion)
 				end
@@ -1474,7 +1501,7 @@ function Zeri:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(750)
-		TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+		--TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				Control.CastSpell(HK_Q, minion)
@@ -1568,16 +1595,16 @@ function Zeri:Draw()
 	end
 
 	if Menu.Draw.Q:Value() then
-		Draw.Circle(myHero.pos, QSpell.Range, 0.5, Draw.Color(255, 66, 244, 113))
+		Draw.Circle(myHero.pos, self.QSpell.Range, 0.5, Draw.Color(255, 66, 244, 113))
 	end
 	if Menu.Draw.W:Value() and IsReady(_W) then
-		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+		Draw.Circle(myHero.pos, self.WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
 	end
 	if Menu.Draw.E:Value() and IsReady(_E) then
-		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
-		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+		Draw.Circle(myHero.pos, self.RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 end
 
@@ -1591,11 +1618,11 @@ function Lucian:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 65, Range = 500, Speed = MathHuge, Collision = false}
-	Q2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 65, Range = 1100, Speed = MathHuge, Collision = false}
-	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 55, Range = 1000, Speed = 1600, Collision = false}
-	ESpell = { Range = 425 }
-	RSpell = { Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 110, Range = 1200, Speed = 2800, Collision = false }
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 65, Range = 500, Speed = MathHuge, Collision = false}
+	self.Q2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 65, Range = 1100, Speed = MathHuge, Collision = false}
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 55, Range = 1000, Speed = 1600, Collision = false}
+	self.ESpell = { Range = 425 }
+	self.RSpell = { Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 110, Range = 1200, Speed = 2800, Collision = false }
 end
 
 function Lucian:LoadMenu()
@@ -1650,17 +1677,19 @@ function Lucian:LoadMenu()
 end
 
 function Lucian:OnTick()
-	QSpell.Delay = 0.4 - 0.15 / 17 * (myHero.levelData.lvl - 1)
-	Q2Spell.Delay = QSpell.Delay
-	
-	self:AntiGapcloser()
-
-	if lastQ + QSpell.Delay * 2 > Game.Timer() then return end
-	if IsCasting() or self:HavePassive() or self:Dashing() or self:CastingR() then return end
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	self.QSpell.Delay = 0.4 - 0.15 / 17 * (myHero.levelData.lvl - 1)
+	self.Q2Spell.Delay = self.QSpell.Delay
+	if self:CastingR() then
+		Orbwalker:SetAttack(false)
+	else
+		Orbwalker:SetAttack(true)
+	end
+	if ShouldWait() then
 		return
 	end
-
+	self:AntiGapcloser()
+	if lastQ + self.QSpell.Delay * 2 > Game.Timer() then return end
+	if IsCasting() or self:HavePassive() or self:Dashing() or self:CastingR() then return end
 	local Mode = GetMode()
 	if Mode == "Combo" then
 		self:Combo()
@@ -1676,7 +1705,7 @@ function Lucian:CastingR()
 	return HaveBuff(myHero, "LucianR")
 end
 function Lucian:Dashing()
-	return myHero.pathing.isDashing
+	return myHero.pathing.isDashing and myHero.pathing.dashSpeed > 0
 end
 function Lucian:HavePassive()
 	return HaveBuff(myHero, "LucianPassiveBuff")
@@ -1686,63 +1715,63 @@ function Lucian:EToSideHoldDis()
 	return myHero.range == 650 and Edis + 150 or Edis
 end
 function Lucian:Combo()
-	local target = GetTarget(Q2Spell.Range)
+	local target = GetTarget(self.Q2Spell.Range)
 	if IsValid(target) then
 		local eCastSuccess = false
 		if Menu.Combo.Priority:Value() == 1 then
-			if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+			if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (self.QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
 				lastQ = Game.Timer()
 			end
 			if not Menu.Combo.Q:Value() or not IsReady(_Q) then
-				if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+				if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < self.WSpell.Range then
 					self:CastW(target)
 				end
-				if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
+				if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + self.ESpell.Range then
 					eCastSuccess = self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 				end
 			end
 		end
 
 		if Menu.Combo.Priority:Value() == 2 then
-			if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+			if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < self.WSpell.Range then
 				self:CastW(target)
 			end
 			if not Menu.Combo.W:Value() or not IsReady(_W) then
-				if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+				if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (self.QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 					Control.CastSpell(HK_Q, target)
 					lastQ = Game.Timer()
 				end
-				if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
+				if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + self.ESpell.Range then
 					eCastSuccess = self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 				end
 			end
 		end
 
 		if Menu.Combo.Priority:Value() == 3 then
-			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
+			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + self.ESpell.Range then
 				eCastSuccess = self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			end
 			if not Menu.Combo.E:Value() or not IsReady(_E) or not eCastSuccess then
-				if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+				if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (self.QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 					Control.CastSpell(HK_Q, target)
 					lastQ = Game.Timer()
 				end
-				if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+				if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < self.WSpell.Range then
 					self:CastW(target)
 				end
 			end
 		end
 
 		if Menu.Combo.Priority:Value() == 4 then
-			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + ESpell.Range then
+			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() + self.ESpell.Range then
 				eCastSuccess = self:CastE(target, Menu.Combo.Emode:Value(), self:CastERange(target))
 			end
 			if not Menu.Combo.E:Value() or not IsReady(_E) or not eCastSuccess then
-				if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+				if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < self.WSpell.Range then
 					self:CastW(target)
 				end
-				if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+				if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (self.QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 					Control.CastSpell(HK_Q, target)
 					lastQ = Game.Timer()
 				end
@@ -1764,7 +1793,7 @@ function Lucian:CastE(target, mode, range)
 	local castPos = nil
 	if mode == 1 then
 		--local targetPred = target:GetPrediction(MathHuge, 0.25)
-		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, target.pos, ESpell.Range, self:EToSideHoldDis())
+		local intPos1, intPos2 = CircleCircleIntersection(myHero.pos, target.pos, self.ESpell.Range, self:EToSideHoldDis())
 		if intPos1 and intPos2 then
 			local closest = GetDistance(intPos1, mousePos) < GetDistance(intPos2, mousePos) and intPos1 or intPos2
 			if IsFacingMe(target) then
@@ -1795,10 +1824,10 @@ function Lucian:CastE(target, mode, range)
 end
 
 function Lucian:CastW(target)
-	local WPrediction = GGPrediction:SpellPrediction(WSpell)
+	local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 	WPrediction:GetPrediction(target, myHero)
 	if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
-		local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, WPrediction.CastPosition, WSpell.Speed, WSpell.Delay, WSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+		local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, WPrediction.CastPosition, self.WSpell.Speed, self.WSpell.Delay, self.WSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 		if collisionCount == 0 or Data:IsInAutoAttackRange(myHero, target) then
 			Control.CastSpell(HK_W, WPrediction.CastPosition)
 		end
@@ -1806,15 +1835,15 @@ function Lucian:CastW(target)
 end
 
 function Lucian:CastQExt(target)
-	local pred = GGPrediction:SpellPrediction(Q2Spell)
+	local pred = GGPrediction:SpellPrediction(self.Q2Spell)
 	pred:GetPrediction(target, myHero)
 	if pred:CanHit(Menu.Misc.QhitChance:Value() + 1) then
 		local predPos = Vector(pred.CastPosition)
 		
 		local targetPos = myHero.pos:Extended(predPos, GetDistance(myHero.pos, predPos))
 
-		local minions = ObjectManager:GetEnemyMinions(QSpell.Range + myHero.boundingRadius + target.boundingRadius)
-		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range + myHero.boundingRadius + target.boundingRadius)
+		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range + myHero.boundingRadius + target.boundingRadius)
+		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range + myHero.boundingRadius + target.boundingRadius)
 		
 		local objTable = {}
 		for i = 1, #minions do
@@ -1831,7 +1860,7 @@ function Lucian:CastQExt(target)
 		for i = 1, #objTable do
 			local obj = objTable[i]
 			local objPos = myHero.pos:Extended(obj.pos, GetDistance(myHero.pos, predPos))
-			if GetDistance(targetPos, objPos) < (Q2Spell.Radius/2 + target.boundingRadius) then
+			if GetDistance(targetPos, objPos) < (self.Q2Spell.Radius/2 + target.boundingRadius) then
 				Control.CastSpell(HK_Q, obj.pos)
 				lastQ = Game.Timer()
 			end
@@ -1841,16 +1870,16 @@ end
 
 function Lucian:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
-		local target = GetTarget(Q2Spell.Range)
+		local target = GetTarget(self.Q2Spell.Range)
 		if IsValid(target) then
-			if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
+			if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) <= (self.QSpell.Range + myHero.boundingRadius + target.boundingRadius) then
 				Control.CastSpell(HK_Q, target)
 				lastQ = Game.Timer()
 			end
 			if Menu.Harass.QExt:Value() and IsReady(_Q) then 
 				self:CastQExt(target)
 			end
-			if Menu.Harass.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range then
+			if Menu.Harass.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < self.WSpell.Range then
 				self:CastW(target)
 			end
 		end
@@ -1867,18 +1896,18 @@ end
 function Lucian:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(Q2Spell.Range)
+		local minions = ObjectManager:GetEnemyMinions(self.Q2Spell.Range)
 		TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
-					if myHero.pos:DistanceTo(minion.pos) <= (QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
+					if myHero.pos:DistanceTo(minion.pos) <= (self.QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
 						local direction = (minion.pos - myHero.pos):Normalized()
 						local hitCount = 1
 						for j, otherMinion in ipairs(minions) do
 							if otherMinion.networkID ~= minion.networkID and IsValid(otherMinion) then
 								local pointToLineDistance = GetDistanceToLine(otherMinion.pos, myHero.pos, direction)
-								if pointToLineDistance <= Q2Spell.Radius/2 + otherMinion.boundingRadius then
+								if pointToLineDistance <= self.Q2Spell.Radius/2 + otherMinion.boundingRadius then
 									hitCount = hitCount + 1
 								end
 							end
@@ -1902,12 +1931,12 @@ end
 
 function Lucian:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(self.WSpell.Range)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
 				if Menu.Clear.JungleClear.Priority:Value() == 1 then
-					if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
+					if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (self.QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
 						Control.CastSpell(HK_Q, minion)
 						lastQ = Game.Timer()
 					elseif Menu.Clear.JungleClear.W:Value() and (not Menu.Clear.JungleClear.Q:Value() or not IsReady(_Q)) and IsReady(_W) then
@@ -1920,7 +1949,7 @@ function Lucian:JungleClear()
 				if Menu.Clear.JungleClear.Priority:Value() == 2 then
 					if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
 						Control.CastSpell(HK_W, minion)
-					elseif Menu.Clear.JungleClear.Q:Value() and (not Menu.Clear.JungleClear.W:Value() or not IsReady(_W)) and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
+					elseif Menu.Clear.JungleClear.Q:Value() and (not Menu.Clear.JungleClear.W:Value() or not IsReady(_W)) and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (self.QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
 						Control.CastSpell(HK_Q, minion)
 						lastQ = Game.Timer()
 					elseif Menu.Clear.JungleClear.E:Value() and (not Menu.Clear.JungleClear.W:Value() or not IsReady(_W)) and IsReady(_E) then
@@ -1931,7 +1960,7 @@ function Lucian:JungleClear()
 				if Menu.Clear.JungleClear.Priority:Value() == 3 then
 					if Menu.Clear.JungleClear.E:Value() and IsReady(_E) then
 						self:CastE(minion, Menu.Clear.JungleClear.Emode:Value(), self:CastERange(minion))
-					elseif Menu.Clear.JungleClear.Q:Value() and (not Menu.Clear.JungleClear.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
+					elseif Menu.Clear.JungleClear.Q:Value() and (not Menu.Clear.JungleClear.E:Value() or not IsReady(_E)) and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= (self.QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
 						Control.CastSpell(HK_Q, minion)
 						lastQ = Game.Timer()
 					elseif Menu.Clear.JungleClear.W:Value() and (not Menu.Clear.JungleClear.E:Value() or not IsReady(_E)) and IsReady(_W) then
@@ -1948,9 +1977,9 @@ function Lucian:AntiGapcloser()
 		local enemies = ObjectManager:GetEnemyHeroes(1500)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing then
-				if myHero.pos:DistanceTo(target.pathing.endPos) < 300 then -- Data:GetAutoAttackRange(myHero, target)
-					--local castPos = Vector(myHero.pos) + (Vector(target.pathing.endPos) - Vector(target.pathing.startPos)):Normalized() * ESpell.Range
-					local castPos = myHero.pos + (myHero.pos - target.pos):Normalized() * ESpell.Range
+				if myHero.pos:DistanceTo(target.pathing.endPos) < 300 and IsFacingMe(target) then -- Data:GetAutoAttackRange(myHero, target)
+					--local castPos = Vector(myHero.pos) + (Vector(target.pathing.endPos) - Vector(target.pathing.startPos)):Normalized() * self.ESpell.Range
+					local castPos = myHero.pos + (myHero.pos - target.pos):Normalized() * self.ESpell.Range
 					if castPos:To2D().onScreen then
 						Control.CastSpell(HK_E, castPos)
 					end
@@ -1980,16 +2009,16 @@ function Lucian:Draw()
 	end
 
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
-		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+		Draw.Circle(myHero.pos, self.QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end
 	if Menu.Draw.W:Value() and IsReady(_W) then
-		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+		Draw.Circle(myHero.pos, self.WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
 	end
 	if Menu.Draw.E:Value() and IsReady(_E) then
-		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
-		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+		Draw.Circle(myHero.pos, self.RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 end
 
@@ -2004,10 +2033,10 @@ function Jinx:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	QSpell = { Range = 525 }
-	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 60, Range = 1450, Speed = 3300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
-	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 115, Range = 925, Speed = math.huge, Collision = false}
-	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 140, Range = 12500, Speed = 1700, Collision = false}
+	self.QSpell = { Range = 525 }
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 60, Range = 1450, Speed = 3300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
+	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 115, Range = 925, Speed = math.huge, Collision = false}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 140, Range = 12500, Speed = 1700, Collision = false}
 end
 
 function Jinx:LoadMenu()
@@ -2102,9 +2131,9 @@ end
 
 function Jinx:OnTick()
 
-	WSpell.Delay = math.max(math.floor((0.6 - 0.02 * ((myHero.attackSpeed - 1)/0.25)) * 100) / 100, 0.4)
+	self.WSpell.Delay = math.max(math.floor((0.6 - 0.02 * ((myHero.attackSpeed - 1)/0.25)) * 100) / 100, 0.4)
 	
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	if ShouldWait() then
 		return
 	end
 	if IsCasting() then return end
@@ -2127,7 +2156,7 @@ function Jinx:OnTick()
 end
 
 function Jinx:Combo()
-	local target = GetTarget(WSpell.Range)
+	local target = GetTarget(self.WSpell.Range)
 	if IsValid(target) then
 		if Menu.Combo.W:Value() and IsReady(_W) then
 			if myHero.pos:DistanceTo(target.pos) > Data:GetAutoAttackRange(myHero, target) then
@@ -2135,7 +2164,7 @@ function Jinx:Combo()
 			end
 		end
 		if Menu.Combo.E:Value() and IsReady(_E) then
-			if myHero.pos:DistanceTo(target.pos) < ESpell.Range then
+			if myHero.pos:DistanceTo(target.pos) < self.ESpell.Range then
 				self:CastE(target)
 			end
 		end
@@ -2158,16 +2187,16 @@ function Jinx:ComboQ()
 end
 
 function Jinx:QbaseRange(unit)
-	return QSpell.Range + myHero.boundingRadius + unit.boundingRadius
+	return self.QSpell.Range + myHero.boundingRadius + unit.boundingRadius
 end
 
 function Jinx:QmaxRange(unit)
 	local level = myHero:GetSpellData(_Q).level
-	return QSpell.Range + myHero.boundingRadius + unit.boundingRadius + ({80, 110, 140, 170, 200})[level]
+	return self.QSpell.Range + myHero.boundingRadius + unit.boundingRadius + ({80, 110, 140, 170, 200})[level]
 end
 
 function Jinx:CastW(target)
-	local WPrediction = GGPrediction:SpellPrediction(WSpell)
+	local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 	WPrediction:GetPrediction(target, myHero)
 	if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
 		Control.CastSpell(HK_W, WPrediction.CastPosition)
@@ -2175,7 +2204,7 @@ function Jinx:CastW(target)
 end
 
 function Jinx:CastE(target)
-	local EPrediction = GGPrediction:SpellPrediction(ESpell)
+	local EPrediction = GGPrediction:SpellPrediction(self.ESpell)
 	EPrediction:GetPrediction(target, myHero)
 	if EPrediction:CanHit(Menu.Misc.EhitChance:Value() + 1) then
 		Control.CastSpell(HK_E, EPrediction.CastPosition)
@@ -2183,7 +2212,7 @@ function Jinx:CastE(target)
 end
 
 function Jinx:CastR(target)
-	local RPrediction = GGPrediction:SpellPrediction(RSpell)
+	local RPrediction = GGPrediction:SpellPrediction(self.RSpell)
 	RPrediction:GetPrediction(target, myHero)
 	if RPrediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
 		Control.CastSpell(HK_R, RPrediction.CastPosition)
@@ -2192,7 +2221,7 @@ end
 
 function Jinx:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
-		local target = GetTarget(WSpell.Range)
+		local target = GetTarget(self.WSpell.Range)
 		if IsValid(target) then
 			if Menu.Harass.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) > self:QmaxRange(target) then
 				self:CastW(target)
@@ -2222,7 +2251,7 @@ end
 	if IsUnderTurret(myHero) then return end
 	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
-			local minions = ObjectManager:GetEnemyMinions(QSpell.Range + 130)
+			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range + 130)
 			TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
@@ -2249,7 +2278,7 @@ end ]]
 
 function Jinx:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(QSpell.Range + 130)
+		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range + 130)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -2278,7 +2307,7 @@ end
 function Jinx:AutoE()
 	if Menu.Misc.Ecc:Value() and IsReady(_E) then
 		for i, target in ipairs(GetEnemyHeroes()) do
-			if target and myHero.pos:DistanceTo(target.pos) <= ESpell.Range then
+			if target and myHero.pos:DistanceTo(target.pos) <= self.ESpell.Range then
 				if
 					GetImmobileDuration(target) > 0.5 --cc
 					or IsInvulnerable(target) --zhonya
@@ -2299,7 +2328,7 @@ function Jinx:AutoE()
 	end
 	
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
-		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing then
 				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
@@ -2313,7 +2342,7 @@ function Jinx:AutoE()
 		for i = GameParticleCount(), 1, -1 do
 			local par = GameParticle(i)
 			if
-				par and par.pos:DistanceTo(myHero.pos) <= ESpell.Range
+				par and par.pos:DistanceTo(myHero.pos) <= self.ESpell.Range
  				and ((par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
 			then
 				Control.CastSpell(HK_E, par)
@@ -2339,7 +2368,7 @@ function Jinx:KillSteal()
 			if Menu.KillSteal.W:Value() and IsReady(_W) and lastR + 1500 < GetTickCount() then
 				local Wdmg = self:GetWDmg(enemy)
 				if Wdmg >= enemy.health + enemy.hpRegen * 1 then
-					if myHero.pos:DistanceTo(enemy.pos) < WSpell.Range then
+					if myHero.pos:DistanceTo(enemy.pos) < self.WSpell.Range then
 						if myHero.pos:DistanceTo(enemy.pos) > Data:GetAutoAttackRange(myHero, enemy) then 
 							self:CastW(enemy)
 							lastW = GetTickCount()
@@ -2392,10 +2421,10 @@ function Jinx:Draw()
 	end
 
 	if Menu.Draw.W:Value() and IsReady(_W) then
-		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+		Draw.Circle(myHero.pos, self.WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
 	end
 	if Menu.Draw.E:Value() and IsReady(_E) then
-		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 end
 
@@ -2512,7 +2541,7 @@ function Tristana:OnTick()
 	
 	self:ForceE()
 
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	if ShouldWait() then
 		return
 	end
 	if IsCasting() then return end
@@ -2615,7 +2644,7 @@ function Tristana:GetEDmg(unit)
 end
 
 function Tristana:GetRDmg(unit)
-	local baseDmg = ({275, 325, 375})[myHero:GetSpellData(_R).level]
+	local baseDmg = ({225, 275, 325})[myHero:GetSpellData(_R).level]
 	local bonusDmg = myHero.bonusDamage * 0.7 + myHero.ap * 1
 	local Rvalue = baseDmg + bonusDmg
 	local Rdmg = Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_MAGICAL, Rvalue)
@@ -2653,9 +2682,9 @@ function MissFortune:__init()
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	-- Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
-	QSpell = {Delay = 0.25, Range = 550, Speed = 1400}
-	ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 200, Range = 1150, Speed = MathHuge, Collision = false}
-	RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.375, Radius = 40, Range = 1350, Speed = 2000, Collision = false}
+	self.QSpell = {Delay = 0.25, Range = 550, Speed = 1400}
+	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 200, Range = 1150, Speed = MathHuge, Collision = false}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.375, Radius = 40, Range = 1350, Speed = 2000, Collision = false}
 	-- LastAttackId = 0
 end
 
@@ -2705,12 +2734,12 @@ function MissFortune:LoadMenu()
 end
 
 function MissFortune:OnTick()
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	if ShouldWait() then
 		return
 	end
 
-	QSpell.Range = myHero.range + myHero.boundingRadius*2
-	QSpell.Delay = myHero.attackData.windUpTime
+	self.QSpell.Range = myHero.range + myHero.boundingRadius*2
+	self.QSpell.Delay = myHero.attackData.windUpTime
 
 	if HaveBuff(myHero, "missfortunebulletsound") then
 		Orbwalker:SetAttack(false)
@@ -2768,7 +2797,7 @@ end
 
 function MissFortune:SemiRLogic()
 	if Menu.Misc.R:Value() and IsReady(_R) and lastR + 3000 < GetTickCount() then
-		local Rtarget = GetTarget(RSpell.Range)
+		local Rtarget = GetTarget(self.RSpell.Range)
 		if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 			Control.CastSpell(HK_R, Rtarget)
 			lastR = GetTickCount()
@@ -2778,7 +2807,7 @@ end
 
 function MissFortune:KillSteal()
 	if Menu.KillSteal.Q:Value() and IsReady(_Q) then
-		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range+500)
+		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range+500)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and (target.health + target.shieldAD) < self:GetQDmg(target) then
 				self:QLogic(target, true)
@@ -2793,7 +2822,7 @@ end
 		-- if IsValid(orbT) and orbT.type == Obj_AI_Hero and orbT.networkID == LastAttackId then
 			-- if orbT.health > Damage:GetAutoAttackDamage(myHero, orbT) * 2 then
 				-- local ta = nil
-				-- local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)				--aarange == qrange
+				-- local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)				--aarange == qrange
 				-- for _, enemy in ipairs(enemies) do
 					-- if IsValid(enemy) and enemy.networkID ~= LastAttackId then
 						-- ta = enemy
@@ -2819,7 +2848,7 @@ end
 
 function MissFortune:Combo()
 	if IsReady(_Q) then
-		local Qtarget = GetTarget(QSpell.Range+500)
+		local Qtarget = GetTarget(self.QSpell.Range+500)
 		if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
 			if Menu.Combo.Q:Value() then
 				self:QLogic(Qtarget, Menu.Combo.Q2:Value())
@@ -2827,7 +2856,7 @@ function MissFortune:Combo()
 		end
 	end
 
-	local Etarget = GetTarget(ESpell.Range)
+	local Etarget = GetTarget(self.ESpell.Range)
 	if IsValid(Etarget) and Etarget.pos2D.onScreen then
 		if Menu.Combo.E:Value() and IsReady(_E) and not Data:IsInAutoAttackRange(myHero, Etarget) then
 			if myHero.mana > myHero:GetSpellData(_R).mana + myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_W).mana + myHero:GetSpellData(_E).mana then
@@ -2840,7 +2869,7 @@ end
 function MissFortune:Harass()
 	--if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if IsReady(_Q) then
-			local Qtarget = GetTarget(QSpell.Range+500)
+			local Qtarget = GetTarget(self.QSpell.Range+500)
 			if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
 				if Menu.Harass.Q:Value() then
 					self:QLogic(Qtarget, Menu.Harass.Q2:Value())
@@ -2848,7 +2877,7 @@ function MissFortune:Harass()
 			end
 		end
 
-		local Etarget = GetTarget(ESpell.Range)
+		local Etarget = GetTarget(self.ESpell.Range)
 		if IsValid(Etarget) and Etarget.pos2D.onScreen then
 			if Menu.Harass.E:Value() and IsReady(_E) then
 				self:CastGGPred(HK_E, Etarget)
@@ -2866,17 +2895,17 @@ end
 function MissFortune:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
 		TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				if Menu.Clear.LaneClear.E:Value() and IsReady(_E) then
-					if GetMinionCount(ESpell.Radius, minion.pos) >= Menu.Clear.LaneClear.ECount:Value() then
+					if GetMinionCount(self.ESpell.Radius, minion.pos) >= Menu.Clear.LaneClear.ECount:Value() then
 						Control.CastSpell(HK_E, minion)
 					end
 				end
 				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
-					if #minions > 2 and minions[1].pos:DistanceTo(myHero.pos) < QSpell.Range then
+					if #minions > 2 and minions[1].pos:DistanceTo(myHero.pos) < self.QSpell.Range then
 						Control.CastSpell(HK_Q, minions[1])
 					end
 				end
@@ -2887,7 +2916,7 @@ end
 
 function MissFortune:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -2895,12 +2924,12 @@ function MissFortune:JungleClear()
 					if not minion.name:lower():find("mini") then
 						Control.CastSpell(HK_E, minion)
 					else
-						if GetMinionCount(ESpell.Radius, minion.pos) > 2 then
+						if GetMinionCount(self.ESpell.Radius, minion.pos) > 2 then
 							Control.CastSpell(HK_E, minion)
 						end
 					end
 				end
-				if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) < QSpell.Range then
+				if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) < self.QSpell.Range then
 					Control.CastSpell(HK_Q, minion)
 				end
 			end
@@ -2910,14 +2939,14 @@ end
 
 function MissFortune:QLogic(target, UseQBounce)
 	if target == nil then return end
-	if myHero.pos:DistanceTo(target.pos) <= QSpell.Range then
+	if myHero.pos:DistanceTo(target.pos) <= self.QSpell.Range then
 		Control.CastSpell(HK_Q, target)
 	else
 		if UseQBounce then
-			local tarPred = target:GetPrediction(QSpell.Speed, QSpell.Delay)
+			local tarPred = target:GetPrediction(self.QSpell.Speed, self.QSpell.Delay)
 			local bounceFirstTar = {}
-			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
-			local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
+			local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 			
 			local objTable = {}
 			for i = 1, #minions do
@@ -2933,7 +2962,7 @@ function MissFortune:QLogic(target, UseQBounce)
 				local obj = objTable[i]
 				if IsValid(obj) and obj.networkID ~= target.networkID then
 					local angle = Menu.Misc.Qangle:Value()/2
-					local objPred = obj:GetPrediction(QSpell.Speed, QSpell.Delay)
+					local objPred = obj:GetPrediction(self.QSpell.Speed, self.QSpell.Delay)
 					local middlePos = myHero.pos:Extended(objPred, myHero.pos:DistanceTo(objPred) + 500)
 					local leftVector = (middlePos - objPred):Rotated(0, angle * math.pi / 180, 0)
 					local rightVector = (middlePos - objPred):Rotated(0, -angle * math.pi / 180, 0)
@@ -2958,7 +2987,7 @@ function MissFortune:QLogic(target, UseQBounce)
 				TableSort(bounceFirstTar, function(a, b) return a.dis < b.dis end)
 				local starTar = bounceFirstTar[1].tar
 				local starPos = starTar.pos:Extended(tarPred, starTar.boundingRadius*2)
-				local _, _, collisionCount = GGPrediction:GetCollision(starPos, tarPred, QSpell.Speed, QSpell.Delay, 60, {GGPrediction.COLLISION_MINION}, target.networkID)
+				local _, _, collisionCount = GGPrediction:GetCollision(starPos, tarPred, self.QSpell.Speed, self.QSpell.Delay, 60, {GGPrediction.COLLISION_MINION}, target.networkID)
 				if collisionCount == 0 then
 					Control.CastSpell(HK_Q, starTar)
 				end
@@ -2969,7 +2998,7 @@ end
 
 function MissFortune:CastGGPred(spell, unit)
 	if spell == HK_E then
-		local EPrediction = GGPrediction:SpellPrediction(ESpell)
+		local EPrediction = GGPrediction:SpellPrediction(self.ESpell)
 		EPrediction:GetPrediction(unit, myHero)
 		if EPrediction:CanHit(3) then
 			Control.CastSpell(HK_E, EPrediction.CastPosition)
@@ -3003,13 +3032,13 @@ function MissFortune:Draw()
 	end
 
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
-		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+		Draw.Circle(myHero.pos, self.QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end
 	if Menu.Draw.E:Value() and IsReady(_E) then
-		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
-		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+		Draw.Circle(myHero.pos, self.RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 end
 
@@ -3026,13 +3055,13 @@ function Jayce:__init()
 	-- Callback.Add("WndMsg", function(...) self:OnWndMsg(...) end)
 	Spell:OnSpellCast(function(spell) self:OnSpellCast(spell) end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	Q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1050, Speed = 1450, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	Q1extSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.3, Radius = 70, Range = 1600, Speed = 2350, Collision = false}
-	Q1extColSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.3, Radius = 70, Range = 1600, Speed = 2350, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	Q2Spell = {Range = 600}
-	W2Spell = {Radius = 350}
-	E1Spell = {Range = 650}
-	E2Spell = {Delay = 0.25, Range = 240}
+	self.Q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1050, Speed = 1450, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.Q1extSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.3, Radius = 70, Range = 1600, Speed = 2350, Collision = false}
+	self.Q1extColSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.3, Radius = 70, Range = 1600, Speed = 2350, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.Q2Spell = {Range = 600}
+	self.W2Spell = {Radius = 350}
+	self.E1Spell = {Range = 650}
+	self.E2Spell = {Delay = 0.25, Range = 240}
 end
 
 function Jayce:LoadMenu()
@@ -3161,7 +3190,7 @@ end
 
 local Etick = 0
 function Jayce:OnTick()
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	if ShouldWait() then
 		return
 	end
 	-- if QmanualTimer and GetTickCount() > QmanualTimer + 1000 then
@@ -3253,7 +3282,7 @@ function Jayce:Flee()
 		end
 	else
 		if IsReady(_Q) then
-			local minions = ObjectManager:GetEnemyMinions(Q2Spell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.Q2Spell.Range)
 			TableSort(minions, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
 			if #minions > 0 then
 				local best = minions[1]
@@ -3274,8 +3303,8 @@ function Jayce:Flee()
 end
 
 function Jayce:Q1Logic()
-	local Qtype = Q1Spell
-	if self:CanUseQE() then Qtype = Q1extSpell end
+	local Qtype = self.Q1Spell
+	if self:CanUseQE() then Qtype = self.Q1extSpell end
 	
 	if Menu.Q.useQE:Value() then
 		local enemies = ObjectManager:GetEnemyHeroes(Qtype.Range)
@@ -3316,7 +3345,7 @@ function Jayce:W1Logic()
 end
 
 function Jayce:Q2Logic()
-	local target = GetTarget(Q2Spell.Range)
+	local target = GetTarget(self.Q2Spell.Range)
 	if IsValid(target) then
 		if self:GetQ2Dmg(target) > target.health then
 			Control.CastSpell(HK_Q, target)
@@ -3335,7 +3364,7 @@ function Jayce:W2Logic()
 end
 
 function Jayce:E2Logic()
-	local target = GetTarget(E2Spell.Range+150)
+	local target = GetTarget(self.E2Spell.Range+150)
 	if IsValid(target) then
 		if self:GetE2Dmg(target) > target.health then
 			Control.CastSpell(HK_E, target)
@@ -3349,7 +3378,7 @@ end
 
 function Jayce:RLogic()
 	if self:IsRange() and Menu.R.Rm:Value() then
-		local target = GetTarget(Q2Spell.Range+200)
+		local target = GetTarget(self.Q2Spell.Range+200)
 		if GetMode() == "Combo" and Q1cd > 0.5 and IsValid(target) and
 			((not IsReady(_W) and target.range > 300) or (not IsReady(_W) and not HaveBuff(myHero, "jaycehypercharge") and target.range < 300))
 		then
@@ -3364,7 +3393,7 @@ function Jayce:RLogic()
 	else
 		if GetMode() == "Combo" and Menu.R.Rr:Value() then
 			local target = GetTarget(1400)
-			if IsValid(target) and target.pos:DistanceTo(myHero.pos) > Q2Spell.Range + 200 then
+			if IsValid(target) and target.pos:DistanceTo(myHero.pos) > self.Q2Spell.Range + 200 then
 				if Q1cd < 0.5 and E1cd < 0.5 then -- and self:GetQ1Dmg(target) * 1.4 > target.health
 					Control.CastSpell(HK_R)
 				end
@@ -3378,7 +3407,7 @@ end
 
 function Jayce:CastQ1(target)
 	if not self:CanUseQE() then
-		local Pred = GGPrediction:SpellPrediction(Q1Spell)
+		local Pred = GGPrediction:SpellPrediction(self.Q1Spell)
 		Pred:GetPrediction(target, myHero)
 		if Pred:CanHit(3) then
 			Control.CastSpell(HK_Q, Pred.CastPosition)
@@ -3387,10 +3416,10 @@ function Jayce:CastQ1(target)
 	end
 
 	if Menu.Q.QEsplash:Value() then
-		local Pred = GGPrediction:SpellPrediction(Q1extSpell)
+		local Pred = GGPrediction:SpellPrediction(self.Q1extSpell)
 		Pred:GetPrediction(target, myHero)
 		if Pred:CanHit(3) then
-			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, Pred.CastPosition, Q1extSpell.Speed, Q1extSpell.Delay, Q1extSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, Pred.CastPosition, self.Q1extSpell.Speed, self.Q1extSpell.Delay, self.Q1extSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 			if collisionCount > 0 then
 				local minion = collisionObjects[1]
 				if minion.pos:DistanceTo(Pred.CastPosition) < 150 then
@@ -3401,7 +3430,7 @@ function Jayce:CastQ1(target)
 			end
 		end
 	else
-		local Pred = GGPrediction:SpellPrediction(Q1extColSpell)
+		local Pred = GGPrediction:SpellPrediction(self.Q1extColSpell)
 		Pred:GetPrediction(target, myHero)
 		if Pred:CanHit(3) then
 			Control.CastSpell(HK_Q, Pred.CastPosition)
@@ -3426,12 +3455,12 @@ function Jayce:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Farm.spellFarm:Value() --[[and myHero.mana/myHero.maxMana > Menu.Farm.Mana:Value()/100 ]]then
 		if self:IsRange() and IsReady(_Q) and IsReady(_E) and Menu.Farm.farmQ:Value() then
-			local minions = ObjectManager:GetEnemyMinions(Q1Spell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.Q1Spell.Range)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 					if GetMinionCount(250, minion.pos) >= Menu.Farm.LCminions:Value() then
 						local endPos = minion.pos:Extended(myHero.pos, 150)
-						local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, endPos, Q1extSpell.Speed, Q1extSpell.Delay, Q1extSpell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
+						local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, endPos, self.Q1extSpell.Speed, self.Q1extSpell.Delay, self.Q1extSpell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
 						if collisionCount == 0 then
 							Control.CastSpell(HK_Q, minion)
 						end
@@ -3556,12 +3585,12 @@ function Jayce:Draw()
 	if Menu.Draw.Q:Value() then
 		if self:IsRange() then
 			if self:CanUseQE() then
-				Draw.Circle(myHero.pos, Q1extSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+				Draw.Circle(myHero.pos, self.Q1extSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 			else
-				Draw.Circle(myHero.pos, Q1Spell.Range, 1, Draw.Color(255, 66, 244, 113))
+				Draw.Circle(myHero.pos, self.Q1Spell.Range, 1, Draw.Color(255, 66, 244, 113))
 			end
 		else
-			Draw.Circle(myHero.pos, Q2Spell.Range, 1, Draw.Color(255, 66, 244, 113))
+			Draw.Circle(myHero.pos, self.Q2Spell.Range, 1, Draw.Color(255, 66, 244, 113))
 		end
 	end
 end
@@ -3576,9 +3605,9 @@ function Kalista:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 40, Range = 1150, Speed = 2400, Collision = false}
-	ESpell = {Range = 1000}
-	RSpell = {Range = 1150}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 40, Range = 1150, Speed = 2400, Collision = false}
+	self.ESpell = {Range = 1000}
+	self.RSpell = {Range = 1150}
 end
 
 function Kalista:LoadMenu()
@@ -3623,7 +3652,7 @@ function Kalista:LoadMenu()
 end
 
 function Kalista:OnTick()
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	if ShouldWait() then
 		return
 	end
 
@@ -3645,7 +3674,7 @@ end
 
 function Kalista:KillSteal()
 	if Menu.KillSteal.E:Value() and IsReady(_E) then
-		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and HaveBuff(target, "kalistaexpungemarker") then
 				local EDmg = self:GetEDmg(target)
@@ -3664,7 +3693,7 @@ function Kalista:KillSteal()
 		end
 	end
 	if Menu.KillSteal.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
-		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) then
 				local QDmg = self:GetQDmg(target)
@@ -3685,10 +3714,10 @@ function Kalista:KillSteal()
 end
 
 function Kalista:CastQ(target)
-	local QPrediction = GGPrediction:SpellPrediction(QSpell)
+	local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 	QPrediction:GetPrediction(target, myHero)
 	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) and not IsCasting() and not myHero.pathing.isDashing then
-		local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, QPrediction.CastPosition, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+		local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, QPrediction.CastPosition, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 		if collisionCount > 0 then
 			local allColCanKill = true
 			for _, col in ipairs(collisionObjects) do
@@ -3711,16 +3740,16 @@ end
 
 function Kalista:Combo()
 	if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
-		local Qtarget = GetTarget(QSpell.Range)
+		local Qtarget = GetTarget(self.QSpell.Range)
 		if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
 			self:CastQ(Qtarget)
 		end
 	end
 	if Menu.Combo.E:Value() and IsReady(_E) then
-		local targets = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		local targets = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
 		for _, Etarget in ipairs(targets) do 
 			if IsValid(Etarget) and HaveBuff(Etarget, "kalistaexpungemarker") then
-				local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+				local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
 				for _, minion in ipairs(minions) do
 					if IsValid(minion) and HaveBuff(minion, "kalistaexpungemarker") then
 						local EDmg = self:GetEDmg(minion)
@@ -3739,16 +3768,16 @@ function Kalista:Harass()
 	if IsUnderTurret(myHero) then return end
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
-			local Qtarget = GetTarget(QSpell.Range)
+			local Qtarget = GetTarget(self.QSpell.Range)
 			if IsValid(Qtarget) and Qtarget.pos2D.onScreen and not Data:IsInAutoAttackRange(myHero, Qtarget) then
 				self:CastQ(Qtarget)
 			end
 		end
 		if Menu.Harass.E:Value() and IsReady(_E) then
-			local targets = ObjectManager:GetEnemyHeroes(ESpell.Range)
+			local targets = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
 			for _, Etarget in ipairs(targets) do 
 				if IsValid(Etarget) and HaveBuff(Etarget, "kalistaexpungemarker") then
-					local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+					local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
 					for i, minion in ipairs(minions) do
 						if IsValid(minion) and HaveBuff(minion, "kalistaexpungemarker") then
 							local EDmg = self:GetEDmg(minion)
@@ -3774,7 +3803,7 @@ function Kalista:LaneClear()
 	if Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.E:Value() and IsReady(_E) then
 			local killCount = 0
-			local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and HaveBuff(minion, "kalistaexpungemarker") then
 					local EDmg = self:GetEDmg(minion)
@@ -3795,12 +3824,12 @@ function Kalista:LaneClear()
 			end
 		end
 		if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.QMana:Value()/100 and ]]Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
-			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and not IsCasting() and not myHero.pathing.isDashing then
 					local QDmg = self:GetQDmg(minion)
 					if minion.health <= QDmg then
-						local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
+						local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
 						if Menu.Clear.LaneClear.QCount:Value() == 1 then
 							if collisionCount == 0 then
 								Control.CastSpell(HK_Q, minion)
@@ -3831,7 +3860,7 @@ end
 
 function Kalista:JungleClear()
 	if Menu.Clear.JungleClear.E:Value() and IsReady(_E) then
-		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and HaveBuff(minion, "kalistaexpungemarker") then
 				local minionName = minion.charName:lower()
@@ -3848,7 +3877,7 @@ end
 
 function Kalista:AutoKillEpicMonster()
 	if Menu.Misc.E:Value() and IsReady(_E) then
-		local minions = ObjectManager:GetEnemyMinions(ESpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and HaveBuff(minion, "kalistaexpungemarker") then
 				local minionName = minion.charName:lower()
@@ -3872,7 +3901,7 @@ end
 
 function Kalista:AutoR()
 	if Menu.Misc.R:Value() and IsReady(_R) then
-		local allies = ObjectManager:GetAllyHeroes(RSpell.Range)
+		local allies = ObjectManager:GetAllyHeroes(self.RSpell.Range)
 		for i, ally in ipairs(allies) do
 			if IsValid(ally) and not ally.isMe and HaveBuff(ally, "kalistacoopstrikeally") then
 				if ally.health < GetEnemyCount(600, ally.pos) * ally.levelData.lvl * 30 then
@@ -3932,13 +3961,13 @@ function Kalista:Draw()
 	end
 
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
-		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+		Draw.Circle(myHero.pos, self.QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end
 	if Menu.Draw.E:Value() and IsReady(_E) then
-		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
-		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+		Draw.Circle(myHero.pos, self.RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 end
 
@@ -3953,8 +3982,8 @@ function Ashe:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPostAttack(function() self:OnPostAttack() end)
-	WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 20, Range = 1200, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 130, Range = 12500, Speed = 1600, Collision = false}
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 20, Range = 1200, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 130, Range = 12500, Speed = 1600, Collision = false}
 end
 
 function Ashe:LoadMenu()
@@ -4018,7 +4047,7 @@ function Ashe:OnPostAttack()
 end
 
 function Ashe:OnTick()
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	if ShouldWait() then
 		return
 	end
 	self:SemiManualR()
@@ -4038,7 +4067,7 @@ end
 
 function Ashe:KillSteal()
 	if Menu.KillSteal.W:Value() and IsReady(_W) then
-		local enemies = ObjectManager:GetEnemyHeroes(WSpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.WSpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) then
 				local WDmg = self:GetWDmg(target)
@@ -4052,7 +4081,7 @@ end
 
 function Ashe:SemiManualR()
 	if Menu.Misc.Rsm:Value() and IsReady(_R) then
-		local enemies = ObjectManager:GetEnemyHeroes(RSpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.RSpell.Range)
 		TableSort(enemies, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
 		if IsValid(enemies[1]) and enemies[1].pos2D.onScreen then
 			self:CastR(enemies[1])
@@ -4061,7 +4090,7 @@ function Ashe:SemiManualR()
 end
 
 function Ashe:CastW(target)
-	local WPrediction = GGPrediction:SpellPrediction(WSpell)
+	local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 	WPrediction:GetPrediction(target, myHero)
 	if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
 		Control.CastSpell(HK_W, WPrediction.CastPosition)
@@ -4069,7 +4098,7 @@ function Ashe:CastW(target)
 end
 
 function Ashe:CastR(target)
-	local RPrediction = GGPrediction:SpellPrediction(RSpell)
+	local RPrediction = GGPrediction:SpellPrediction(self.RSpell)
 	RPrediction:GetPrediction(target, myHero)
 	if RPrediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
 		Control.CastSpell(HK_R, RPrediction.CastPosition)
@@ -4078,7 +4107,7 @@ end
 
 function Ashe:Combo()
 	if Menu.Combo.W:Value() and IsReady(_W) then
-		local target = GetTarget(WSpell.Range)
+		local target = GetTarget(self.WSpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
 			self:CastW(target)
 		end
@@ -4094,7 +4123,7 @@ end
 function Ashe:Harass()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Harass.W:Value() and IsReady(_W) --[[and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 ]]then
-		local target = GetTarget(WSpell.Range)
+		local target = GetTarget(self.WSpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
 			self:CastW(target)
 		end
@@ -4110,7 +4139,7 @@ end
 function Ashe:LaneClear()
 	if Menu.Clear.SpellFarm:Value() then
 		if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
-			local minions = ObjectManager:GetEnemyMinions(WSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.WSpell.Range)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 then
 					if GetMinionCount(300, minion.pos) >= Menu.Clear.LaneClear.Count:Value() then
@@ -4163,7 +4192,7 @@ function Ashe:Draw()
 	end
 
 	if Menu.Draw.W:Value() and IsReady(_W) then
-		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+		Draw.Circle(myHero.pos, self.WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
 	end
 end
 
@@ -4178,10 +4207,10 @@ function Corki:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 275, Range = 950, Speed = 1100, Collision = false}
-	ESpell = {Range = 690}
-	R1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1250, Speed = 2000, Collision = false}
-	R2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1450, Speed = 2000, Collision = false}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 275, Range = 950, Speed = 1100, Collision = false}
+	self.ESpell = {Range = 690}
+	self.R1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1250, Speed = 2000, Collision = false}
+	self.R2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1450, Speed = 2000, Collision = false}
 end
 
 function Corki:LoadMenu()
@@ -4241,7 +4270,7 @@ function Corki:OnPreAttack(args)
 end
 
 function Corki:OnTick()
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	if ShouldWait() then
 		return
 	end
 	if IsCasting() then return end
@@ -4262,7 +4291,7 @@ end
 
 function Corki:Combo()
 	if Menu.Combo.Q:Value() and IsReady(_Q) then
-		local target = GetTarget(QSpell.Range)
+		local target = GetTarget(self.QSpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
 			self:CastQ(target)
 		end
@@ -4278,7 +4307,7 @@ end
 
 function Corki:AutoQ()
 	if Menu.Misc.Qcc:Value() and IsReady(_Q) then
-		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pos2D.onScreen and IsImmobile(target) then
 				self:CastQ(target)
@@ -4288,7 +4317,7 @@ function Corki:AutoQ()
 end
 
 function Corki:CastQ(target)
-	local QPrediction = GGPrediction:SpellPrediction(QSpell)
+	local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 	QPrediction:GetPrediction(target, myHero)
 	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
 		local castPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 825)
@@ -4302,10 +4331,10 @@ end
 
 function Corki:CastR(target)
 	if HaveBuff(myHero, "mbcheck2") then
-		local R2Prediction = GGPrediction:SpellPrediction(R2Spell)
+		local R2Prediction = GGPrediction:SpellPrediction(self.R2Spell)
 		R2Prediction:GetPrediction(target, myHero)
 		if R2Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
-			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R2Prediction.CastPosition, R2Spell.Speed, R2Spell.Delay, R2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R2Prediction.CastPosition, self.R2Spell.Speed, self.R2Spell.Delay, self.R2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 			if collisionCount > 0 then
 				local minion = collisionObjects[1]
 				if minion.pos:DistanceTo(R2Prediction.CastPosition) < 250 then
@@ -4316,10 +4345,10 @@ function Corki:CastR(target)
 			end
 		end
 	else
-		local R1Prediction = GGPrediction:SpellPrediction(R1Spell)
+		local R1Prediction = GGPrediction:SpellPrediction(self.R1Spell)
 		R1Prediction:GetPrediction(target, myHero)
 		if R1Prediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
-			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R1Prediction.CastPosition, R1Spell.Speed, R1Spell.Delay, R1Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R1Prediction.CastPosition, self.R1Spell.Speed, self.R1Spell.Delay, self.R1Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
 			if collisionCount > 0 then
 				local minion = collisionObjects[1]
 				if minion.pos:DistanceTo(R1Prediction.CastPosition) < 100 then
@@ -4335,7 +4364,7 @@ end
 function Corki:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if Menu.Harass.Q:Value() and IsReady(_Q) then
-			local target = GetTarget(QSpell.Range)
+			local target = GetTarget(self.QSpell.Range)
 			if IsValid(target) and target.pos2D.onScreen then
 				self:CastQ(target)
 			end
@@ -4360,7 +4389,7 @@ end
 function Corki:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
@@ -4371,7 +4400,7 @@ function Corki:LaneClear()
 				if Menu.Clear.LaneClear.R:Value() and IsReady(_R) then
 					if GetMinionCount(150, minion.pos) >= Menu.Clear.LaneClear.RCount:Value() then
 						local endPos = minion.pos:Extended(myHero.pos, 150)
-						local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, endPos, R1Spell.Speed, R1Spell.Delay, R1Spell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
+						local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, endPos, self.R1Spell.Speed, self.R1Spell.Delay, self.R1Spell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
 						if collisionCount == 0 then
 							Control.CastSpell(HK_R, minion)
 						end
@@ -4384,7 +4413,7 @@ end
 
 function Corki:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -4437,16 +4466,16 @@ function Corki:Draw()
 	end
 
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
-		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+		Draw.Circle(myHero.pos, self.QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end
 	if Menu.Draw.E:Value() and IsReady(_E) then
-		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
 		if HaveBuff(myHero, "mbcheck2") then
-			Draw.Circle(myHero.pos, R2Spell.Range+50, 1, Draw.Color(255, 244, 66, 104))
+			Draw.Circle(myHero.pos, self.R2Spell.Range+50, 1, Draw.Color(255, 244, 66, 104))
 		else
-			Draw.Circle(myHero.pos, R1Spell.Range+50, 1, Draw.Color(255, 244, 66, 104))
+			Draw.Circle(myHero.pos, self.R1Spell.Range+50, 1, Draw.Color(255, 244, 66, 104))
 		end
 	end
 end
@@ -4461,17 +4490,21 @@ function Caitlyn:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.625, Radius = 60, Range = 1250, Speed = 2200, Collision = false}
-	WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 15, Range = 800, Speed = MathHuge, Collision = false}
-	ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.15, Radius = 70, Range = 750, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.375, Radius = 40, Range = 3500, Speed = 3200, Collision = false}
+	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
+	Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.625, Radius = 60, Range = 1250, Speed = 2200, Collision = false}
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 15, Range = 800, Speed = MathHuge, Collision = false}
+	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.15, Radius = 70, Range = 750, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.375, Radius = 40, Range = 3500, Speed = 3200, Collision = false}
+	self.LastAttackId = nil
 end
 
 function Caitlyn:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	Menu.Combo:MenuElement({id = "QCount", name = "Use Q| Aoe Hit Count >= x", value = 2, min = 1, max = 5, step = 1})
+	Menu.Combo:MenuElement({id = "QSlow", name = "Use Q| Slow", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "QAoe", name = "Use Q| Aoe", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "QRange", name = "Use Q| Min Range >= x", value = 750, min = 500, max = 1000, step = 50})
 	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "WCount", name = "Use W| Keep Ammo Count == x", value = 1, min = 1, max = 3, step = 1})
@@ -4524,7 +4557,7 @@ function Caitlyn:LoadMenu()
 end
 
 function Caitlyn:OnTick()
-	if myHero.dead or Game.IsChatOpen() or (_G.JustEvade and _G.JustEvade:Evading()) or (_G.ExtLibEvade and _G.ExtLibEvade.Evading) or Recalling(myHero) then
+	if ShouldWait() then
 		return
 	end
 
@@ -4535,7 +4568,7 @@ function Caitlyn:OnTick()
 		Orbwalker:SetMovement(true)
 		Orbwalker:SetAttack(true)
 	end
-	if IsCasting() then return end
+	if IsCasting() or myHero.activeSpell.name == "CaitlynR" then return end
 	if Menu.Misc.EQKey:Value() then
 		self:OneKeyEQ()
 	end
@@ -4560,8 +4593,60 @@ function Caitlyn:OnTick()
 	end
 end
 
+_G.CTRLCait = true
+_G.lastEProc = 0
+_G.lastWProc = {}
+local currentBuffTarget = nil
+
+function Caitlyn:OnPreAttack(args)
+	local heroes = ObjectManager:GetEnemyHeroes(1300)
+	local Buff = _G.SDK.BuffManager
+	local bestTarget = nil
+	local shortestBuffTime = math.huge
+	for i, enemy in pairs(heroes) do
+		if enemy then
+			if Buff:HasBuff(enemy, "eternals_caitlyneheadshottracker") 
+			   and _G.lastEProc + 3 < Game.Timer() 
+			then
+				local buffTime = Buff:GetBuffDuration(enemy, "eternals_caitlyneheadshottracker")
+				if buffTime < shortestBuffTime then
+					bestTarget = enemy
+					shortestBuffTime = buffTime
+					currentBuffTarget = {target = enemy, buffType = "E"}
+				end
+			end
+			
+			if Buff:HasBuff(enemy, "caitlynwsight") 
+			   and (_G.lastWProc[enemy.networkID] == nil or _G.lastWProc[enemy.networkID] + 3 < Game.Timer())
+			then
+				local buffTime = Buff:GetBuffDuration(enemy, "caitlynwsight")
+				if buffTime < shortestBuffTime then
+					bestTarget = enemy
+					shortestBuffTime = buffTime
+					currentBuffTarget = {target = enemy, buffType = "W"}
+				end
+			end
+		end
+	end
+	if bestTarget then
+		args.Target = bestTarget
+	end
+end
+
+function Caitlyn:OnPostAttack()
+	if currentBuffTarget and currentBuffTarget.target then
+		local target = currentBuffTarget.target
+		if currentBuffTarget.buffType == "E" then
+			_G.lastEProc = Game.Timer()
+		elseif currentBuffTarget.buffType == "W" then
+			_G.lastWProc[target.networkID] = Game.Timer()
+		end
+		currentBuffTarget = nil
+	end
+end
+
 function Caitlyn:OneKeyCastR()
-	local Rtarget = GetTarget(RSpell.Range)
+	local Rtarget = GetTarget(self.RSpell.Range)
 	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 		Control.CastSpell(HK_R, Rtarget)
 	end
@@ -4572,7 +4657,7 @@ local lastWgap = 0
 local lastWtp = 0
 function Caitlyn:AntiGapcloser()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
-		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing then
 				local endPos = Vector(target.pathing.endPos)
@@ -4581,9 +4666,8 @@ function Caitlyn:AntiGapcloser()
 				end
 			end	
 		end
-	end
-	if Menu.Misc.Wgap:Value() and IsReady(_W) and lastWgap + 1500 < GetTickCount() then
-		local enemies = ObjectManager:GetEnemyHeroes(WSpell.Range)
+	elseif Menu.Misc.Wgap:Value() and IsReady(_W) and lastWgap + 1500 < GetTickCount() then
+		local enemies = ObjectManager:GetEnemyHeroes(self.WSpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing then
 				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
@@ -4597,13 +4681,13 @@ end
 
 function Caitlyn:Auto()
 	if Menu.Misc.Qcc:Value() and IsReady(_Q) and GetMode() ~= "Combo" and GetMode() ~= "Harass" then
-		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pos2D.onScreen and IsImmobile(target) then
 				if not IsReady(_W) then
 					self:CastGGPred(HK_Q, target)
 				else
-					if myHero.pos:DistanceTo(target.pos) > WSpell.Range then
+					if myHero.pos:DistanceTo(target.pos) > self.WSpell.Range then
 						self:CastGGPred(HK_Q, target)
 					end
 				end
@@ -4613,7 +4697,7 @@ function Caitlyn:Auto()
 	
 	if Menu.Misc.Wcc:Value() and IsReady(_W) and lastWcc + 3000 < GetTickCount() then
 		for i, target in ipairs(GetEnemyHeroes()) do
-			if target and myHero.pos:DistanceTo(target.pos) <= WSpell.Range then
+			if target and myHero.pos:DistanceTo(target.pos) <= self.WSpell.Range then
 				if
 					(not HaveBuff(target, "caitlynwsight") and GetImmobileDuration(target) > 0.5)
 					or IsInvulnerable(target)
@@ -4638,7 +4722,7 @@ function Caitlyn:Auto()
 		for i = GameParticleCount(), 1, -1 do
 			local par = GameParticle(i)
 				if
-				par and par.pos:DistanceTo(myHero.pos) <= WSpell.Range
+				par and par.pos:DistanceTo(myHero.pos) <= self.WSpell.Range
  				and ((par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
 			then
 				Control.CastSpell(HK_W, par)
@@ -4651,7 +4735,7 @@ end
 
 function Caitlyn:KillSteal()
 	if Menu.KillSteal.Q:Value() and IsReady(_Q) then
-		local enemies = ObjectManager:GetEnemyHeroes(QSpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and (target.health + target.shieldAD) < self:GetQDmg(target) then
 				if Data:IsInAutoAttackRange(myHero, target) and target.health <= Damage:GetAutoAttackDamage(myHero, target) then
@@ -4662,7 +4746,7 @@ function Caitlyn:KillSteal()
 		end
 	end
 	if Menu.KillSteal.E:Value() and IsReady(_E) then
-		local enemies = ObjectManager:GetEnemyHeroes(ESpell.Range)
+		local enemies = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and (target.health + target.shieldAD) < (self:GetEDmg(target) + Damage:GetAutoAttackDamage(myHero, target)) then
 				self:CastGGPred(HK_E, target)
@@ -4672,43 +4756,38 @@ function Caitlyn:KillSteal()
 end
 
 function Caitlyn:Combo()
-	local target = GetTarget(QSpell.Range)
-	if IsValid(target) and target.pos2D.onScreen then
-		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.ERange:Value() then
-			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, ESpell.Speed, ESpell.Delay, ESpell.Radius, ESpell.CollisionTypes, target.networkID)
-			if collisionCount == 0 then
-				if Menu.Combo.Q:Value() and IsReady(_Q) then
-					self:CastEQ(target)
-					--DelayAction(function() self:CastGGPred(HK_Q, target) end, ESpell.Delay)
-				else
-					self:CastGGPred(HK_E, target)
-				end
+	if Menu.Combo.E:Value() and IsReady(_E) then
+		local target = GetTarget(self.ESpell.Range)
+		if IsValid(target) and target.pos2D.onScreen then
+			if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
+				self:CastEQ(target)
 			else
-				if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) > Menu.Combo.QRange:Value() then
-					self:CastGGPred(HK_Q, target)
-					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, QSpell.Speed, QSpell.Delay, 90, {GGPrediction.COLLISION_ENEMYHERO}, nil)
-					if collisionCount >= Menu.Combo.QCount:Value() then
-						self:CastGGPred(HK_Q, target)
-					end
-				end
+				self:CastGGPred(HK_E, target)
 			end
 		end
+	end
 
-		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) > Menu.Combo.QRange:Value() then
-			self:CastGGPred(HK_Q, target)
-			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, QSpell.Speed, QSpell.Delay, 90, {GGPrediction.COLLISION_ENEMYHERO}, nil)
-			if collisionCount >= Menu.Combo.QCount:Value() then
+	if Menu.Combo.Q:Value() and IsReady(_Q) then
+		local target = GetTarget(self.QSpell.Range)
+		if IsValid(target) and target.pos2D.onScreen and myHero.pos:DistanceTo(target.pos) > Menu.Combo.QRange:Value() then
+			if Menu.Combo.QSlow:Value() and IsSlow(target) then
 				self:CastGGPred(HK_Q, target)
 			end
+			if Menu.Combo.QAoe:Value() then
+				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.QSpell.Speed, self.QSpell.Delay, 90, {GGPrediction.COLLISION_ENEMYHERO}, nil)
+				if collisionCount >= 2 then
+					self:CastGGPred(HK_Q, target)
+				end
+			end
 		end
 
-		if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < WSpell.Range and myHero:GetSpellData(_W).ammo > Menu.Combo.WCount:Value() then
+		if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < self.WSpell.Range and myHero:GetSpellData(_W).ammo > Menu.Combo.WCount:Value() then
 			self:CastGGPred(HK_W, target)
 		end
 	end
 
 	if Menu.Combo.R:Value() and IsReady(_R) and lastQ + 1500 < GetTickCount() and lastE + 1500 < GetTickCount() then
-		local Rtarget = GetTarget(RSpell.Range)
+		local Rtarget = GetTarget(self.RSpell.Range)
 		if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 			if Menu.Combo.RSafe:Value() and (IsUnderTurret(myHero) or GetEnemyCount(Menu.Combo.RRange:Value(), myHero.pos) > 0) then
 				return
@@ -4730,7 +4809,7 @@ end
 function Caitlyn:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if Menu.Harass.Q:Value() and IsReady(_Q) then
-			local target = GetTarget(QSpell.Range)
+			local target = GetTarget(self.QSpell.Range)
 			if IsValid(target) and target.pos2D.onScreen then
 				self:CastGGPred(HK_Q, target)
 			end
@@ -4748,7 +4827,7 @@ function Caitlyn:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
-			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 			TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
@@ -4766,7 +4845,7 @@ end
 function Caitlyn:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
-			local minions = ObjectManager:GetEnemyMinions(QSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 			TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -4790,9 +4869,9 @@ end
 
 function Caitlyn:OneKeyEQ()
 	if IsReady(_E) and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
-		local target = GetTarget(ESpell.Range)
+		local target = GetTarget(self.ESpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
-			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, ESpell.Speed, ESpell.Delay, ESpell.Radius, ESpell.CollisionTypes, target.networkID)
+			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.ESpell.Speed, self.ESpell.Delay, self.ESpell.Radius, self.ESpell.CollisionTypes, target.networkID)
 			if collisionCount == 0 then
 				self:CastEQ(target)
 				-- self:CastGGPred(HK_E, target)
@@ -4803,7 +4882,7 @@ function Caitlyn:OneKeyEQ()
 end
 
 function Caitlyn:CastEQ(target)
-	local Prediction = GGPrediction:SpellPrediction(ESpell)
+	local Prediction = GGPrediction:SpellPrediction(self.ESpell)
 	Prediction:GetPrediction(target, myHero)
 	if Prediction:CanHit(3) then
 		Control.CastSpell({HK_E, HK_Q}, Prediction.CastPosition)
@@ -4812,14 +4891,14 @@ end
 
 function Caitlyn:CastGGPred(spell, unit)
 	if spell == HK_Q then
-		local QPrediction = GGPrediction:SpellPrediction(QSpell)
+		local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 		QPrediction:GetPrediction(unit, myHero)
 		if QPrediction:CanHit(3) then
 			Control.CastSpell(HK_Q, QPrediction.CastPosition)
 			lastQ = GetTickCount()
 		end
 	elseif spell == HK_W then
-		local WPrediction = GGPrediction:SpellPrediction(WSpell)
+		local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 		WPrediction:GetPrediction(unit, myHero)
 		if WPrediction:CanHit(3) and lastW + 1500 < GetTickCount() then
 			if IsFacingMe(unit) then
@@ -4832,14 +4911,14 @@ function Caitlyn:CastGGPred(spell, unit)
 				end
 			else
 				local castPos = WPrediction.CastPosition + (unit.pos - myHero.pos):Normalized() * 100
-				if myHero.pos:DistanceTo(castPos) <= WSpell.Range then
+				if myHero.pos:DistanceTo(castPos) <= self.WSpell.Range then
 					Control.CastSpell(HK_W, castPos)
 					lastW = GetTickCount()
 				end
 			end
 		end
 	elseif spell == HK_E then
-		local EPrediction = GGPrediction:SpellPrediction(ESpell)
+		local EPrediction = GGPrediction:SpellPrediction(self.ESpell)
 		EPrediction:GetPrediction(unit, myHero)
 		if EPrediction:CanHit(3) then
 			Control.CastSpell(HK_E, EPrediction.CastPosition)
@@ -4886,18 +4965,18 @@ function Caitlyn:Draw()
 	end
 
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
-		Draw.Circle(myHero.pos, QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
+		Draw.Circle(myHero.pos, self.QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end
 	if Menu.Draw.W:Value() and IsReady(_W) then
-		Draw.Circle(myHero.pos, WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
+		Draw.Circle(myHero.pos, self.WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
 	end
 	if Menu.Draw.E:Value() and IsReady(_E) then
-		Draw.Circle(myHero.pos, ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
+		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
-		Draw.Circle(myHero.pos, RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
+		Draw.Circle(myHero.pos, self.RSpell.Range, 1, Draw.Color(255, 244, 66, 104))
 	end
 	if Menu.Draw.Rmin:Value() and IsReady(_R) then
-		Draw.CircleMinimap(myHero.pos, RSpell.Range, 1, Draw.Color(200, 14, 194, 255))
+		Draw.CircleMinimap(myHero.pos, self.RSpell.Range, 1, Draw.Color(200, 14, 194, 255))
 	end
 end
