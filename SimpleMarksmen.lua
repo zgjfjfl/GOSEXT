@@ -1,4 +1,4 @@
-local Version = 2025.23
+local Version = 2025.24
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2036,7 +2036,7 @@ function Jinx:__init()
 	self.QSpell = { Range = 525 }
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 60, Range = 1450, Speed = 3300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 115, Range = 925, Speed = math.huge, Collision = false}
-	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 140, Range = 12500, Speed = 1700, Collision = false}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 140, Range = 25000, Speed = 1700, Collision = false}
 end
 
 function Jinx:LoadMenu()
@@ -2088,15 +2088,15 @@ end
 function Jinx:OnPreAttack(args)
 	local target = args.Target
 	if IsValid(target) then
-		if GetMode() == "LaneClear" then
+		if GetMode() == "LaneClear" and IsReady(_Q) and not IsCasting() then
 			if target.type == Obj_AI_Minion then
-				if Menu.Clear.SpellFarm:Value() and IsReady(_Q) then
+				if Menu.Clear.SpellFarm:Value() then
 					if target.team ~= 300 and Menu.Clear.LaneClear.Q:Value() then
 						-- if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 then
-							if GetMinionCount(250, target.pos) >= Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "jinxqicon") then
+							if GetMinionCount(300, target.pos) >= Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "jinxqicon") then
 								Control.CastSpell(HK_Q)
 							end
-							if GetMinionCount(250, target.pos) < Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "JinxQ") then
+							if GetMinionCount(300, target.pos) < Menu.Clear.LaneClear.QCount:Value() and HaveBuff(myHero, "JinxQ") then
 								Control.CastSpell(HK_Q)
 							end
 						-- else
@@ -2107,10 +2107,10 @@ function Jinx:OnPreAttack(args)
 					end
 					if target.team == 300 and Menu.Clear.JungleClear.Q:Value() then
 						-- if myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 then
-							if GetMinionCount(250, target.pos) >= 2 and HaveBuff(myHero, "jinxqicon") then
+							if GetMinionCount(300, target.pos) >= 2 and HaveBuff(myHero, "jinxqicon") then
 								Control.CastSpell(HK_Q)
 							end
-							if GetMinionCount(250, target.pos) < 2 and HaveBuff(myHero, "JinxQ") then
+							if GetMinionCount(300, target.pos) < 2 and HaveBuff(myHero, "JinxQ") then
 								Control.CastSpell(HK_Q)
 							end
 						-- else
@@ -2183,6 +2183,8 @@ function Jinx:ComboQ()
 				Control.CastSpell(HK_Q)
 			end
 		end
+	elseif HaveBuff(myHero, "JinxQ") and GetEnemyCount(1500, myHero.pos) == 0 and IsReady(_Q) then
+		Control.CastSpell(HK_Q)
 	end
 end
 
@@ -4520,7 +4522,6 @@ function Caitlyn:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 5, step = 1})
@@ -4548,7 +4549,6 @@ function Caitlyn:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
-	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
 	Menu.Draw:MenuElement({id = "Q", name = "Draw Q Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
@@ -4585,7 +4585,6 @@ function Caitlyn:OnTick()
 	elseif Mode == "Harass" then
 		self:Harass()
 	elseif Mode == "LaneClear" then
-		self:FarmHarass()
 		self:LaneClear()
 		self:JungleClear()
 	elseif Mode == "Flee" then
@@ -4761,8 +4760,6 @@ function Caitlyn:Combo()
 		if IsValid(target) and target.pos2D.onScreen then
 			if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
 				self:CastEQ(target)
-			else
-				self:CastGGPred(HK_E, target)
 			end
 		end
 	end
@@ -4780,8 +4777,11 @@ function Caitlyn:Combo()
 				end
 			end
 		end
+	end
 
-		if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < self.WSpell.Range and myHero:GetSpellData(_W).ammo > Menu.Combo.WCount:Value() then
+	if Menu.Combo.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).ammo > Menu.Combo.WCount:Value() then
+		local target = GetTarget(self.WSpell.Range)
+		if IsValid(target) and target.pos2D.onScreen then
 			self:CastGGPred(HK_W, target)
 		end
 	end
@@ -4817,12 +4817,6 @@ function Caitlyn:Harass()
 	-- end
 end
 
-function Caitlyn:FarmHarass()
-	if Menu.Clear.SpellHarass:Value() then
-		self:Harass()
-	end
-end
-
 function Caitlyn:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
@@ -4831,7 +4825,7 @@ function Caitlyn:LaneClear()
 			TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
-					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, QSpell.Speed, QSpell.Delay, QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
+					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius, {GGPrediction.COLLISION_MINION}, nil)
 					if collisionCount >= Menu.Clear.LaneClear.QCount:Value() then
 						Control.CastSpell(HK_Q, minion)
 						lastQ = GetTickCount()
@@ -4874,8 +4868,6 @@ function Caitlyn:OneKeyEQ()
 			local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.ESpell.Speed, self.ESpell.Delay, self.ESpell.Radius, self.ESpell.CollisionTypes, target.networkID)
 			if collisionCount == 0 then
 				self:CastEQ(target)
-				-- self:CastGGPred(HK_E, target)
-				-- DelayAction(function() self:CastGGPred(HK_Q, target) end, ESpell.Delay)
 			end
 		end
 	end
@@ -4953,14 +4945,6 @@ function Caitlyn:Draw()
 			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
 		else
 			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
-		end
-	end
-
-	if Menu.Draw.DrawHarass:Value() then
-		if Menu.Clear.SpellHarass:Value() then
-			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
-		else
-			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
 		end
 	end
 
