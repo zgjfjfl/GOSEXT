@@ -1,4 +1,4 @@
-local Version = 2025.15
+local Version = 2025.16
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2359,24 +2359,28 @@ function Yorick:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:onTick() end)
-	self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 225, Range = 600, Speed = math.huge, Collision =false}
-	self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1000, Speed = 1800, Collision = false}
+	self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 225, Range = 600, Speed = math.huge, Collision = false}
+	self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 900, Speed = 1800, Collision = false}
 	self.rSpell = {Range = 600}
 end
 
 function Yorick:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 		Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "Q2", name = "[Q2]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "R1", name = "[R1] ", toggle = true, value = true})
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 		Menu.Harass:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 		Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-	Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
-		Menu.Clear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
-		Menu.Clear:MenuElement({id = "Q2", name = "[Q2] activate Mist Walker", toggle = true, value = true})
-		Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
+	Menu:MenuElement({type = MENU, id = "LaneClear", name = "Lane Clear"})
+		Menu.LaneClear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+		Menu.LaneClear:MenuElement({id = "Q2", name = "[Q2] activate Mist Walker", toggle = true, value = false})
+	Menu:MenuElement({type = MENU, id = "JungleClear", name = "Jungle Clear"})
+		Menu.JungleClear:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
+		Menu.JungleClear:MenuElement({id = "Q2", name = "[Q2] activate Mist Walker", toggle = true, value = true})
+		Menu.JungleClear:MenuElement({id = "E", name = "[E]", toggle = true, value = false})
 	Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
 		Menu.LastHit:MenuElement({id = "Q", name = "Q", toggle = true, value = true})
 	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
@@ -2384,8 +2388,6 @@ function Yorick:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "KS", name = "KillSteal"})
 		Menu.KS:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 		Menu.KS:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
-	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-		Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 		Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
 		Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
@@ -2405,19 +2407,17 @@ function Yorick:onTick()
 	end
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
 		self:LaneClear()
+		self:JungleClear()
 	end
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LASTHIT] then
 		self:LastHit()
-	end
-	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
-		self:Flee()
 	end
 	self:KillSteal()
 	self:AutoW()
 end
 
 function Yorick:Combo()
-	if Menu.Combo.Q:Value() and IsReady(_Q) and lastQ + 250 < GetTickCount() then
+	if Menu.Combo.Q:Value() and IsReady(_Q) and myHero:GetSpellData(_Q).name == "YorickQ" and lastQ + 250 < GetTickCount() then
 		local target = TargetSelector:GetTarget(350)
 		if IsValid(target) then
 			Control.CastSpell(HK_Q)
@@ -2443,6 +2443,10 @@ function Yorick:Combo()
 			Control.CastSpell(HK_R, target)
 		end
 	end
+	if Menu.Combo.Q2:Value() and IsReady(_Q) and myHero:GetSpellData(_Q).name == "YorickQ2" and not haveBuff(myHero, "yorickqbuff") and lastQ + 300 < GetTickCount() then
+		Control.CastSpell(HK_Q)
+		lastQ = GetTickCount()
+	end
 end
 
 function Yorick:Harass()
@@ -2455,23 +2459,37 @@ function Yorick:Harass()
 end
 
 function Yorick:LaneClear()
-	local target = HealthPrediction:GetJungleTarget()
-	if not target then
-		target = HealthPrediction:GetLaneClearTarget()
-	end
+	local target = HealthPrediction:GetLaneClearTarget()
 	if IsValid(target) then
-		if Menu.Clear.Q:Value() and IsReady(_Q) and lastQ + 300 < GetTickCount() and myHero:GetSpellData(_Q).name == "YorickQ" then
-			if myHero.pos:DistanceTo(target.pos) <= 350 and self:getqDmg(target) >= target.health then
+		if Menu.LaneClear.Q:Value() and IsReady(_Q) and lastQ + 300 < GetTickCount() and myHero:GetSpellData(_Q).name == "YorickQ" then
+			if myHero.pos:DistanceTo(target.pos) < 350 and self:getqDmg(target) >= target.health then
 				Control.CastSpell(HK_Q)
 				lastQ = GetTickCount()
 				Control.Attack(target)
 			end
 		end
-		if Menu.Clear.Q2:Value() and myHero:GetSpellData(_Q).name == "YorickQ2" and lastQ + 300 < GetTickCount() then
+		if Menu.LaneClear.Q2:Value() and IsReady(_Q) and myHero:GetSpellData(_Q).name == "YorickQ2" and not haveBuff(myHero, "yorickqbuff") and lastQ + 300 < GetTickCount() then
 			Control.CastSpell(HK_Q)
 			lastQ = GetTickCount()
 		end
-		if Menu.Clear.E:Value() and IsReady(_E) then
+	end
+end
+
+function Yorick:JungleClear()
+	local target = HealthPrediction:GetJungleTarget()
+	if IsValid(target) then
+		if Menu.JungleClear.Q:Value() and IsReady(_Q) and lastQ + 300 < GetTickCount() and myHero:GetSpellData(_Q).name == "YorickQ" then
+			if myHero.pos:DistanceTo(target.pos) < 350 then
+				Control.CastSpell(HK_Q)
+				lastQ = GetTickCount()
+				Control.Attack(target)
+			end
+		end
+		if Menu.JungleClear.Q2:Value() and IsReady(_Q) and myHero:GetSpellData(_Q).name == "YorickQ2" and not haveBuff(myHero, "yorickqbuff") and lastQ + 300 < GetTickCount() then
+			Control.CastSpell(HK_Q)
+			lastQ = GetTickCount()
+		end
+		if Menu.JungleClear.E:Value() and IsReady(_E) then
 			bestPosition, bestCount = getAOEMinion(self.eSpell.Range, self.eSpell.Radius)
 			if bestCount > 0 then
 				Control.CastSpell(HK_E, bestPosition)
@@ -2487,7 +2505,7 @@ function Yorick:LastHit()
 	end
 	if IsValid(target) then
 		if Menu.LastHit.Q:Value() and IsReady(_Q) and lastQ + 300 < GetTickCount() and myHero:GetSpellData(_Q).name == "YorickQ" then
-			if myHero.pos:DistanceTo(target.pos) <= 350 and self:getqDmg(target) >= target.health then
+			if myHero.pos:DistanceTo(target.pos) < 350 and self:getqDmg(target) >= target.health then
 				Control.CastSpell(HK_Q)
 				lastQ = GetTickCount()
 				Control.Attack(target)
@@ -2496,22 +2514,10 @@ function Yorick:LastHit()
 	end
 end
 
-function Yorick:Flee()
-	local target = TargetSelector:GetTarget(self.wSpell.Range)
-	if IsValid(target) then
-		if Menu.Flee.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount() then
-			if myHero.pos:DistanceTo(target.pos) < self.wSpell.Range then
-				castSpellHigh(self.wSpell, HK_W, target)
-				lastW = GetTickCount()
-			end
-		end
-	end
-end
-
 function Yorick:KillSteal()
 	local target = TargetSelector:GetTarget(self.eSpell.Range)
 	if IsValid(target) then
-		if IsReady(_Q) and lastQ + 250 < GetTickCount() and Menu.KS.Q:Value() then
+		if IsReady(_Q) and lastQ + 250 < GetTickCount() and Menu.KS.Q:Value() and myHero:GetSpellData(_Q).name == "YorickQ" then
 			if self:getqDmg(target) >= target.health and myHero.pos:DistanceTo(target.pos) <= 350 then
 				Control.CastSpell(HK_Q)
 				lastQ = GetTickCount()
@@ -2529,8 +2535,11 @@ end
 function Yorick:getqDmg(target)
 	local qlvl = myHero:GetSpellData(_Q).level
 	local qbaseDmg = 25 * qlvl + 5
-	local qadDmg = myHero.totalDamage * 0.4
+	local qadDmg = myHero.totalDamage * 0.5
 	local qDmg = qbaseDmg + qadDmg + myHero.totalDamage
+	if target.type == Obj_AI_Minion then
+		qDmg = (qbaseDmg + qadDmg)/2 + myHero.totalDamage
+	end
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
 
