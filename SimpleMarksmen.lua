@@ -1,4 +1,4 @@
-local Version = 2025.24
+local Version = 2025.25
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1222,7 +1222,6 @@ function Zeri:LoadMenu()
 	Menu.Misc:MenuElement({id = "QRange", name = "Q Range = RealRange + X", value = 0, min = -50, max = 50, step = 5})
 	Menu.Misc:MenuElement({id = "QBarrel", name = "Q Attack GP's Barrel", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
-	-- Menu.Misc:MenuElement({id = "AAkills", name = "Use PassiveAA kills target when no Q", toggle = true, value = false})
 	Menu.Misc:MenuElement({id = "ComboAA", name = "Disable AA when no Qpassive in combo", toggle = true, value = true, key = string.byte("T")})
 	Menu.Misc:MenuElement({id = "ClearAA", name = "Disable AA when in Clear(Mouse Scroll)", toggle = true, value = true, key = 4})	
 
@@ -1355,10 +1354,14 @@ function Zeri:QBarrel()
 
 			if barrelHealth <= 1 then
 				Control.CastSpell(HK_Q, obj)
-			else
-				local nextHealthDecayTime = currentTime < barrelBuffStartTime + healthDecayRate and barrelBuffStartTime + healthDecayRate or barrelBuffStartTime + healthDecayRate * 2
-				if barrelHealth <= 2 and nextHealthDecayTime <= currentTime + time then
+			elseif barrelHealth <= 2 then
+				if Data:IsInAutoAttackRange(myHero, obj) then
 					Control.CastSpell(HK_Q, obj)
+				else
+					local nextHealthDecayTime = currentTime < barrelBuffStartTime + healthDecayRate and barrelBuffStartTime + healthDecayRate or barrelBuffStartTime + healthDecayRate * 2
+					if nextHealthDecayTime <= currentTime + time then
+						Control.CastSpell(HK_Q, obj)
+					end
 				end
 			end
 		end
@@ -1452,26 +1455,6 @@ function Zeri:FarmHarass()
 		self:Harass()
 	end
 end
-
--- function Zeri:GetAADmg(target)
-	-- local level = myHero.levelData.lvl
-	-- local baseDmg, bonusDmg, totalDmg
-	-- if HaveBuff(myHero, "ZeriQPassiveReady") then
-		-- baseDmg = 90 + (110 / 17) * (level - 1) * (0.7025 + 0.0175 * (level - 1)) + myHero.ap * 1.1
-		-- bonusDmg = 0.01 * (1 + (14 / 17) * (level - 1) * (0.7025 + 0.0175 * (level - 1))) * target.maxHealth
-	-- else
-		-- baseDmg = 10 + (15 / 17) * (level - 1) * (0.7025 + 0.0175 * (level - 1)) + myHero.ap * 0.03
-		-- if target.health < 60 + (90 / 17) * (level - 1) + myHero.ap * 0.18 then
-			-- baseDmg = 60 + (90 / 17) * (level - 1) + myHero.ap * 0.18
-		-- end
-	-- end
-	-- if target.team == 300 then
-		-- totalDmg = MathMin(300, baseDmg + (bonusDmg or 0))
-	-- else
-		-- totalDmg = baseDmg + (bonusDmg or 0)
-	-- end
-	-- return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, totalDmg)
--- end
 
 function Zeri:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
@@ -4760,6 +4743,8 @@ function Caitlyn:Combo()
 		if IsValid(target) and target.pos2D.onScreen then
 			if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
 				self:CastEQ(target)
+			else
+				self:CastGGPred(HK_E, target)
 			end
 		end
 	end
