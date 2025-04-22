@@ -1,4 +1,4 @@
-local Version = 2025.25
+local Version = 2025.26
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -442,6 +442,22 @@ local function ShouldWait()
 			Control.IsKeyDown(0x12)
 end
 
+local function CastSpellAOE(spellSlot, spellData, minHitCount, source)
+	local SpellPred = GGPrediction:SpellPrediction(spellData)
+	local aoeResults = SpellPred:GetAOEPrediction(source)
+	if #aoeResults == 0 then
+		return false
+	end
+	TableSort(aoeResults, function(a, b) return a.Count > b.Count end)
+	for i, result in ipairs(aoeResults) do
+		if result.Count >= minHitCount then
+			Control.CastSpell(spellSlot, result.CastPosition)
+			return true
+		end
+	end
+	return false
+end
+
 ---------------------------------
 
 Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.5.1/img/champion/"..myHero.charName..".png"})
@@ -847,6 +863,9 @@ function Smolder:OnPreAttack(args)
 	if target.type == Obj_AI_Minion then
 		if (Mode == "LaneClear" or Mode == "Harass" or Mode == "LastHit") and target.health < QTotalDmg and IsReady(_Q) then
 			args.Process = false
+			if target.maxHealth <= 8 then
+				args.Process = true
+			end
 		else
 			args.Process = true
 		end
@@ -960,10 +979,9 @@ function Smolder:Combo()
 			if myHero.health/myHero.maxHealth < Menu.Combo.RHp:Value()/100 and myHero.pos:DistanceTo(Rtarget.pos) < self.WSpell.Range then
 				self:CastGGPred(HK_R, Rtarget)
 			else
-				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, Rtarget.pos, self.RSpell.Speed, self.RSpell.Delay, self.RSpell.Radius, {GGPrediction.COLLISION_ENEMYHERO}, nil)
-				if collisionCount >= Menu.Combo.RCount:Value() then
-					self:CastGGPred(HK_R, Rtarget)
-				end
+				local minHitCount = Menu.Combo.RCount:Value()
+				local source = myHero.pos:Extended(myHero.dir, -600)
+				CastSpellAOE(HK_R, self.RSpell, minHitCount, source)
 			end
 		end
 	end
@@ -1132,7 +1150,8 @@ function Smolder:CastGGPred(spell, target)
 		end
 	elseif spell == HK_R then
 		local RPrediction = GGPrediction:SpellPrediction(self.RSpell)
-		RPrediction:GetPrediction(target, myHero)
+		local source = myHero.pos:Extended(myHero.dir, -600)
+		RPrediction:GetPrediction(target, source)
 		if RPrediction:CanHit(3) then
 			Control.CastSpell(HK_R, RPrediction.CastPosition)
 		end	
@@ -4700,11 +4719,11 @@ function Caitlyn:Auto()
 		end
 	end
 
-	if Menu.Misc.Wtp:Value() and IsReady(_W) and lastWtp + 4000 < GetTickCount() then
+	if Menu.Misc.Wtp:Value() and IsReady(_W) and lastWtp + 8000 < GetTickCount() then
 		for i = GameParticleCount(), 1, -1 do
 			local par = GameParticle(i)
-				if
-				par and par.pos:DistanceTo(myHero.pos) <= self.WSpell.Range
+			if
+				par and par.pos:DistanceTo(myHero.pos) <= self.WSpell.Range 
  				and ((par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
 			then
 				Control.CastSpell(HK_W, par)
@@ -4756,10 +4775,7 @@ function Caitlyn:Combo()
 				self:CastGGPred(HK_Q, target)
 			end
 			if Menu.Combo.QAoe:Value() then
-				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.QSpell.Speed, self.QSpell.Delay, 90, {GGPrediction.COLLISION_ENEMYHERO}, nil)
-				if collisionCount >= 2 then
-					self:CastGGPred(HK_Q, target)
-				end
+				CastSpellAOE(HK_Q, self.QSpell, 2, myHero)
 			end
 		end
 	end
