@@ -1,4 +1,4 @@
-local Version = 2025.26
+local Version = 2025.27
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -840,6 +840,9 @@ function Smolder:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
 	Menu.LastHit:MenuElement({id = "Q", name = "Use Q(Clear/Harass/LastHit Modes)", toggle = true, value = true})
+	
+	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+	Menu.Flee:MenuElement({id = "E", name = "Use E to mouse", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "Q", name = "Q priority AA in combat", toggle = true, value = true})
@@ -915,6 +918,8 @@ function Smolder:OnTick()
 		self:JungleClear()
 	elseif Mode == "LastHit" then
 		self:LastHit()
+	elseif Mode == "Flee" then
+		self:Flee()
 	end
 end
 
@@ -938,6 +943,12 @@ end
 		end
 	end
 end]]
+
+function Smolder:Flee()
+	if Menu.Flee.E:Value() and IsReady(_E) then
+		Control.CastSpell(HK_E)
+	end
+end
 
 function Smolder:OneKeyCastR()
 	local Rtarget = GetTarget(Menu.Combo.RRange:Value())
@@ -980,7 +991,7 @@ function Smolder:Combo()
 				self:CastGGPred(HK_R, Rtarget)
 			else
 				local minHitCount = Menu.Combo.RCount:Value()
-				local source = myHero.pos:Extended(myHero.dir, -600)
+				local source = myHero.pos:Extended(Rtarget.pos, -600)
 				CastSpellAOE(HK_R, self.RSpell, minHitCount, source)
 			end
 		end
@@ -1150,7 +1161,7 @@ function Smolder:CastGGPred(spell, target)
 		end
 	elseif spell == HK_R then
 		local RPrediction = GGPrediction:SpellPrediction(self.RSpell)
-		local source = myHero.pos:Extended(myHero.dir, -600)
+		local source = myHero.pos:Extended(target.pos, -600)
 		RPrediction:GetPrediction(target, source)
 		if RPrediction:CanHit(3) then
 			Control.CastSpell(HK_R, RPrediction.CastPosition)
