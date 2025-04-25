@@ -1,4 +1,4 @@
-local Version = 2025.17
+local Version = 2025.18
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -308,7 +308,7 @@ end
 local function Recalling(unit)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
-		if buff.name == "recall" and buff.duration > 0 then
+		if buff and buff.name == "recall" and buff.count > 0 then
 			return true
 		end
 	end
