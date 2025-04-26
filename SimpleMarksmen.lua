@@ -1,4 +1,4 @@
-local Version = 2025.28
+local Version = 2025.29
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -212,10 +212,10 @@ local function GetBuffData(unit, buffName)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff.name:lower() == buffName and buff.count > 0 then 
-			return buff
+			return true, buff
 		end
 	end
-	return {type = 0, name = "", startTime = 0, expireTime = 0, duration = 0, stacks = 0, count = 0}
+	return false, {type = 0, name = "", startTime = 0, expireTime = 0, duration = 0, stacks = 0, count = 0}
 end
 
 local function GetEnemyCount(range, unit)
@@ -812,7 +812,6 @@ function Smolder:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	-- Menu.Combo:MenuElement({id = "Q2", name = "Use Q Ext", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "RHp", name = "Use R| Self Hp <= x%", value = 50, min = 0, max = 100, step = 5})
@@ -821,7 +820,6 @@ function Smolder:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	-- Menu.Harass:MenuElement({id = "Q2", name = "Use Q Ext", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
@@ -829,7 +827,6 @@ function Smolder:LoadMenu()
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
 	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
-	-- Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
 	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
@@ -1034,9 +1031,9 @@ function Smolder:GetQDmg(target)
 end
 
 function Smolder:GetPQDmg(target)
-	local PassiveStacks = GetBuffData(myHero, "SmolderQPassive").stacks
-	if PassiveStacks then
-		local Dmg = (0.3 * (1 + 0.75 * myHero.critChance)) * PassiveStacks
+	local buff, buffData = GetBuffData(myHero, "SmolderQPassive")
+	if buff then
+		local Dmg = (0.3 * (1 + 0.75 * myHero.critChance)) * buffData.stacks
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
 	else
 		return 0
@@ -1098,59 +1095,6 @@ function Smolder:JungleClear()
 		end
 	end
 end
-
---[[function Smolder:QLogic(target, UseQExt)
-	if target == nil then return end
-	local PassiveStacks = GetBuffData(myHero, "SmolderQPassive").stacks
-	local Angles = (15 * (2 + MathFloor(0.01 * PassiveStacks+0.5)))/2
-	if myHero.pos:DistanceTo(target.pos) <= self.QSpell.Range then
-		Control.CastSpell(HK_Q, target)
-	else
-		if UseQExt then
-			local ExtFirstTar = {}
-			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
-			for i, minion in ipairs(minions) do
-				if IsValid(minion) then
-					local middlePos = myHero.pos:Extended(minion.pos, myHero.pos:DistanceTo(minion.pos) + 500)
-					local leftVector = (middlePos - minion.pos):Rotated(0, Angles * math.pi / 180, 0)
-					local rightVector = (middlePos - minion.pos):Rotated(0, -Angles * math.pi / 180, 0)
-					local targetVector = target.pos - minion.pos
-					local crossLeft = targetVector:CrossProduct(leftVector)
-					local crossRight = rightVector:CrossProduct(targetVector)
-					if PassiveStacks >= 25 and minion.pos:DistanceTo(target.pos) < 200 then
-						ExtFirstTar[#ExtFirstTar + 1] = {tar = minion}
-					end
-					if PassiveStacks >= 125 and crossLeft * crossRight > 0 and minion.pos:DistanceTo(target.pos) < 400 then
-						ExtFirstTar[#ExtFirstTar + 1] = {tar = minion}
-					end
-				end
-			end
-
-			local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
-			for i, enemy in ipairs(enemies) do
-				if IsValid(enemy) and enemy.networkID ~= target.networkID then
-					local middlePos = myHero.pos:Extended(enemy.pos, myHero.pos:DistanceTo(enemy.pos) + 500)
-					local leftVector = (middlePos - enemy.pos):Rotated(0, Angles * math.pi / 180, 0)
-					local rightVector = (middlePos - enemy.pos):Rotated(0, -Angles * math.pi / 180, 0)
-					local targetVector = target.pos - enemy.pos
-					local crossLeft = targetVector:CrossProduct(leftVector)
-					local crossRight = rightVector:CrossProduct(targetVector)
-					if PassiveStacks >= 25 and enemy.pos:DistanceTo(target.pos) < 200 then
-						ExtFirstTar[#ExtFirstTar + 1] = {tar = enemy}
-					end
-					if PassiveStacks >= 125 and crossLeft * crossRight > 0 and enemy.pos:DistanceTo(target.pos) < 400 then
-						ExtFirstTar[#ExtFirstTar + 1] = {tar = enemy}
-					end
-				end
-			end
-
-			if #ExtFirstTar > 0 then
-				TableSort(ExtFirstTar, function(a, b) return a.tar.type == Obj_AI_Hero and b.tar.type ~= Obj_AI_Hero end)
-				Control.CastSpell(HK_Q, ExtFirstTar[1].tar)
-			end
-		end
-	end
-end]]
 
 function Smolder:CastGGPred(spell, target)
 	if spell == HK_W then
@@ -1378,8 +1322,8 @@ function Zeri:QBarrel()
 	for _, obj in ipairs(plants) do
 		if obj and obj.charName:lower() == "gangplankbarrel" then
 			local barrelHealth = obj.health
-			local barrelBuffData = GetBuffData(obj, "gangplankebarrelactive")
-			local barrelBuffStartTime = barrelBuffData.startTime
+			local barrelBuff, barrelBuffData = GetBuffData(obj, "gangplankebarrelactive")
+			local barrelBuffStartTime = barrelBuff and barrelBuffData.startTime or 0
 			local time = obj.distance / self.QSpell.Speed
 
 			if barrelHealth <= 1 then
@@ -2644,15 +2588,14 @@ end
 
 function Tristana:GetEDmg(unit)
 	local Edmg = 0
-	local hasbuff = HaveBuff(unit, "tristanaecharge")
-	local count = GetBuffData(unit, "tristanaecharge").count
+	local hasbuff, buffData = GetBuffData(unit, "tristanaecharge")
 	local hasIE = HasItem(myHero, 3031)
 
 	if hasbuff then
 		local EbaseDmg = ({60, 70, 80, 90, 100})[myHero:GetSpellData(_E).level]
 		local Ead = myHero.bonusDamage * ({1.0, 1.1, 1.2, 1.3, 1.4})[myHero:GetSpellData(_E).level]
 		local Eap = myHero.ap * 0.5
-		local Evalue = (EbaseDmg + Ead+ Eap) * (count * 0.25 + 1) * (myHero.critChance * (hasIE and 1.15 or 0.75) + 1)
+		local Evalue = (EbaseDmg + Ead+ Eap) * (buffData.count * 0.25 + 1) * (myHero.critChance * (hasIE and 1.15 or 0.75) + 1)
 		Edmg = Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_PHYSICAL, Evalue)
 	end
 	return Edmg
@@ -3938,11 +3881,11 @@ function Kalista:GetQDmg(target)
 end
 
 function Kalista:GetEDmg(target)
-	local buff = GetBuffData(target, "kalistaexpungemarker")
+	local buff, buffData = GetBuffData(target, "kalistaexpungemarker")
 	local level = myHero:GetSpellData(_E).level
-	if buff.count > 0 and level > 0 then
+	if buff and level > 0 then
 		local baseDmg = ({10, 20, 30, 40, 50})[level] + 0.7 * myHero.totalDamage + 0.2 * myHero.ap
-		local bonusDmg = (buff.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.25, 0.3, 0.35, 0.4})[level] * myHero.totalDamage + 0.2 * myHero.ap)
+		local bonusDmg = (buffData.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.25, 0.3, 0.35, 0.4})[level] * myHero.totalDamage + 0.2 * myHero.ap)
 		local totalDmg = baseDmg + bonusDmg
 		if HasBuffContainsName(myHero, "PressTheAttackLockout") then
 			totalDmg = totalDmg * 1.08

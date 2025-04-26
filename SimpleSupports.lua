@@ -1,4 +1,4 @@
-local Version = 2025.13
+local Version = 2025.14
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -176,10 +176,10 @@ local function GetBuffData(unit, buffname)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff.name == buffname and buff.count > 0 then 
-			return buff
+			return true, buff
 		end
 	end
-	return {type = 0, name = "", startTime = 0, expireTime = 0, duration = 0, stacks = 0, count = 0}
+	return false, {type = 0, name = "", startTime = 0, expireTime = 0, duration = 0, stacks = 0, count = 0}
 end
 
 local function GetEnemyCount(range, unit)
@@ -657,10 +657,10 @@ end
 
 function Lux:GetRDmg(target)
 	local R2Dmg = 0
-	local buff = GetBuffData(target, "LuxIlluminatingFraulein")
+	local buff, buffData = GetBuffData(target, "LuxIlluminatingFraulein")
 	local level = myHero:GetSpellData(_R).level
 	local R1Dmg = ({300, 400, 500})[level] + 1.2 * myHero.ap
-	if buff.count > 0 and buff.duration > 1.25 then
+	if buff and buffData.duration > 1.25 then
  		R2Dmg = 10 + 10 * myHero.levelData.lvl + myHero.ap * 0.2
 	end
 	local RDmg = R1Dmg + R2Dmg
@@ -1905,8 +1905,8 @@ end
 function Swain:Auto()
 	for i, enemy in ipairs(GetEnemyHeroes()) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
-			local buff = GetBuffData(enemy, "swaineroot")
-			if Menu.Auto.E2:Value() and IsReady(_E) and myHero:GetSpellData(_E).name == "SwainE2" and buff.count > 0 and buff.duration < 1 then
+			local buff, buffData = GetBuffData(enemy, "swaineroot")
+			if Menu.Auto.E2:Value() and IsReady(_E) and myHero:GetSpellData(_E).name == "SwainE2" and buff and buffData.duration < 1 then
 				Control.CastSpell(HK_E)
 			end
 			if Menu.Auto.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(enemy.pos) < self.QSpell.Range and IsImmobile(enemy) then

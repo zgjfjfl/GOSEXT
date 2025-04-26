@@ -1,4 +1,4 @@
-local Version = 2025.18
+local Version = 2025.19
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -230,10 +230,10 @@ local function getBuffData(unit, buffname)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff.name == buffname and buff.count > 0 then 
-			return buff
+			return true, buff
 		end
 	end
-	return {type = 0, name = "", startTime = 0, expireTime = 0, duration = 0, stacks = 0, count = 0}
+	return false, {type = 0, name = "", startTime = 0, expireTime = 0, duration = 0, stacks = 0, count = 0}
 end
 
 local function GetEnemyHeroesWithinDistanceOfUnit(location, distance)
@@ -1117,8 +1117,8 @@ end
 
 function Poppy:R2()
 	if GetTickCount() > self.rCastTimer + 450 and myHero.activeSpell.isCharging then
-		local buff = getBuffData(myHero, "PoppyR")
-		if buff and buff.duration < 2.9 then
+		local buff, buffData = getBuffData(myHero, "PoppyR")
+		if buff and buffData.duration < 2.9 then
 			local target = TargetSelector:GetTarget(self.r2Spell.Range)
 			if IsValid(target) then
 				castSpellHigh(self.r2Spell, HK_R, target)
@@ -1921,9 +1921,10 @@ function Nasus:KillSteal()
 end
 
 function Nasus:getqDmg(target)
+	local buff, buffData = getBuffData(myHero, "NasusQStacks")
 	local qlvl = myHero:GetSpellData(_Q).level
 	local qbaseDmg = 20 * qlvl + 15
-	local qDmg = qbaseDmg + getBuffData(myHero, "NasusQStacks").stacks + myHero.totalDamage
+	local qDmg = qbaseDmg + buff and buffData.stacks or 0 + myHero.totalDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg) 
 end
 
@@ -2104,7 +2105,7 @@ function Udyr:Combo()
 		local hasAwakenedW = doesMyChampionHaveBuff("udyrwrecastready")
 		local hasAwakenedE = doesMyChampionHaveBuff("udyrerecastready")
 		local hasAwakenedR = doesMyChampionHaveBuff("udyrrrecastready")
-		local R1 = getBuffData(myHero, "UdyrRActivation")
+		local R1Buff, R1BuffData = getBuffData(myHero, "UdyrRActivation")
 		local haspassiveAA = doesMyChampionHaveBuff("UdyrPAttackReady")
 		if Menu.Combo.E:Value() and IsReady(_E) and lastE + 250 < GetTickCount() and not hasAwakenedE and not hasAwakenedR then
 			Control.CastSpell(HK_E)
@@ -2112,7 +2113,7 @@ function Udyr:Combo()
 		end
 		if Menu.Style.MainR:Value() then
 			if Menu.Combo.R:Value() and IsReady(_R) and lastR + 250 < GetTickCount() then
-				if (not IsReady(_E) or hasAwakenedE or hasAwakenedR) and R1.duration < 1.5 and myHero.pos:DistanceTo(target.pos) < 450 then
+				if (not IsReady(_E) or hasAwakenedE or hasAwakenedR) and R1Buff and R1BuffData.duration < 1.5 and myHero.pos:DistanceTo(target.pos) < 450 then
 					Control.CastSpell(HK_R)
 					lastR = GetTickCount()
 				end
@@ -2154,7 +2155,7 @@ function Udyr:JungleClear()
 	local hasAwakenedQ = doesMyChampionHaveBuff("udyrqrecastready")
 	local hasAwakenedR = doesMyChampionHaveBuff("udyrrrecastready")
 	local haspassiveAA = doesMyChampionHaveBuff("UdyrPAttackReady")
-	local R1 = getBuffData(myHero, "UdyrRActivation")
+	local R1Buff, R1BuffData = getBuffData(myHero, "UdyrRActivation")
 	local target = HealthPrediction:GetJungleTarget()
 	if target and not haspassiveAA then
 		if Menu.Clear.Q:Value() and IsReady(_Q) and count == 1 then
@@ -2167,7 +2168,7 @@ function Udyr:JungleClear()
 		end
 		if Menu.Clear.R:Value() and IsReady(_R) and count > 1 then
 			Control.CastSpell(HK_R)
-				if hasAwakenedR and R1.duration < 0.5 then
+				if hasAwakenedR and R1Buff and R1BuffData.duration < 0.5 then
 					Control.CastSpell(HK_R)
 				end
 		elseif not hasAwakenedQ and IsReady(_Q) and not IsReady(_R) then
@@ -3935,10 +3936,11 @@ end
 function Gragas:JungleClear()
 	local target = HealthPrediction:GetJungleTarget()
 	if IsValid(target) then
+		local buff, buffData = getBuffData(myHero, "GragasQ")
 		if Menu.Clear.Q:Value() and IsReady(_Q) and myHero:GetSpellData(_Q).name == "GragasQ" and myHero.pos:DistanceTo(target.pos) < self.qSpell.Range then
 			Control.CastSpell(HK_Q, target)
 		end
-		if IsReady(_Q) and lastQ + 250 < GetTickCount() and myHero:GetSpellData(_Q).name == "GragasQToggle" and getBuffData(myHero, "GragasQ").duration < 2 then
+		if IsReady(_Q) and lastQ + 250 < GetTickCount() and myHero:GetSpellData(_Q).name == "GragasQToggle" and buff and buffData.duration < 2 then
 			Control.CastSpell(HK_Q)
 			lastQ = GetTickCount()
 		end
@@ -4339,14 +4341,16 @@ function AurelionSol:LoadMenu()
 end
 
 function AurelionSol:onTick()
-	passivecount = getBuffData(myHero, "AurelionSolPassive").stacks
+	passive, passiveData = getBuffData(myHero, "AurelionSolPassive")
 	self.qSpell.Range = 740 + 10 * myHero.levelData.lvl
 	self.eSpell.Range = 740 + 10 * myHero.levelData.lvl
-	self.wSpell.Range = 1400 + 100 * myHero:GetSpellData(_W).level + 7.5 * passivecount
-	self.eSpell.Radius = math.sqrt(275^2+16.93^2 * passivecount)
-	self.rSpell.Radius = math.sqrt(275^2+16.93^2 * passivecount)
-	if myHero:GetSpellData(_R).name == "AurelionSolR2" then
-		self.rSpell.Radius = math.sqrt(388.91^2+21.85^2 * passivecount)
+	if passive then
+		self.wSpell.Range = 1400 + 100 * myHero:GetSpellData(_W).level + 7.5 * passiveData.stacks
+		self.eSpell.Radius = math.sqrt(275^2+16.93^2 * passiveData.stacks)
+		self.rSpell.Radius = math.sqrt(275^2+16.93^2 * passiveData.stacks)
+		if myHero:GetSpellData(_R).name == "AurelionSolR2" then
+			self.rSpell.Radius = math.sqrt(388.91^2+21.85^2 * passiveData.stacks)
+		end
 	end
 	Etarget = TargetSelector:GetTarget(self.eSpell.Range)
 	Rtarget = TargetSelector:GetTarget(self.rSpell.Range)
@@ -4748,6 +4752,7 @@ end
 function Briar:Combo()
 	local target = TargetSelector:GetTarget(1000)
 	if IsValid(target) then
+		local buff, buffData = getBuffData(myHero, "BriarWAttackSpell")
 		if Menu.Combo.Q:Value() and IsReady(_Q) and GetDistance(myHero.pos, target.pos) <= self.Q.Range and GetDistance(myHero.pos, target.pos) > Data:GetAutoAttackRange(myHero) then
 			Control.CastSpell(HK_Q, target)
 		end
@@ -4762,7 +4767,7 @@ function Briar:Combo()
 		if Menu.Combo.W:Value() and not haveBuff(myHero, "BriarRSelf") and IsReady(_W) and myHero:GetSpellData(_W).name == "BriarW" and GetDistance(myHero.pos, target.pos) < self.W.Range then
 			Control.CastSpell(HK_W, target)
 		end
-		if Menu.Combo.W2:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and GetDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and getBuffData(myHero, "BriarWAttackSpell").duration < 3 then
+		if Menu.Combo.W2:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and GetDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and buff and buffData.duration < 3 then
 			Control.CastSpell(HK_W)
 		end
 		if Menu.Combo.E:Value() and IsReady(_E) and lastE + 1100 < GetTickCount() and GetDistance(myHero.pos, target.pos) < self.E.Range and myHero.health/myHero.maxHealth <= Menu.Combo.EHP:Value()/100 then
@@ -4796,13 +4801,14 @@ end
 function Briar:JungleClear()
 	local target = HealthPrediction:GetJungleTarget()
 	if IsValid(target) then
+		local buff, buffData = getBuffData(myHero, "BriarWAttackSpell")
 		if Menu.Clear.Q:Value() and IsReady(_Q) and GetDistance(myHero.pos, target.pos) <= self.Q.Range then
 			Control.CastSpell(HK_Q, target)
 		end
 		if Menu.Clear.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "BriarW" and GetDistance(myHero.pos, target.pos) < self.W.Range then
 			Control.CastSpell(HK_W, target)
 		end
-		if Menu.Clear.W2:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and GetDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and getBuffData(myHero, "BriarWAttackSpell").duration < 3 then
+		if Menu.Clear.W2:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "BriarWAttackSpell" and GetDistance(myHero.pos, target.pos) < Data:GetAutoAttackRange(myHero) and buff and buffData.duration < 3 then
 			Control.CastSpell(HK_W)
 		end
 		if Menu.Clear.E:Value() and IsReady(_E) and lastE + 1100 < GetTickCount() and GetDistance(myHero.pos, target.pos) < self.E.Range and myHero.health/myHero.maxHealth <= Menu.Clear.EHP:Value()/100 then
@@ -5071,7 +5077,8 @@ function Aurora:GetQ2Dmg(target)
 end
 
 function Aurora:GetPDmg(target)
-	if getBuffData(target, "AuroraPDebuff").count == 2 then
+	local buff, buffData = getBuffData(target, "AuroraPDebuff")
+	if buff and buffData.count == 2 then
 		local Dmg = (0.025 + myHero.ap / 100 * 0.02) * target.maxHealth
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
 	else
@@ -5080,12 +5087,13 @@ function Aurora:GetPDmg(target)
 end
 
 function Aurora:AutoQ2()
+	local buff, buffData = getBuffData(myHero, "AuroraQRecast")
 	if myHero:GetSpellData(_Q).name == "AuroraQRecast" then
 		if Menu.Misc.AutoQ2:Value() and Game.CanUseSpell(_Q) == 0 then
 			for i, enemy in ipairs(GetEnemyHeroes()) do
 				if IsValid(enemy) and haveBuff(enemy, "auroraqdebufftracker") then
 					local Q2Dmg = self:GetQ2Dmg(enemy) + self:GetPDmg(enemy)
-					if (enemy.health + enemy.shieldAD + enemy.shieldAP) <= Q2Dmg or getBuffData(myHero, "AuroraQRecast").duration < 1 then
+					if (enemy.health + enemy.shieldAD + enemy.shieldAP) <= Q2Dmg or buff and buffData.duration < 1 then
 						Control.CastSpell(HK_Q)
 					end
 				end
@@ -5439,13 +5447,13 @@ end
 
 function Mel:GetPDmg(target)
 	local rlevel = myHero:GetSpellData(_R).level
-	local buffCount = getBuffData(target, "MelPassiveOverwhelm").stacks
+	local buff, buffData = getBuffData(target, "MelPassiveOverwhelm")
 	local PDmg = 0
-	if buffCount > 0 then
+	if buff then
 		if rlevel == 0 then
-			PDmg = (50 + 0.1 * myHero.ap) + (2 + 0.0075 * myHero.ap) * buffCount
+			PDmg = (50 + 0.1 * myHero.ap) + (2 + 0.0075 * myHero.ap) * buffData.stacks
 		else
-			PDmg = (({60, 70, 80})[rlevel] + 0.1 * myHero.ap) + (({3, 4, 5})[rlevel] + 0.0075 * myHero.ap) * buffCount
+			PDmg = (({60, 70, 80})[rlevel] + 0.1 * myHero.ap) + (({3, 4, 5})[rlevel] + 0.0075 * myHero.ap) * buffData.stacks
 		end
 	end
 	if HasItem(myHero, 4645) and target.health / target.maxHealth < 0.4 then
@@ -5456,8 +5464,11 @@ end
 
 function Mel:GetRDmg(target)
 	local level = myHero:GetSpellData(_R).level
-	local buffCount = getBuffData(target, "MelPassiveOverwhelm").stacks
-	local RDmg = (({100, 150, 200})[level] + 0.30 * myHero.ap) + (({4, 7, 10})[level] + 0.035 * myHero.ap) * buffCount
+	local buff, buffData = getBuffData(target, "MelPassiveOverwhelm")
+	local RDmg = 0
+	if buff then
+		RDmg = (({100, 150, 200})[level] + 0.30 * myHero.ap) + (({4, 7, 10})[level] + 0.035 * myHero.ap) * buffData.stacks
+	end
 	if HasItem(myHero, 4645) and target.health / target.maxHealth < 0.4 then
 		RDmg = RDmg * 1.2
 	end
