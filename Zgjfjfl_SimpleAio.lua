@@ -1,4 +1,4 @@
-local Version = 2025.19
+local Version = 2025.21
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -40,6 +40,7 @@ if not table.contains(Heroes, myHero.charName) then
 end
 
 require "GGPrediction"
+require "MapPositionGOS"
 
 local GameParticleCount = Game.ParticleCount
 local GameParticle = Game.Particle
@@ -491,7 +492,7 @@ local function FindFirstWallCollision(startPos, endPos)
 	local step = 10
 	for i = 0, distance, step do
 		local checkPos = startPos + direction * i
-		if GameIsWall(checkPos) then
+		if MapPosition:inWall(checkPos) then -- GameIsWall(checkPos)
 			return checkPos
 		end
 	end
@@ -541,8 +542,7 @@ function Ornn:__init()
 	self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 180, Range = 750, Speed = 1600, Collision = false}
 	self.r1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 170, Range = 2500, Speed = 1200, Collision = false}
 	self.qPos = {}
-	self.qTimer = 0
-	self.qPosToRemove = nil
+	self.qTimer = nil
 end
 
 function Ornn:LoadMenu()		
@@ -574,7 +574,7 @@ function Ornn:onTick()
 	end
 	if self.qTimer and Game.Timer() > self.qTimer then
 		self:GetQPos()
-		self.qTimer = 0
+		self.qTimer = nil
 	end
 	self:UpdateQPos()
 	if IsCasting() then return end
@@ -1045,7 +1045,7 @@ function Poppy:Combo()
 		for dis = 20, Menu.Combo.ED:Value(), 20 do
 			local endPos = target.pos:Extended(myHero.pos, -dis)
 			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
-				if GameIsWall(endPos) then
+				if MapPosition:inWall(endPos) then --GameIsWall(endPos)
 					Control.CastSpell(HK_E, target)
 				end
 			end
@@ -3752,7 +3752,7 @@ function Maokai:Combo()
 				castSpellHigh(self.qSpell, HK_Q, Qtarget)
 			elseif Qtoward ~= nil then
 				local Pos = Qtarget.pos + (Qtarget.pos - Qtoward):Normalized() * 250
-				if GameIsWall(Pos) then
+				if MapPosition:inWall(Pos) then
 					castSpellHigh(self.qSpell, HK_Q, Qtarget)
 				elseif myHero.pos:DistanceTo(Pos) < 100 then
 					castSpellHigh(self.qSpell, HK_Q, Qtarget)

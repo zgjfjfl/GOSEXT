@@ -1,4 +1,4 @@
-local Version = 2025.14
+local Version = 2025.15
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -38,6 +38,7 @@ if not table.contains(Heroes, myHero.charName) then
 end
 
 require "GGPrediction"
+require "MapPositionGOS"
 
 local GameParticleCount = Game.ParticleCount
 local GameParticle = Game.Particle

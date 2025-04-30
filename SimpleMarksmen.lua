@@ -1,4 +1,4 @@
-local Version = 2025.29
+local Version = 2025.31
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -38,6 +38,7 @@ if not table.contains(Heroes, myHero.charName) then
 end
 
 require "GGPrediction"
+require "MapPositionGOS"
 
 local GameHeroCount = Game.HeroCount
 local GameHero = Game.Hero
@@ -360,7 +361,7 @@ local function FindFirstWallCollision(startPos, endPos)
 	local step = 10
 	for i = 0, distance, step do
 		local checkPos = startPos + direction * i
-		if GameIsWall(checkPos) then
+		if MapPosition:inWall(checkPos) then -- GameIsWall(checkPos)
 			return checkPos
 		end
 	end
@@ -375,7 +376,7 @@ local function FindFirstWallCollisionInRectangle(startPos, endPos, width)
 		local centerPos = startPos + direction * i
 		for j = -width/2, width/2, 10 do
 			local checkPos = centerPos + perpDirection * j
-			if GameIsWall(checkPos) then
+			if MapPosition:inWall(checkPos) then -- GameIsWall(checkPos)
 				return checkPos
 			end
 		end
@@ -1767,7 +1768,7 @@ function Lucian:CastE(target, mode, range)
 	
 	if castPos ~= nil then
 		local underTurret = IsUnderTurret2(castPos)
-		local inWall = GameIsWall(castPos)
+		local inWall = GameIsWall(castPos) -- GameIsWall(castPos)
 		local enemyCheck = Menu.Combo.enemyCheck:Value()
 		local enemyCount = GetEnemyCount(600, castPos)
 
@@ -2263,6 +2264,8 @@ function Jinx:JungleClear()
 	end
 end
 
+local lastParticleCheckTime = 0
+local particleCheckInterval = 1.0
 function Jinx:AutoE()
 	if Menu.Misc.Ecc:Value() and IsReady(_E) then
 		for i, target in ipairs(GetEnemyHeroes()) do
@@ -2298,14 +2301,18 @@ function Jinx:AutoE()
 	end
 
 	if Menu.Misc.Etp:Value() and IsReady(_E) then
-		for i = GameParticleCount(), 1, -1 do
-			local par = GameParticle(i)
-			if
-				par and par.pos:DistanceTo(myHero.pos) <= self.ESpell.Range
- 				and ((par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
-			then
-				Control.CastSpell(HK_E, par)
-				break
+		local now = GetTickCount() / 1000
+		if now - lastParticleCheckTime > particleCheckInterval then
+			lastParticleCheckTime = now
+			for i = GameParticleCount(), 1, -1 do
+				local par = GameParticle(i)
+				if
+					par and par.pos:DistanceTo(myHero.pos) <= self.ESpell.Range
+					and ((par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
+				then
+					Control.CastSpell(HK_E, par)
+					break
+				end
 			end
 		end
 	end
@@ -3613,10 +3620,8 @@ function Kalista:OnTick()
 	if ShouldWait() then
 		return
 	end
-
 	self:KillSteal()
 	self:AutoKillEpicMonster()
-
 	local Mode = GetMode()
 	if Mode == "Combo" then
 		self:Combo()
@@ -3636,13 +3641,6 @@ function Kalista:KillSteal()
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and HaveBuff(target, "kalistaexpungemarker") then
 				local EDmg = self:GetEDmg(target)
-				if HaveBuff(myHero, "SRX_DragonSoulBuffChemtech") and myHero.health/myHero.maxHealth < 0.5 then
-					EDmg = EDmg * 1.11
-				elseif HaveBuff(target, "SRX_DragonSoulBuffChemtech") and target.health/target.maxHealth < 0.5 then
-					EDmg = EDmg * 0.89
-				elseif Game.mapID == HOWLING_ABYSS then
-					EDmg = EDmg * 1.1
-				end
 				-- print(EDmg)
 				if EDmg >= target.health + target.hpRegen + target.shieldAD then
 					Control.CastSpell(HK_E)
@@ -3656,10 +3654,6 @@ function Kalista:KillSteal()
 			if IsValid(target) then
 				local QDmg = self:GetQDmg(target)
 				local EDmg = self:GetEDmg(target)
-				if Game.mapID == HOWLING_ABYSS then
-					QDmg = QDmg	* 1.1
-					EDmg = EDmg * 1.1
-				end
 				local hp = target.health + target.shieldAD
 				if QDmg >= hp and (EDmg < hp or not IsReady(_E)) then
 					self:CastQ(target)
@@ -3711,7 +3705,6 @@ function Kalista:Combo()
 				for _, minion in ipairs(minions) do
 					if IsValid(minion) and HaveBuff(minion, "kalistaexpungemarker") then
 						local EDmg = self:GetEDmg(minion)
-						if Game.mapID == HOWLING_ABYSS then EDmg = EDmg * 0.75 end
 						if minion.health <= EDmg then
 							Control.CastSpell(HK_E)
 						end
@@ -3739,7 +3732,6 @@ function Kalista:Harass()
 					for i, minion in ipairs(minions) do
 						if IsValid(minion) and HaveBuff(minion, "kalistaexpungemarker") then
 							local EDmg = self:GetEDmg(minion)
-							if Game.mapID == HOWLING_ABYSS then EDmg = EDmg * 0.75 end
 							if minion.health <= EDmg then
 								Control.CastSpell(HK_E)
 							end
@@ -3765,7 +3757,6 @@ function Kalista:LaneClear()
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team ~= 300 and HaveBuff(minion, "kalistaexpungemarker") then
 					local EDmg = self:GetEDmg(minion)
-					if Game.mapID == HOWLING_ABYSS then EDmg = EDmg * 0.75 end
 					if minion.health <= EDmg then
 						killCount = killCount + 1
 						if not Data:IsInAutoAttackRange(myHero, minion) then
@@ -3818,9 +3809,9 @@ end
 
 function Kalista:JungleClear()
 	if Menu.Clear.JungleClear.E:Value() and IsReady(_E) then
-		local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
+		local minions = ObjectManager:GetMonsters(self.ESpell.Range)
 		for i, minion in ipairs(minions) do
-			if IsValid(minion) and minion.team == 300 and HaveBuff(minion, "kalistaexpungemarker") then
+			if IsValid(minion) and HaveBuff(minion, "kalistaexpungemarker") then
 				local minionName = minion.charName:lower()
 				if not epicMonsters[minionName] then
 					local EDmg = self:GetEDmg(minion)
@@ -3835,19 +3826,12 @@ end
 
 function Kalista:AutoKillEpicMonster()
 	if Menu.Misc.E:Value() and IsReady(_E) then
-		local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
+		local minions = ObjectManager:GetMonsters(self.ESpell.Range)
 		for i, minion in ipairs(minions) do
-			if IsValid(minion) and minion.team == 300 and HaveBuff(minion, "kalistaexpungemarker") then
+			if IsValid(minion) and HaveBuff(minion, "kalistaexpungemarker") then
 				local minionName = minion.charName:lower()
-				if epicMonsters[charName] then
-					local EDmg = self:GetEDmg(minion) * 0.5
-					if minionName == "sru_baron" and HaveBuff(myHero, "BaronTarget") then
-						EDmg = EDmg * 0.5
-					end
-					if minionName:find("sru_dragon") and minionName ~= "sru_dragon_elder" then
-						local buffNums = HaveBuffContainsNameNums(myHero, "SRX_DragonBuff")
-						EDmg = EDmg * (1 - 0.07 * buffNums)
-					end
+				if epicMonsters[minionName] then
+					local EDmg = self:GetEDmg(minion, true)
 					if EDmg >= (minion.health + minion.hpRegen + minion.shieldAD) then
 						Control.CastSpell(HK_E)
 					end
@@ -3871,32 +3855,60 @@ function Kalista:AutoR()
 end
 
 function Kalista:GetQDmg(target)
-	local level = myHero:GetSpellData(_Q).level
-	if level > 0 then
-		local QDmg = ({10, 75, 140, 205, 270})[level] + 1.05 * myHero.totalDamage
-		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
-	else
-		return 0
-	end
+    local level = myHero:GetSpellData(_Q).level
+    if level > 0 then
+        local QDmg = ({10, 75, 140, 205, 270})[level] + 1.05 * myHero.totalDamage
+        if Game.mapID == HOWLING_ABYSS then
+            if target.type == Obj_AI_Hero then
+				QDmg = QDmg * 1.1
+            end
+        end
+        return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
+    else
+        return 0
+    end
 end
 
-function Kalista:GetEDmg(target)
-	local buff, buffData = GetBuffData(target, "kalistaexpungemarker")
-	local level = myHero:GetSpellData(_E).level
-	if buff and level > 0 then
-		local baseDmg = ({10, 20, 30, 40, 50})[level] + 0.7 * myHero.totalDamage + 0.2 * myHero.ap
-		local bonusDmg = (buffData.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.25, 0.3, 0.35, 0.4})[level] * myHero.totalDamage + 0.2 * myHero.ap)
-		local totalDmg = baseDmg + bonusDmg
-		if HasBuffContainsName(myHero, "PressTheAttackLockout") then
-			totalDmg = totalDmg * 1.08
+function Kalista:GetEDmg(target, isEpicMonster)
+    local buff, buffData = GetBuffData(target, "kalistaexpungemarker")
+    local level = myHero:GetSpellData(_E).level
+	local targetName = target.charName:lower()
+    if buff and level > 0 then
+        local baseDmg = ({5, 15, 25, 35, 45})[level] + 0.7 * myHero.totalDamage + 0.2 * myHero.ap
+        local bonusDmg = (buffData.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.25, 0.3, 0.35, 0.4})[level] * myHero.totalDamage + 0.2 * myHero.ap)
+        local totalDmg = baseDmg + bonusDmg
+        if HasBuffContainsName(myHero, "PressTheAttackLockout") then
+            totalDmg = totalDmg * 1.08
+        end
+        if HaveBuff(myHero, "SummonerExhaust") then
+            totalDmg = totalDmg * 0.65
+        end
+		if HaveBuff(myHero, "SRX_DragonSoulBuffChemtech") and myHero.health/myHero.maxHealth < 0.5 then
+			totalDmg = totalDmg * 1.11
+		elseif HaveBuff(target, "SRX_DragonSoulBuffChemtech") and target.health/target.maxHealth < 0.5 then
+			totalDmg = totalDmg * 0.89
 		end
-		if HaveBuff(myHero, "SummonerExhaust") then
-			totalDmg = totalDmg * 0.65
+		if Game.mapID == HOWLING_ABYSS then
+			if target.type == Obj_AI_Hero then
+				totalDmg = totalDmg * 1.1
+			else
+				totalDmg = totalDmg * 0.75
+			end
 		end
-		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, totalDmg)
-	else
-		return 0
-	end
+		if isEpicMonster then
+			totalDmg = totalDmg * 0.5
+			if targetName == "sru_baron" and HaveBuff(myHero, "BaronTarget") then
+				totalDmg = totalDmg * 0.5
+			end
+			if targetName:find("sru_dragon") and targetName ~= "sru_dragon_elder" then
+				local buffNums = HaveBuffContainsNameNums(myHero, "SRX_DragonBuff")
+				totalDmg = totalDmg * (1 - 0.07 * buffNums)
+			end
+		end
+        return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, totalDmg)
+    else
+        return 0
+    end
 end
 
 function Kalista:Draw()
@@ -4610,6 +4622,8 @@ end
 local lastWcc = 0
 local lastWgap = 0
 local lastWtp = 0
+local lastParticleCheckTime = 0
+local particleCheckInterval = 1.0
 function Caitlyn:AntiGapcloser()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
@@ -4674,15 +4688,19 @@ function Caitlyn:Auto()
 	end
 
 	if Menu.Misc.Wtp:Value() and IsReady(_W) and lastWtp + 8000 < GetTickCount() then
-		for i = GameParticleCount(), 1, -1 do
-			local par = GameParticle(i)
-			if
-				par and par.pos:DistanceTo(myHero.pos) <= self.WSpell.Range 
- 				and ((par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
-			then
-				Control.CastSpell(HK_W, par)
-				lastWtp = GetTickCount()
-				break
+		local now = GetTickCount() / 1000
+		if now - lastParticleCheckTime > particleCheckInterval then
+			lastParticleCheckTime = now
+			for i = GameParticleCount(), 1, -1 do
+				local par = GameParticle(i)
+				if
+					par and par.pos:DistanceTo(myHero.pos) <= self.WSpell.Range 
+					and ((par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
+				then
+					Control.CastSpell(HK_W, par)
+					lastWtp = GetTickCount()
+					break
+				end
 			end
 		end
 	end
