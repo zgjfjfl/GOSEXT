@@ -1,4 +1,4 @@
-local Version = 2025.31
+local Version = 2025.32
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1768,7 +1768,7 @@ function Lucian:CastE(target, mode, range)
 	
 	if castPos ~= nil then
 		local underTurret = IsUnderTurret2(castPos)
-		local inWall = GameIsWall(castPos) -- GameIsWall(castPos)
+		local inWall = MapPosition:inWall(castPos) -- GameIsWall(castPos)
 		local enemyCheck = Menu.Combo.enemyCheck:Value()
 		local enemyCount = GetEnemyCount(600, castPos)
 
@@ -3855,34 +3855,34 @@ function Kalista:AutoR()
 end
 
 function Kalista:GetQDmg(target)
-    local level = myHero:GetSpellData(_Q).level
-    if level > 0 then
-        local QDmg = ({10, 75, 140, 205, 270})[level] + 1.05 * myHero.totalDamage
-        if Game.mapID == HOWLING_ABYSS then
-            if target.type == Obj_AI_Hero then
+	local level = myHero:GetSpellData(_Q).level
+	if level > 0 then
+		local QDmg = ({10, 75, 140, 205, 270})[level] + 1.05 * myHero.totalDamage
+		if Game.mapID == HOWLING_ABYSS then
+			if target.type == Obj_AI_Hero then
 				QDmg = QDmg * 1.1
-            end
-        end
-        return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
-    else
-        return 0
-    end
+			end
+		end
+		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
+	else
+		return 0
+	end
 end
 
 function Kalista:GetEDmg(target, isEpicMonster)
-    local buff, buffData = GetBuffData(target, "kalistaexpungemarker")
-    local level = myHero:GetSpellData(_E).level
+	local buff, buffData = GetBuffData(target, "kalistaexpungemarker")
+	local level = myHero:GetSpellData(_E).level
 	local targetName = target.charName:lower()
-    if buff and level > 0 then
-        local baseDmg = ({5, 15, 25, 35, 45})[level] + 0.7 * myHero.totalDamage + 0.2 * myHero.ap
-        local bonusDmg = (buffData.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.25, 0.3, 0.35, 0.4})[level] * myHero.totalDamage + 0.2 * myHero.ap)
-        local totalDmg = baseDmg + bonusDmg
-        if HasBuffContainsName(myHero, "PressTheAttackLockout") then
-            totalDmg = totalDmg * 1.08
-        end
-        if HaveBuff(myHero, "SummonerExhaust") then
-            totalDmg = totalDmg * 0.65
-        end
+	if buff and level > 0 then
+		local baseDmg = ({5, 15, 25, 35, 45})[level] + 0.7 * myHero.totalDamage + 0.2 * myHero.ap
+		local bonusDmg = (buffData.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.25, 0.3, 0.35, 0.4})[level] * myHero.totalDamage + 0.2 * myHero.ap)
+		local totalDmg = baseDmg + bonusDmg
+		if HasBuffContainsName(myHero, "PressTheAttackLockout") then
+			totalDmg = totalDmg * 1.08
+		end
+		if HaveBuff(myHero, "SummonerExhaust") then
+			totalDmg = totalDmg * 0.65
+		end
 		if HaveBuff(myHero, "SRX_DragonSoulBuffChemtech") and myHero.health/myHero.maxHealth < 0.5 then
 			totalDmg = totalDmg * 1.11
 		elseif HaveBuff(target, "SRX_DragonSoulBuffChemtech") and target.health/target.maxHealth < 0.5 then
@@ -3905,10 +3905,10 @@ function Kalista:GetEDmg(target, isEpicMonster)
 				totalDmg = totalDmg * (1 - 0.07 * buffNums)
 			end
 		end
-        return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, totalDmg)
-    else
-        return 0
-    end
+		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, totalDmg)
+	else
+		return 0
+	end
 end
 
 function Kalista:Draw()
