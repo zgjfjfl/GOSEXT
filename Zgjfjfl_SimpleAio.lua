@@ -1,4 +1,4 @@
-local Version = 2025.21
+local Version = 2025.22
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -502,14 +502,14 @@ end
 local ItemSlots = { ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6, ITEM_7 }
 
 local function HasItem(unit, itemId)
-    for i = 1, #ItemSlots do
-        local slot = ItemSlots[i]
-        local item = unit:GetItemData(slot)
-        if item and item.itemID == itemId then
-            return true
-        end
-    end
-    return false
+	for i = 1, #ItemSlots do
+		local slot = ItemSlots[i]
+		local item = unit:GetItemData(slot)
+		if item and item.itemID == itemId then
+			return true
+		end
+	end
+	return false
 end
 
 local function ShouldWait() 
@@ -1962,16 +1962,20 @@ end
 function Singed:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 		Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo", toggle = true, value = true})
-		Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
+		Menu.Combo:MenuElement({id = "WE", name = "Try [WE] Roots", toggle = true, value = false, key = string.byte("T")})
 		Menu.Combo:MenuElement({id = "R", name = "[R] ", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "Rcount", name = "UseR when X enemies inWrange ", value = 2, min = 1, max = 5, step = 1})
 	Menu:MenuElement({type = MENU, id = "Auto", name = "AutoQ"})
 		Menu.Auto:MenuElement({id = "Q", name = "Auto Q when enemies nearby", toggle = true, value = true})
-		Menu.Auto:MenuElement({id = "Qrange", name = "turn on Q enemy distance", value = 300, min = 200, max = 600, step = 50})
+		Menu.Auto:MenuElement({id = "Qrange", name = "turn on Q enemy distance", value = 300, min = 200, max = 1000, step = 50})
+		Menu.Auto:MenuElement({id = "QClear", name = "Auto Q Clear(LaneClear Mode)", toggle = true, value = true})
+		Menu.Auto:MenuElement({id = "QCrange", name = "turn on Q minion distance", value = 400, min = 200, max = 1000, step = 50})
+		Menu.Auto:MenuElement({id = "ClearAA", name = "Disable [AA] in Clear", toggle = true, value = false})
 		Menu.Auto:MenuElement({id = "DontOffQ", name = "Do not turn off Q", toggle = true, value = false})
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+		Menu.Draw:MenuElement({id = "WE", name = "Draw WE Roots Status", toggle = true, value = true})
 		Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
 end
 
@@ -1992,19 +1996,31 @@ function Singed:OnPreAttack(args)
 			args.Process = false
 		end
 	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+		if Menu.Auto.ClearAA:Value() then
+			args.Process = false
+		end
+	end
 end
 
 function Singed:AutoQ()
 	if IsReady(_Q) and lastQ + 250 < GetTickCount() then
+		local shouldQBeOn = false
 		if Menu.Auto.Q:Value() then
-			if getEnemyCount(Menu.Auto.Qrange:Value(), myHero.pos) >= 1 then
-				if myHero:GetSpellData(_Q).toggleState == 1 then
-					Control.CastSpell(HK_Q)
-					lastQ = GetTickCount()
-				end
-				if myHero:GetSpellData(_Q).toggleState == 2 then
-					self.poisonTime = GetTickCount() + 1200
-				end
+			shouldQBeOn = getEnemyCount(Menu.Auto.Qrange:Value(), myHero.pos) >= 1
+		end
+		if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_LANECLEAR] then
+			if Menu.Auto.QClear:Value() and not shouldQBeOn then
+				shouldQBeOn = getMinionCount(Menu.Auto.QCrange:Value(), myHero.pos) > 0
+			end
+		end
+		if shouldQBeOn then
+			if myHero:GetSpellData(_Q).toggleState == 1 then
+				Control.CastSpell(HK_Q)
+				lastQ = GetTickCount()
+			end
+			if myHero:GetSpellData(_Q).toggleState == 2 then
+				self.poisonTime = GetTickCount() + 1200
 			end
 		end
 		if Menu.Auto.DontOffQ:Value() then return end
@@ -2024,13 +2040,31 @@ function Singed:Combo()
 	end
 	local target = TargetSelector:GetTarget(1000)
 	if IsValid(target) then
-		if Menu.Combo.W:Value() and myHero.pos:DistanceTo(target.pos) < 1000 then
-			self:CastW(target)
-		end
-		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= Data:GetAutoAttackRange(myHero, target) then
-			Control.CastSpell(HK_E, target)
+		if Menu.Combo.WE:Value() then
+			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= Data:GetAutoAttackRange(myHero, target) then
+				if Menu.Combo.W:Value() and IsReady(_W) and myHero.mana > myHero:GetSpellData(_E).mana + myHero:GetSpellData(_W).mana and target.health > self:GetEDmg(target) then
+					local wCastPos = myHero.pos:Extended(target.pos, -300)
+					Control.CastSpell(HK_W, wCastPos)
+				end
+				Control.CastSpell(HK_E, target)
+			end
+		else
+			if Menu.Combo.W:Value() and IsReady(_W) then
+				self:CastW(target)
+			end
+			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= Data:GetAutoAttackRange(myHero, target) then
+				Control.CastSpell(HK_E, target)
+			end
 		end
 	end
+end
+
+function Singed:GetEDmg(target)
+	local elvl = myHero:GetSpellData(_E).level
+	local baseDmg = 10 * elvl + 40
+	local extDmg = (0.5 * elvl + 5.5)/100 * target.maxHealth + 0.55 * myHero.ap
+	local eDmg = baseDmg + extDmg
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, eDmg) 
 end
 
 function Singed:CastW(target)
@@ -2046,6 +2080,13 @@ function Singed:CastW(target)
 end
 
 function Singed:Draw()
+	if Menu.Draw.WE:Value() then
+		if Menu.Combo.WE:Value() then
+			Draw.Text("Tyr WE Roots: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Tyr WE Roots: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
 	if Menu.Draw.W:Value() and IsReady(_W) then
 		Draw.Circle(myHero.pos, self.wSpell.Range, Draw.Color(192, 255, 255, 255))
 	end
