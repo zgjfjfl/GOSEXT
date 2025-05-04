@@ -1,4 +1,4 @@
-local Version = 2025.15
+local Version = 2025.16
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -60,7 +60,7 @@ local MathMin = math.min
 local MathMax = math.max
 local MathFloor = math.floor
 local MathSqrt = math.sqrt
-local MathSort = table.sort
+local TableSort = table.sort
 
 local lastQ = 0
 local lastW = 0
@@ -1409,7 +1409,7 @@ function Velkoz:AimQ(finalPos)
 		end
 	end
 
-	table.sort(points, function(a, b)
+	TableSort(points, function(a, b)
 		return a:DistanceTo(finalPos) < b:DistanceTo(finalPos)
 	end)
 
@@ -2068,8 +2068,8 @@ function Seraphine:SemiManualR()
 		else
 			local isWall1, collisionObjects1, collisionCount1 = GGPrediction:GetCollision(myHero.pos, Rtarget.pos, self.RSpell.Speed, self.RSpell.Delay, self.RSpell.Radius/2, {GGPrediction.COLLISION_ALLYHERO}, myHero.networkID)
 			local isWall2, collisionObjects2, collisionCount2 = GGPrediction:GetCollision(myHero.pos, Rtarget.pos, self.RSpell.Speed, self.RSpell.Delay, self.RSpell.Radius/2, {GGPrediction.COLLISION_ENEMYHERO}, Rtarget.networkID)
-			MathSort(collisionObjects1, SortByDistance)
-			MathSort(collisionObjects2, SortByDistance)
+			TableSort(collisionObjects1, SortByDistance)
+			TableSort(collisionObjects2, SortByDistance)
 			if (collisionCount1 > 0 and myHero.pos:DistanceTo(collisionObjects1[1].pos) < 1200) or (collisionCount2 > 0 and myHero.pos:DistanceTo(collisionObjects2[1].pos) < 1200) then
 				self:CastGGPred(HK_R, Rtarget)
 			end
@@ -2338,7 +2338,8 @@ function Soraka:LoadMenu()
 	Menu.Heal:MenuElement({id = "Enemy", name = "Healing Only When Enemies Nearby", toggle = true, value = true})
 	Menu.Heal:MenuElement({id = "W", name = "Auto [W] Heal", toggle = true, value = true})
 	Menu.Heal:MenuElement({id = "Wmin", name = "Auto [W] Ally < HP%", value = 50, min = 0, max = 100, step = 5})
-	Menu.Heal:MenuElement({id = "WMmin", name = "Auto [W] My > HP%", value = 20, min = 0, max = 100, step = 5})
+	Menu.Heal:MenuElement({id = "WMmin", name = "Auto [W] Self > HP%", value = 20, min = 0, max = 100, step = 5})
+	Menu.Heal:MenuElement({id = "Priority", name = "Healing Priority", value = 4, drop = {"Most AD", "Most AP", "Least Health", "Least Health (Prioritize Squishies)"}})
 	Menu.Heal:MenuElement({type = MENU,id = "WHealTarget", name = "UseW On"})
 		ObjectManager:OnAllyHeroLoad(function(args)
 			if args.charName ~= myHero.charName then
@@ -2351,6 +2352,9 @@ function Soraka:LoadMenu()
 		ObjectManager:OnAllyHeroLoad(function(args)
 			Menu.Heal.RHealTarget:MenuElement({id = args.charName, name = args.charName, value = true})			
 		end)
+	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
+	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] On CC or Slow", toggle = true, value = true})
+	Menu.Auto:MenuElement({id = "E", name = "Auto [E] On CC or Slow", toggle = true, value = true})
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 	Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "W", name = "Draw [W] Range", toggle = true, value = false})
@@ -2368,6 +2372,7 @@ function Soraka:OnTick()
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
 		self:Harass()
 	end
+	self:AutoQE()
 	self:AutoW()
 	self:AutoR()
 end
@@ -2405,32 +2410,55 @@ function Soraka:Harass()
 end
 
 function Soraka:AutoW()
-	if Menu.Heal.W:Value() and IsReady(_W) and lastW + 350 < GetTickCount() then
-		if myHero.health/myHero.maxHealth <= Menu.Heal.WMmin:Value()/100 then
-			return
-		end
-		local allies = ObjectManager:GetAllyHeroes(self.WSpell.Range)
-		for _, ally in ipairs(allies) do
-			if Menu.Heal.WHealTarget[ally.charName] and Menu.Heal.WHealTarget[ally.charName]:Value() then
-				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Wmin:Value()/100 then
-					if not Menu.Heal.Enemy:Value() or GetEnemyCount(1500, ally.pos) > 0 then
-						Control.CastSpell(HK_W, ally)
-						lastW = GetTickCount()
-					end
+	if not (Menu.Heal.W:Value() and IsReady(_W)) then return end
+	if myHero.health/myHero.maxHealth < Menu.Heal.WMmin:Value()/100 then return end
+	local allies = ObjectManager:GetAllyHeroes(self.WSpell.Range)
+	local validAllies = {}
+	for _, ally in ipairs(allies) do
+		if Menu.Heal.WHealTarget[ally.charName] and Menu.Heal.WHealTarget[ally.charName]:Value() then
+			if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Wmin:Value()/100 then
+				if not Menu.Heal.Enemy:Value() or GetEnemyCount(1500, ally.pos) > 0 then
+					TableInsert(validAllies, ally)
 				end
 			end
 		end
 	end
+	if #validAllies == 0 then return end
+	local priorityMode = Menu.Heal.Priority:Value()
+	if priorityMode == 1 then
+		TableSort(validAllies, function(a, b) 
+			return a.totalDamage > b.totalDamage 
+		end)
+	elseif priorityMode == 2 then
+		TableSort(validAllies, function(a, b) 
+			return a.ap > b.ap 
+		end)
+	elseif priorityMode == 3 then
+		TableSort(validAllies, function(a, b) 
+			return a.health < b.health 
+		end)
+	elseif priorityMode == 4 then
+		TableSort(validAllies, function(a, b)
+			if a.health == b.health then
+				return a.maxHealth < b.maxHealth
+			else
+				return a.health < b.health
+			end
+		end)
+	end
+    for _, target in ipairs(validAllies) do
+        Control.CastSpell(HK_W, target)
+        return
+    end
 end
 
 function Soraka:AutoR()
-	if Menu.Heal.R:Value() and IsReady(_R) and lastR + 350 < GetTickCount() then
+	if Menu.Heal.R:Value() and IsReady(_R) then
 		for _, ally in ipairs(GetAllyHeroes()) do
-			if Menu.Heal.WHealTarget[ally.charName] and Menu.Heal.WHealTarget[ally.charName]:Value() then		
+			if Menu.Heal.RHealTarget[ally.charName] and Menu.Heal.RHealTarget[ally.charName]:Value() then		
 				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Rmin:Value()/100 then
 					if not Menu.Heal.Enemy:Value() or GetEnemyCount(1500, ally.pos) > 0 then
 						Control.CastSpell(HK_R)
-						lastR = GetTickCount()
 					end
 				end
 			end
@@ -2438,26 +2466,37 @@ function Soraka:AutoR()
 	end	
 end
 
+function Soraka:AutoQE()
+	local enemies = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
+	for _, target in ipairs(enemies) do
+		if IsValid(target) and target.pos2D.onScreen and (IsImmobile(target) or IsSlow(target)) then
+			if Menu.Auto.Q:Value() and IsReady(_Q) then
+				self:CastGGPred(HK_Q, target)
+			end
+			if Menu.Auto.E:Value() and IsReady(_E) then
+				self:CastGGPred(HK_E, target)
+			end
+		end
+	end
+end
+
 function Soraka:CastGGPred(spell, unit)
 	if spell == HK_Q then
 		local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 		QPrediction:GetPrediction(unit, myHero)
-		if QPrediction:CanHit(3) and lastQ + 350 < GetTickCount() then
+		if QPrediction:CanHit(3) then
 			local castPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 800)
 			if myHero.pos:DistanceTo(QPrediction.CastPosition) <= 800 then
 				Control.CastSpell(HK_Q, QPrediction.CastPosition)
-				lastQ = GetTickCount()
 			else
 				Control.CastSpell(HK_Q, castPos)
-				lastQ = GetTickCount()
 			end
 		end
 	elseif spell == HK_E then
 		local EPrediction = GGPrediction:SpellPrediction(self.ESpell)
 		EPrediction:GetPrediction(unit, myHero)
-		if EPrediction:CanHit(3) and lastE + 350 < GetTickCount() then
+		if EPrediction:CanHit(3) then
 			Control.CastSpell(HK_E, EPrediction.CastPosition)
-			lastE = GetTickCount()
 		end
 	end
 end
