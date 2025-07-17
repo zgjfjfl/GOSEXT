@@ -1,4 +1,4 @@
-local Version = 2025.32
+local Version = 2025.33
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -30,7 +30,7 @@ do
 	end)
 end
 
-local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian", "Jinx", "Tristana", "MissFortune", "Jayce", "Kalista", "Ashe", "Corki", "Caitlyn"}
+local Heroes = {"Nilah", "Smolder", "Zeri", "Lucian", "Jinx", "Tristana", "MissFortune", "Jayce", "Kalista", "Ashe", "Corki", "Caitlyn", "Yunara"}
 
 if not table.contains(Heroes, myHero.charName) then
 	print('SimpleMarksmen not supported ' .. myHero.charName)
@@ -223,7 +223,7 @@ local function GetEnemyCount(range, unit)
 	local count = 0
 	for i, hero in ipairs(GetEnemyHeroes()) do
 		local Range = range * range
-		if GetDistanceSqr(unit, hero.pos) < Range and IsValid(hero) then
+		if IsValid(hero) and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
 	end
@@ -232,7 +232,7 @@ end
 
 local function GetMinionCount(range, unit)
 	local count = 0
-	for i = 1,GameMinionCount() do
+	for i = 1, GameMinionCount() do
 		local hero = GameMinion(i)
 		local Range = range * range
 		if hero.team ~= myHero.team and hero.dead == false and GetDistanceSqr(unit, hero.pos) < Range then
@@ -246,7 +246,7 @@ local function GetAllyCount(range, unit)
 	local count = 0
 	for i, hero in ipairs(GetAllyHeroes()) do
 		local Range = range * range
-		if GetDistanceSqr(unit, hero.pos) < Range and IsValid(hero) then
+		if IsValid(hero) and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
 	end
@@ -436,8 +436,7 @@ end
 
 local function ShouldWait() 
 	return myHero.dead or Game.IsChatOpen() or 
-			(_G.JustEvade and _G.JustEvade:Evading()) or 
-			(_G.ExtLibEvade and _G.ExtLibEvade.Evading) or 
+			(_G.JustEvade and _G.JustEvade:Evading()) or  
 			Recalling(myHero) or 
 			Control.IsKeyDown(0x11) or 
 			Control.IsKeyDown(0x12)
@@ -461,7 +460,7 @@ end
 
 ---------------------------------
 
-Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/14.5.1/img/champion/"..myHero.charName..".png"})
+Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"})
 	Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
 
 ---------------------------------
@@ -1034,7 +1033,7 @@ end
 function Smolder:GetPQDmg(target)
 	local buff, buffData = GetBuffData(myHero, "SmolderQPassive")
 	if buff then
-		local Dmg = (0.3 * (1 + 0.75 * myHero.critChance)) * buffData.stacks
+		local Dmg = (0.4 * (1 + 0.75 * myHero.critChance)) * buffData.stacks
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
 	else
 		return 0
@@ -1863,7 +1862,7 @@ function Lucian:LaneClear()
 						local direction = (minion.pos - myHero.pos):Normalized()
 						local hitCount = 1
 						for j, otherMinion in ipairs(minions) do
-							if otherMinion.networkID ~= minion.networkID and IsValid(otherMinion) then
+							if IsValid(otherMinion) and otherMinion.networkID ~= minion.networkID then
 								local pointToLineDistance = GetDistanceToLine(otherMinion.pos, myHero.pos, direction)
 								if pointToLineDistance <= self.Q2Spell.Radius/2 + otherMinion.boundingRadius then
 									hitCount = hitCount + 1
@@ -4122,11 +4121,13 @@ function Ashe:LaneClear()
 end
 
 function Ashe:JungleClear()
-	if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
-		local minions = ObjectManager:GetEnemyMinions(600)
-		for i, minion in ipairs(minions) do
-			if IsValid(minion) and minion.team == 300 then
-				Control.CastSpell(HK_W, minion)
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
+		if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
+			local minions = ObjectManager:GetEnemyMinions(600)
+			for i, minion in ipairs(minions) do
+				if IsValid(minion) and minion.team == 300 then
+					Control.CastSpell(HK_W, minion)
+				end
 			end
 		end
 	end
@@ -4135,8 +4136,8 @@ end
 function Ashe:GetWDmg(target)
 	local level = myHero:GetSpellData(_W).level
 	if level > 0 then
-		local QDmg = ({20, 35, 50, 65, 80})[level] + myHero.totalDamage
-		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
+		local WDmg = ({20, 35, 50, 65, 80})[level] + myHero.totalDamage
+		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, WDmg)
 	else
 		return 0
 	end
@@ -4935,5 +4936,239 @@ function Caitlyn:Draw()
 	end
 	if Menu.Draw.Rmin:Value() and IsReady(_R) then
 		Draw.CircleMinimap(myHero.pos, self.RSpell.Range, 1, Draw.Color(200, 14, 194, 255))
+	end
+end
+
+--------------------------------------
+
+class "Yunara"
+
+function Yunara:__init()
+
+	print("Marksmen Yunara Loaded") 
+	self:LoadMenu()
+	
+	Callback.Add("Draw", function() self:Draw() end)
+	Callback.Add("Tick", function() self:OnTick() end)
+	Orbwalker:OnPostAttack(function() self:OnPostAttack() end)
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.45, Radius = 60, Range = 1150, Speed = 2150, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.W2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 90, Range = 1150, Speed = MathHuge, Collision = false}
+end
+
+function Yunara:LoadMenu()
+ 
+	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
+	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "WLogic", name = "W Usage Logic", value = 1, drop = {"Smart", "Always"}})
+
+	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Harass:MenuElement({id = "WLogic", name = "W Usage Logic", value = 1, drop = {"Smart", "Always"}})
+	-- Menu.Harass:MenuElement({id = "Mana", name = "Harass When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
+	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
+	
+	Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
+	Menu.LastHit:MenuElement({id = "W", name = "Use W| LastHit Not In AA Range", toggle = true, value = true})
+	
+	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
+	Menu.KillSteal:MenuElement({id = "W", name = "Auto W KillSteal", toggle = true, value = true})
+
+	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
+end
+
+function Yunara:OnPostAttack()
+	local target = Orbwalker:GetTarget()
+	if IsValid(target) and IsReady(_Q) then
+		if target.type == Obj_AI_Hero then
+			if GetMode() == "Combo" and Menu.Combo.Q:Value() or (GetMode() == "Harass" and Menu.Harass.Q:Value()--[[ and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100]]) then
+				Control.CastSpell(HK_Q)
+			end
+		elseif target.type == Obj_AI_Minion then
+			if GetMode() == "LaneClear" and Menu.Clear.SpellFarm:Value() then
+				if target.team ~= 300 and --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.LaneClear.Q:Value() then
+					if GetMinionCount(300, target.pos) >= Menu.Clear.LaneClear.QCount:Value() then
+						Control.CastSpell(HK_Q)
+					end
+				elseif target.team == 300 and --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.JungleClear.Q:Value() then
+					Control.CastSpell(HK_Q)
+				end
+			end
+		end
+	end
+end
+
+function Yunara:OnTick()
+	if ShouldWait() then
+		return
+	end
+	self.WSpell.Delay = MathMax(0.225, 0.45 / myHero.attackSpeed)
+	self.W2Spell.Delay = MathMax(0.45, 0.6 / myHero.attackSpeed)
+	if IsCasting() then return end
+	self:KillSteal()
+	local Mode = GetMode()
+	if Mode == "Combo" then
+		self:Combo()
+	elseif Mode == "Harass" then
+		self:Harass()
+	elseif Mode == "LaneClear" then
+		self:LastHitW()
+		self:FarmHarass()
+		self:JungleClear()
+	elseif Mode == "LastHit" then
+		self:LastHitW()
+	end
+end
+
+function Yunara:KillSteal()
+	if Menu.KillSteal.W:Value() and IsReady(_W) then
+		local enemies = ObjectManager:GetEnemyHeroes(1100)
+		for i, target in ipairs(enemies) do
+			if IsValid(target) and not Data:IsInAutoAttackRange(myHero, target) then
+				local WDmg = self:GetWDmg(target)
+				if WDmg >= target.health + target.hpRegen + target.shieldAD then
+					self:CastW(target)
+				end
+			end
+		end
+	end
+end
+
+function Yunara:CastW(target)
+	local wName = myHero:GetSpellData(_W).name
+	local spell =  wName == "YunaraW2" and self.W2Spell or self.WSpell
+	local WPrediction = GGPrediction:SpellPrediction(spell)
+	WPrediction:GetPrediction(target, myHero)
+	if WPrediction:CanHit(3) then
+		Control.CastSpell(HK_W, WPrediction.CastPosition)
+	end
+end
+
+function Yunara:Combo()
+	if Menu.Combo.W:Value() and IsReady(_W) then
+		local target = GetTarget(1100)
+		if IsValid(target) and target.pos2D.onScreen then
+			local wLogic = Menu.Combo.WLogic:Value()
+			if wLogic == 1 then
+				if not HaveBuff(myHero, "YunaraQ") or not Data:IsInAutoAttackRange(myHero, target) then
+					self:CastW(target)
+				end
+			elseif wLogic == 2 then
+				self:CastW(target)
+			end
+		end
+	end
+end
+
+function Yunara:Harass()
+	if IsUnderTurret(myHero) then return end
+	if Menu.Harass.W:Value() and IsReady(_W) --[[and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 ]]then
+		local target = GetTarget(1100)
+		if IsValid(target) and target.pos2D.onScreen then
+			local wLogic = Menu.Harass.WLogic:Value()
+			if wLogic == 1 then
+				if not HaveBuff(myHero, "YunaraQ") or not Data:IsInAutoAttackRange(myHero, target) then
+					self:CastW(target)
+				end
+			elseif wLogic == 2 then
+				self:CastW(target)
+			end
+		end
+	end
+end
+
+function Yunara:FarmHarass()
+	if Menu.Clear.SpellHarass:Value() then
+		self:Harass()
+	end
+end
+
+function Yunara:LastHitW()
+	if Menu.LastHit.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "YunaraW" then
+		local minions = ObjectManager:GetEnemyMinions(1150)
+		for i, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team ~= 300 then
+				local Wdmg = self:GetWDmg(minion)
+				if minion.health <= Wdmg and not Data:IsInAutoAttackRange(myHero, minion) then
+					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.WSpell.Speed, self.WSpell.Delay, self.WSpell.Radius, {GGPrediction.COLLISION_MINION}, minion.networkID)
+					if collisionCount == 0 then
+						Control.CastSpell(HK_W, minion)
+						return
+					end
+				end
+			end
+		end
+	end
+end
+
+function Yunara:JungleClear()
+	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
+		if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
+			local minions = ObjectManager:GetEnemyMinions(600)
+			TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+			for i, minion in ipairs(minions) do
+				if IsValid(minion) and minion.team == 300 then
+					if not HaveBuff(myHero, "YunaraQ") or not Data:IsInAutoAttackRange(myHero, minion) then
+						Control.CastSpell(HK_W, minion)
+					end
+				end
+			end
+		end
+	end
+end
+
+function Yunara:GetWDmg(target)
+	local wlevel = myHero:GetSpellData(_W).level
+	local rlevel = myHero:GetSpellData(_R).level
+	local wName = myHero:GetSpellData(_W).name
+	if wlevel > 0 then
+		if wName == "YunaraW2" then
+			local WDmg = ({50, 200, 350})[rlevel] + 1.75 * myHero.totalDamage + 0.75 * myHero.ap
+			return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, WDmg)
+		else
+			local WDmg = ({5, 30, 55, 80, 105})[wlevel] + 0.85 * myHero.totalDamage + 0.5 * myHero.ap
+			return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, WDmg)
+		end
+	else
+		return 0
+	end
+end
+
+function Yunara:Draw()
+	if myHero.dead then return end
+
+	if Menu.Draw.DrawFarm:Value() then
+		if Menu.Clear.SpellFarm:Value() then
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.DrawHarass:Value() then
+		if Menu.Clear.SpellHarass:Value() then
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
+
+	if Menu.Draw.W:Value() and IsReady(_W) then
+		Draw.Circle(myHero.pos, 1150, 1, Draw.Color(255, 66, 229, 244))
 	end
 end
