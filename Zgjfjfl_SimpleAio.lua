@@ -1,4 +1,4 @@
-local Version = 2025.22
+local Version = 2025.23
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -256,7 +256,7 @@ local function getEnemyCount(range, unit)
 	local count = 0
 	for i, hero in ipairs(GetEnemyHeroes()) do
 		local Range = range * range
-		if GetDistanceSqr(unit, hero.pos) < Range and IsValid(hero) then
+		if IsValid(hero) and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
 	end
@@ -279,7 +279,7 @@ local function getAllyCount(range, unit)
 	local count = 0
 	for i, hero in ipairs(getAllyHeroes()) do
 		local Range = range * range
-		if GetDistanceSqr(unit, hero.pos) < Range and IsValid(hero) then
+		if IsValid(hero) and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
 	end
@@ -467,7 +467,7 @@ local function GetEnemiesAtPos(checkrange, range, pos, target)
 	for i = 1, #enemies do 
 		local enemy = enemies[i]
 		local Range = range * range
-		if GetDistanceSqr(pos, enemy.pos) < Range and IsValid(enemy) and enemy ~= target then
+		if IsValid(enemy) and GetDistanceSqr(pos, enemy.pos) < Range and enemy ~= target then
 			table.insert(results, enemy)
 		end
 	end
@@ -4372,7 +4372,10 @@ function AurelionSol:LoadMenu()
 		Menu.Combo:MenuElement({id = "Rcount", name = "UseR when hit X enemies", value = 3, min = 1, max = 5})
 		Menu.Combo:MenuElement({id = "Rsm", name = "R Semi-Manual Key", key = string.byte("T")})
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+		Menu.Harass:MenuElement({id = "Q", name = "[Q] Quick Harass", key = string.byte("M")})
 		Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
+	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
+		Menu.Flee:MenuElement({id = "W", name = "[W] to mouse direction ", toggle = true, value = true})
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 		Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
 		Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
@@ -4393,6 +4396,7 @@ function AurelionSol:onTick()
 			self.rSpell.Radius = math.sqrt(388.91^2+21.85^2 * passiveData.stacks)
 		end
 	end
+	self.eSpell.Range = self.eSpell.Range + self.eSpell.Radius/2
 	Etarget = TargetSelector:GetTarget(self.eSpell.Range)
 	Rtarget = TargetSelector:GetTarget(self.rSpell.Range)
 	if myHero.activeSpell.valid and (Game.Timer() >= myHero.activeSpell.startTime and Game.Timer() <= myHero.activeSpell.castEndTime) then
@@ -4404,8 +4408,14 @@ function AurelionSol:onTick()
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
 		self:Harass()
 	end
+	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_FLEE] then
+		self:Flee()
+	end
 	if Menu.Combo.Rsm:Value() then
 		self:SemiManualR()
+	end
+	if Menu.Harass.Q:Value() then
+		self:QuickQ()
 	end
 	if haveBuff(myHero, "AurelionSolQ") or myHero:GetSpellData(_W).name == "AurelionSolWToggle" then
 		Orbwalker:SetMovement(false)
@@ -4427,6 +4437,28 @@ function AurelionSol:OnPreAttack(args)
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
 		if Menu.Combo.DisableAA:Value() then
 			args.Process = false
+		end
+	end
+end
+
+function AurelionSol:Flee()
+	if Menu.Flee.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "AurelionSolW" then 
+		Control.CastSpell(HK_W)
+	end
+end
+
+function AurelionSol:QuickQ()
+	if myHero:GetSpellData(_W).name == "AurelionSolWToggle" then return end
+	if IsValid(Etarget) then
+		if IsReady(_Q) and lastQ + 1000 < GetTickCount() then
+			local mPos = mousePos
+			Control.SetCursorPos(Etarget.pos)
+			Control.KeyDown(HK_Q)
+			DelayAction(function() 
+				Control.KeyUp(HK_Q)
+				Control.SetCursorPos(mPos) 
+			end, 0.2)
+			lastQ = GetTickCount()
 		end
 	end
 end
@@ -4473,12 +4505,12 @@ end
 
 function AurelionSol:CastEAoE(target)
 	if IsReady(_E) then
-		local enemies = GetEnemiesAtPos(self.eSpell.Range + self.eSpell.Radius/2, self.eSpell.Radius, target.pos,target)
+		local enemies = GetEnemiesAtPos(750 + self.eSpell.Radius/2, self.eSpell.Radius, target.pos,target)
 		if #enemies >= 2 then
-			local AoEPos = CalculateBestCirclePosition(enemies, self.eSpell.Radius/2, true, self.eSpell.Range, self.eSpell.Speed, self.eSpell.Delay)
+			local AoEPos = CalculateBestCirclePosition(enemies, self.eSpell.Radius/2, true, 750, self.eSpell.Speed, self.eSpell.Delay)
 			Control.CastSpell(HK_E, AoEPos)
 		else
-			castSpellHigh(self.eSpell, HK_E, target)
+			self:CastE(target)
 		end
 	end
 end
@@ -4501,7 +4533,19 @@ end
 function AurelionSol:CastQ(target)
 	if IsReady(_Q) then
 		Control.SetCursorPos(target.pos)
-		Control.KeyDown(HK_Q)	
+		Control.KeyDown(HK_Q)
+	end
+end
+
+function AurelionSol:CastE(target)
+	local pred = GGPrediction:SpellPrediction(self.eSpell)
+	pred:GetPrediction(target, myHero)
+	if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+		if myHero.pos:DistanceTo(pred.CastPosition) > 750 then
+			Control.CastSpell(HK_E, myHero.pos:Extended(pred.CastPosition, 750))
+		else
+			Control.CastSpell(HK_E, pred.CastPosition)
+		end
 	end
 end
 
