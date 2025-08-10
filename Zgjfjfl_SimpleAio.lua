@@ -1,4 +1,4 @@
-local Version = 2025.23
+local Version = 2025.24
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -300,6 +300,16 @@ local function isInvulnerable(unit)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff and buff.type == 18 and buff.count > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+local function IsPoison(unit)
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
+		if buff and (buff.type == 6 or buff.type == 24) and buff.count > 0 then
 			return true
 		end
 	end
@@ -2689,19 +2699,50 @@ function Ivern:Combo()
 	end
 end
 
+function Ivern:CastE(unit)
+	if unit.isMe then
+		Control.KeyDown(0x12)  -- Alt key
+		Control.KeyDown(HK_E)
+		Control.KeyUp(HK_E)
+		Control.KeyUp(0x12)
+	else
+		Control.CastSpell(HK_E, unit)
+	end
+end
+
 function Ivern:AutoE()
 	if IsReady(_E) and lastE + 250 < GetTickCount() then
-		local enemies = ObjectManager:GetEnemyHeroes(2500)
+		local allies = ObjectManager:GetAllyHeroes(self.eSpell.Range)
+		local validAllies = {}
+		for _, ally in ipairs(allies) do
+			if Menu.AutoE.Etarget[ally.charName] and Menu.AutoE.Etarget[ally.charName]:Value() then
+				table.insert(validAllies, ally)
+			end
+		end
+		local urgentAlly = nil
+		for _, ally in ipairs(validAllies) do
+			if IsPoison(ally) then
+				urgentAlly = ally
+				break
+			end
+			local enemyTowers = ObjectManager:GetEnemyTurrets(2000)
+			for _, turret in ipairs(enemyTowers) do
+				if turret and turret.targetID == ally.networkID then
+					urgentAlly = ally
+					break
+				end
+			end
+			if urgentAlly then break end
+		end
+		if urgentAlly then
+			self:CastE(urgentAlly)
+			lastE = GetTickCount()
+			return
+		end
+		local enemies = ObjectManager:GetEnemyHeroes(2000)
 		local bestAlly, minDist = nil, math.huge
 		for _, enemy in ipairs(enemies) do
 			if IsValid(enemy) then
-				local allies = ObjectManager:GetAllyHeroes(self.eSpell.Range)
-				local validAllies = {}
-				for _, ally in ipairs(allies) do
-					if Menu.AutoE.Etarget[ally.charName] and Menu.AutoE.Etarget[ally.charName]:Value() then
-						table.insert(validAllies, ally)
-					end
-				end
 				for _, ally in ipairs(validAllies) do
 					local dist = ally.pos:DistanceTo(enemy.pos)
 					if dist < self.eSpell.Radius and dist < minDist then
@@ -2712,7 +2753,7 @@ function Ivern:AutoE()
 			end
 		end
 		if bestAlly then
-			Control.CastSpell(HK_E, bestAlly)
+			self:CastE(bestAlly)
 			lastE = GetTickCount()
 		end
 	end
@@ -4238,41 +4279,59 @@ function Milio:AutoE()
 		local turrets = ObjectManager:GetEnemyTurrets(1500)
 		for _, ally in ipairs(allies) do
 			if IsValid(ally) and Menu.AutoE.Etarget[ally.charName] and Menu.AutoE.Etarget[ally.charName]:Value() then
-				for _, enemy in ipairs(enemies) do
-					if IsValid(enemy) then
-						local canuse = false
-						if enemy.isChanneling then 
-							if enemy.activeSpell.target == ally.handle then
-								canuse = true
-							else
-								local endPos = enemy.activeSpell.startPos:Extended(enemy.activeSpell.placementPos, enemy.activeSpell.range)
-								local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(ally.pos, endPos, enemy.pos)
-								local width = ally.boundingRadius + (enemy.activeSpell.width > 0 and enemy.activeSpell.width or 0)
-								if isOnSegment and GGPrediction:IsInRange(point, ally.pos, width) then
+				local canuse = false
+				if IsPoison(ally) then
+					canuse = true
+				else
+					for _, enemy in ipairs(enemies) do
+						if IsValid(enemy) then
+							local spell = enemy.activeSpell
+							if enemy.isChanneling then 
+								if spell.target == ally.handle then
 									canuse = true
+									break
+								else
+									local endPos = spell.startPos:Extended(spell.placementPos, spell.range + spell.width)
+									local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(ally.pos, endPos, enemy.pos)
+									local width = ally.boundingRadius + (spell.width > 0 and spell.width or 0)
+									if isOnSegment and GGPrediction:IsInRange(point, ally.pos, width) then
+										canuse = true
+										break
+									end
 								end
+							elseif spell.target == ally.handle then --autoattack
+								canuse = true
+								break
 							end
-						elseif enemy.activeSpell.target == ally.handle then --autoattack
-							canuse = true
 						end
-						if canuse then
-							Control.CastSpell(HK_E, ally)
-							lastE = GetTickCount()
-							return
+					end
+					if not canuse then
+						for _, turret in ipairs(turrets) do
+							if turret and turret.targetID == ally.networkID then
+								canuse = true
+								break
+							end
 						end
 					end
 				end
-				for _, turret in ipairs(turrets) do
-					if turret and turret.targetID then
-						if turret.targetID == ally.networkID then
-							Control.CastSpell(HK_E, ally)
-							lastE = GetTickCount()
-							return
-						end
-					end
+				if canuse then
+					self:CastE(ally)
+					lastE = GetTickCount()
+					break
 				end
 			end
 		end
+	end
+end
+
+function Milio:CastE(unit)
+	if unit.isMe then
+		Control.KeyDown(0x12)  -- Alt key
+		Control.KeyDown(HK_E)
+		Control.KeyUp(HK_E)
+		Control.KeyUp(0x12)
+	else
+		Control.CastSpell(HK_E, unit)
 	end
 end
 

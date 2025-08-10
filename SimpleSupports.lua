@@ -1,4 +1,4 @@
-local Version = 2025.16
+local Version = 2025.17
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -38,7 +38,7 @@ if not table.contains(Heroes, myHero.charName) then
 end
 
 require "GGPrediction"
-require "MapPositionGOS"
+--require "MapPositionGOS"
 
 local GameParticleCount = Game.ParticleCount
 local GameParticle = Game.Particle
@@ -187,7 +187,7 @@ local function GetEnemyCount(range, unit)
 	local count = 0
 	for i, hero in ipairs(GetEnemyHeroes()) do
 		local Range = range * range
-		if GetDistanceSqr(unit, hero.pos) < Range and IsValid(hero) then
+		if IsValid(hero) and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
 	end
@@ -210,7 +210,7 @@ local function GetAllyCount(range, unit)
 	local count = 0
 	for i, hero in ipairs(GetAllyHeroes()) do
 		local Range = range * range
-		if GetDistanceSqr(unit, hero.pos) < Range and IsValid(hero) then
+		if IsValid(hero) and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
 	end
@@ -255,6 +255,16 @@ local function IsSlow(unit)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
 		if buff and buff.type == 11 and buff.count > 0 then
+			return true
+		end
+	end
+	return false
+end
+
+local function IsPoison(unit)
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
+		if buff and (buff.type == 6 or buff.type == 24) and buff.count > 0 then
 			return true
 		end
 	end
@@ -397,7 +407,7 @@ local function GetEnemiesAtPos(checkrange, range, pos, target)
 	for i = 1, #enemies do 
 		local enemy = enemies[i]
 		local Range = range * range
-		if GetDistanceSqr(pos, enemy.pos) < Range and IsValid(enemy) and enemy ~= target then
+		if IsValid(enemy) and GetDistanceSqr(pos, enemy.pos) < Range and enemy ~= target then
 			TableInsert(results, enemy)
 		end
 	end
@@ -564,19 +574,37 @@ end
 
 function Lux:AutoW()
 	if Menu.Auto.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount() then
-		if myHero.health/myHero.maxHealth <= Menu.Auto.Whp:Value()/100 and GetEnemyCount(1000, myHero.pos) > 0 then
-			Control.CastSpell(HK_W)
-			lastW = GetTickCount()
-		end
 		local allies = ObjectManager:GetAllyHeroes(self.WSpell.Range)
-		for i, ally in ipairs(allies) do			
-			if IsValid(ally) and not ally.isMe and ally.health/ally.maxHealth <= Menu.Auto.Whp:Value()/100 and GetEnemyCount(1000, ally.pos) > 0 then
-				Control.CastSpell(HK_W, ally.pos)
-				lastW = GetTickCount()
+		local turrets = _G.SDK.ObjectManager:GetEnemyTurrets(2000)
+		for _, ally in ipairs(allies) do
+			if IsValid(ally) then
+				local useForPoison = IsPoison(ally)
+				local useForLowHP = (ally.health / ally.maxHealth <= Menu.Auto.Whp:Value() / 100 and GetEnemyCount(1000, ally.pos) > 0)
+				local useForTurret = false
+				for _, turret in ipairs(turrets) do
+					if turret and turret.targetID == ally.networkID then
+						useForTurret = true
+						break
+					end
+				end
+				if useForPoison or useForLowHP or useForTurret then
+					self:CastW(ally)
+					lastW = GetTickCount()
+					break
+				end
 			end
 		end
 	end
 end
+
+function Lux:CastW(unit)
+	if unit.isMe then
+		Control.CastSpell(HK_W)
+	else
+		Control.CastSpell(HK_W, unit)
+	end
+end
+	
 
 function Lux:AutoE()
 	if IsReady(_E) then
@@ -2095,13 +2123,23 @@ end
 
 function Seraphine:AutoW()
 	if Menu.Auto.W:Value() and IsReady(_W) then
-		if myHero.health/myHero.maxHealth <= Menu.Auto.Whp:Value()/100 and GetEnemyCount(1000, myHero.pos) > 0 then
-			Control.CastSpell(HK_W)
-		end
 		local allies = ObjectManager:GetAllyHeroes(self.WSpell.Range)
-		for i, ally in ipairs(allies) do			
-			if IsValid(ally) and not ally.isMe and ally.health/ally.maxHealth <= Menu.Auto.Whp:Value()/100 and GetEnemyCount(1000, ally.pos) > 0 then
-				Control.CastSpell(HK_W, ally.pos)
+		local turrets = _G.SDK.ObjectManager:GetEnemyTurrets(2000)
+		for _, ally in ipairs(allies) do
+			if IsValid(ally) then
+				local useForPoison = IsPoison(ally)
+				local useForLowHP = (ally.health / ally.maxHealth <= Menu.Auto.Whp:Value() / 100 and GetEnemyCount(1000, ally.pos) > 0)
+				local useForTurret = false
+				for _, turret in ipairs(turrets) do
+					if turret and turret.targetID == ally.networkID then
+						useForTurret = true
+						break
+					end
+				end
+				if useForPoison or useForLowHP or useForTurret then
+					Control.CastSpell(HK_W)
+					break
+				end
 			end
 		end
 	end
