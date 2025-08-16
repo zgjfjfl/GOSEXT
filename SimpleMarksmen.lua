@@ -1,4 +1,4 @@
-local Version = 2025.33
+local Version = 2025.34
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -3873,8 +3873,8 @@ function Kalista:GetEDmg(target, isEpicMonster)
 	local level = myHero:GetSpellData(_E).level
 	local targetName = target.charName:lower()
 	if buff and level > 0 then
-		local baseDmg = ({5, 15, 25, 35, 45})[level] + 0.7 * myHero.totalDamage + 0.2 * myHero.ap
-		local bonusDmg = (buffData.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.25, 0.3, 0.35, 0.4})[level] * myHero.totalDamage + 0.2 * myHero.ap)
+		local baseDmg = ({5, 15, 25, 35, 45})[level] + 0.7 * myHero.totalDamage + 0.65 * myHero.ap
+		local bonusDmg = (buffData.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.25, 0.3, 0.35, 0.4})[level] * myHero.totalDamage + 0.5 * myHero.ap)
 		local totalDmg = baseDmg + bonusDmg
 		if HasBuffContainsName(myHero, "PressTheAttackLockout") then
 			totalDmg = totalDmg * 1.08
@@ -5064,7 +5064,7 @@ function Yunara:Combo()
 		local target = GetTarget(1100)
 		if IsValid(target) and target.pos2D.onScreen then
 			local wLogic = Menu.Combo.WLogic:Value()
-			if wLogic == 1 then
+			if wLogic == 1 and self:CanUseW() then
 				if not HaveBuff(myHero, "YunaraQ") or not Data:IsInAutoAttackRange(myHero, target) then
 					self:CastW(target)
 				end
@@ -5081,7 +5081,7 @@ function Yunara:Harass()
 		local target = GetTarget(1100)
 		if IsValid(target) and target.pos2D.onScreen then
 			local wLogic = Menu.Harass.WLogic:Value()
-			if wLogic == 1 then
+			if wLogic == 1 and self:CanUseW() then
 				if not HaveBuff(myHero, "YunaraQ") or not Data:IsInAutoAttackRange(myHero, target) then
 					self:CastW(target)
 				end
@@ -5096,6 +5096,19 @@ function Yunara:FarmHarass()
 	if Menu.Clear.SpellHarass:Value() then
 		self:Harass()
 	end
+end
+
+function Yunara:CanUseW()
+	local QData = myHero:GetSpellData(_Q)
+	local WData = myHero:GetSpellData(_W)
+	local EData = myHero:GetSpellData(_E)
+	local RData = myHero:GetSpellData(_R)
+	if WData.name == "YunaraW" and 
+		myHero.mana < (QData.mana + WData.mana + (EData.currentCd == 0 and EData.mana or 0) + (RData.currentCd == 0 and RData.mana or 0))
+	then
+		return false
+	end
+	return true
 end
 
 function Yunara:LastHitW()
