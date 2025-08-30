@@ -1,4 +1,4 @@
-local Version = 2025.35
+local Version = 2025.36
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1571,6 +1571,7 @@ end
 class "Lucian"
 
 function Lucian:__init()
+	require "MapPositionGOS"
 	print("Marksmen Lucian Loaded") 
 	self:LoadMenu()
 	
