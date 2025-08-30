@@ -1,4 +1,4 @@
-local Version = 2025.34
+local Version = 2025.35
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -38,7 +38,6 @@ if not table.contains(Heroes, myHero.charName) then
 end
 
 require "GGPrediction"
-require "MapPositionGOS"
 
 local GameHeroCount = Game.HeroCount
 local GameHero = Game.Hero
@@ -1151,13 +1150,14 @@ end
 class "Zeri"
 
 function Zeri:__init()
+	require "MapPositionGOS"
 	print("Marksmen Zeri Loaded") 
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 40, Range = 750, Speed = 2600, Collision = false}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.237, Radius = 40, Range = 750, Speed = 2600, Collision = false}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 40, Range = 1150, Speed = 2500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.W2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 100, Range = 2500, Speed = 2500, Collision = false}
 	self.ESpell = { Range = 300 }
@@ -1240,6 +1240,7 @@ function Zeri:OnPreAttack(args)
 end
 
 function Zeri:OnTick()
+	self.QSpell.Delay = myHero.attackData.windUpTime
 	if myHero.range == 650 then
 		self.QSpell.Range = 900 + Menu.Misc.QRange:Value()
 	else
@@ -1658,6 +1659,7 @@ function Lucian:OnTick()
 		self:JungleClear()
 	end
 end
+
 function Lucian:CastingR()
 	return HaveBuff(myHero, "LucianR")
 end
@@ -1671,6 +1673,7 @@ function Lucian:EToSideHoldDis()
 	local Edis = Menu.Combo.Edis:Value()
 	return myHero.range == 650 and Edis + 150 or Edis
 end
+
 function Lucian:Combo()
 	local target = GetTarget(self.Q2Spell.Range)
 	if IsValid(target) then
@@ -3016,8 +3019,8 @@ function Jayce:__init()
 	
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	-- Callback.Add("WndMsg", function(...) self:OnWndMsg(...) end)
-	Spell:OnSpellCast(function(spell) self:OnSpellCast(spell) end)
+	Callback.Add("WndMsg", function(...) self:OnWndMsg(...) end)
+	-- Spell:OnSpellCast(function(...) self:OnSpellCast(...) end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.Q1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1050, Speed = 1450, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.Q1extSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.3, Radius = 70, Range = 1600, Speed = 2350, Collision = false}
@@ -3043,7 +3046,7 @@ function Jayce:LoadMenu()
 	
 	Menu:MenuElement({type = MENU, id = "E", name = "E Config"})
 	Menu.E:MenuElement({id = "Er", name = "Use E range (Q + E)", toggle = true, value = true})
-	-- Menu.E:MenuElement({id = "Esm", name = "Use E When Manual RangeQ", toggle = true, value = false})
+	Menu.E:MenuElement({id = "Esm", name = "Use E When Manual RangeQ", toggle = true, value = false})
 	Menu.E:MenuElement({id = "Em", name = "Use E melee", toggle = true, value = true})
 	Menu.E:MenuElement({id = "Eks", name = "E melee ks only", toggle = true, value = false})
 	Menu.E:MenuElement({id = "gapE", name = "Gapcloser R + E", toggle = true, value = true})
@@ -3118,27 +3121,27 @@ function Jayce:SetValue()
 	E2cd = SetPlus(E2cdt - Game.Timer())
 end
 
--- local isQmanualCast = false
--- local QmanualTimer = nil
--- function Jayce:OnWndMsg(msg, wParam)
-	-- if self:IsRange() and Game.CanUseSpell(_Q) then
-		-- if msg == KEY_DOWN and wParam == HK_Q then
+local isQmanualCast = false
+local QmanualTimer = nil
+function Jayce:OnWndMsg(msg, wParam)
+	if self:IsRange() and Game.CanUseSpell(_Q) == 0 then
+		if msg == KEY_DOWN and wParam == HK_Q then
 		-- print('q')
-			-- isQmanualCast = true
-			-- QmanualTimer = GetTickCount()
-		-- end
-	-- end
--- end
-
-function Jayce:OnSpellCast(spell)
-	if not self:IsRange() then
-		if spell == _Q then
-			if IsReady(_W) and Menu.W.Wm:Value() and myHero.mana > 80 then
-				Control.CastSpell(HK_W)
-			end
+			isQmanualCast = true
+			QmanualTimer = GetTickCount()
 		end
-	end	
+	end
 end
+
+-- function Jayce:OnSpellCast(spell)
+	-- if not self:IsRange() then
+		-- if spell == _Q then
+			-- if IsReady(_W) and Menu.W.Wm:Value() and myHero.mana > 80 then
+				-- Control.CastSpell(HK_W)
+			-- end
+		-- end
+	-- end	
+-- end
 
 function Jayce:OnPreAttack(args)
 	if IsReady(_W) and Menu.W.Wr:Value() and self:IsRange() and args.Target.type == Obj_AI_Hero then
@@ -3157,12 +3160,12 @@ function Jayce:OnTick()
 	if ShouldWait() then
 		return
 	end
-	-- if QmanualTimer and GetTickCount() > QmanualTimer + 1000 then
-		-- isQmanualCast = false
-		-- QmanualTimer = nil
-	-- end
+	if QmanualTimer and GetTickCount() > QmanualTimer + 1000 then
+		isQmanualCast = false
+		QmanualTimer = nil
+	end
 
-	-- if Menu.E.Esm:Value() and isQmanualCast == true or isQmanualCast == false then
+	if Menu.E.Esm:Value() and isQmanualCast == true or isQmanualCast == false then
 		if myHero.activeSpell.name == "JayceShockBlast" then
 			Etick = GetTickCount()
 			if self:IsRange() and IsReady(_E) and Menu.E.Er:Value() and GetTickCount() < Etick + 250 + Game.Latency() then
@@ -3170,7 +3173,7 @@ function Jayce:OnTick()
 				Control.CastSpell(HK_E, EcastPos)
 			end
 		end	
-	-- end
+	end
 
 	self:SetValue()
 	self:Gapcloser()
@@ -5017,8 +5020,8 @@ function Yunara:OnTick()
 	if ShouldWait() then
 		return
 	end
-	self.WSpell.Delay = MathMax(0.225, 0.45 / myHero.attackSpeed)
-	self.W2Spell.Delay = MathMax(0.45, 0.6 / myHero.attackSpeed)
+	self.WSpell.Delay = MathMax(0.225, 0.45 - 0.225 * (myHero.attackSpeed - 1))
+	self.W2Spell.Delay = MathMax(0.45, 0.6 - 0.45 * (myHero.attackSpeed - 1))
 	if IsCasting() then return end
 	self:KillSteal()
 	local Mode = GetMode()

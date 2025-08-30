@@ -1,4 +1,4 @@
-local Version = 2025.17
+local Version = 2025.18
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -38,7 +38,6 @@ if not table.contains(Heroes, myHero.charName) then
 end
 
 require "GGPrediction"
---require "MapPositionGOS"
 
 local GameParticleCount = Game.ParticleCount
 local GameParticle = Game.Particle
@@ -925,7 +924,7 @@ end
 
 function Zyra:GetRDmg(target)
 	local level = myHero:GetSpellData(_R).level
-	local RDmg = ({180, 265, 350})[level] + 0.7 * myHero.ap
+	local RDmg = ({200, 300, 400})[level] + 0.7 * myHero.ap
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, RDmg)
 end
 
@@ -1537,6 +1536,7 @@ end
 class "Ziggs"
 
 function Ziggs:__init()
+	require "MapPositionGOS"
 	print("Support Ziggs Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
@@ -1737,7 +1737,7 @@ function Ziggs:CastQ(unit)
 			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(startPos, QPrediction.CastPosition, self.Q2Spell.Speed, self.Q2Spell.Delay, self.Q2Spell.Radius/2, {GGPrediction.COLLISION_MINION}, unit.networkID)
 			if collisionCount == 0 then
 				local endPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 850)
-				if Vector(QPrediction.CastPosition):To2D().onScreen and not GameIsWall(endPos) then
+				if Vector(QPrediction.CastPosition):To2D().onScreen and not MapPosition:inWall(endPos) then
 					Control.CastSpell(HK_Q, QPrediction.CastPosition)
 				end
 			end

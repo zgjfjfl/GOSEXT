@@ -1,4 +1,4 @@
-local Version = 2025.24
+local Version = 2025.25
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -40,7 +40,6 @@ if not table.contains(Heroes, myHero.charName) then
 end
 
 require "GGPrediction"
-require "MapPositionGOS"
 
 local GameParticleCount = Game.ParticleCount
 local GameParticle = Game.Particle
@@ -540,12 +539,14 @@ Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Simple "..m
 
 class "Ornn"
 
-function Ornn:__init()		 
+function Ornn:__init()
+	require "MapPositionGOS"	 
 	print("Simple Ornn Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:onTick() end)
-	Callback.Add("WndMsg", function(msg, wParam) self:OnWndMsg(msg, wParam) end)
+	Callback.Add("WndMsg", function(...) self:OnWndMsg(...) end)
+	-- Spell:OnSpellCast(function(...) self:OnSpellCast(...) end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.3, Radius = 65, Range = 800, Speed = 1800, Collision = false}
 	self.wSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 175, Range = 500, Speed = math.huge, Collision = false}
@@ -579,14 +580,12 @@ function Ornn:LoadMenu()
 end
 
 function Ornn:onTick()
-	if ShouldWait() then
-		return
-	end
 	if self.qTimer and Game.Timer() > self.qTimer then
 		self:GetQPos()
 		self.qTimer = nil
 	end
 	self:UpdateQPos()
+	if ShouldWait() then return end
 	if IsCasting() then return end
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
 		self:Combo()
@@ -607,9 +606,18 @@ function Ornn:OnPreAttack(args)
 	end
 end
 
+-- function Ornn:OnSpellCast(spell)
+	-- if spell == _Q then
+		-- self.qTimer = Game.Timer() + 1.25
+	-- end	
+-- end
+
 function Ornn:OnWndMsg(msg, wParam)
-	if Game.CanUseSpell(_Q) == 0 and msg == KEY_DOWN and wParam == HK_Q then
-		self.qTimer = Game.Timer() + 1.25
+	if Game.CanUseSpell(_Q) == 0 then
+		if msg == KEY_UP and wParam == HK_Q then
+		-- print('q')
+			self.qTimer = Game.Timer() + 1.25
+		end
 	end
 end
 
@@ -977,7 +985,8 @@ end
 
 class "Poppy"
 
-function Poppy:__init()		 
+function Poppy:__init()
+	require "MapPositionGOS"	 
 	print("Simple Poppy Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
@@ -2235,7 +2244,8 @@ end
 
 class "Galio"
 
-function Galio:__init()		 
+function Galio:__init()
+	require "MapPositionGOS"
 	print("Simple Galio Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
@@ -2795,7 +2805,8 @@ end
 
 class "Bard"
 
-function Bard:__init()		 
+function Bard:__init()
+	require "MapPositionGOS"
 	print("Simple Bard Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
@@ -3346,7 +3357,8 @@ end
 
 class "KSante"
 
-function KSante:__init()		 
+function KSante:__init()
+	require "MapPositionGOS"
 	print("Simple KSante Loaded")
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
@@ -3752,7 +3764,8 @@ end
 
 class "Maokai"
 
-function Maokai:__init()		 
+function Maokai:__init()
+	require "MapPositionGOS"
 	print("Simple Maokai Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
@@ -3893,7 +3906,8 @@ end
 
 class "Gragas"
 
-function Gragas:__init()		 
+function Gragas:__init()
+	require "MapPositionGOS"
 	print("Simple Gragas Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
@@ -4842,7 +4856,8 @@ end
 
 class "Briar"
 		
-function Briar:__init()		 
+function Briar:__init()
+	require "MapPositionGOS"
 	print("Simple Briar Loaded")
 	self:LoadMenu()
 	Callback.Add("Tick", function() self:onTick() end)	
