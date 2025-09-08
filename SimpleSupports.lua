@@ -1,4 +1,4 @@
-local Version = 2025.18
+local Version = 2025.19
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -66,19 +66,22 @@ local lastW = 0
 local lastE = 0
 local lastR = 0
 
-local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data, Cursor
+local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data
 
 Callback.Add("Load", function()
-
-	Orbwalker = _G.SDK.Orbwalker
-	TargetSelector = _G.SDK.TargetSelector
-	ObjectManager = _G.SDK.ObjectManager
-	HealthPrediction = _G.SDK.HealthPrediction
-	Attack = _G.SDK.Attack
-	Damage = _G.SDK.Damage
-	Spell = _G.SDK.Spell
-	Data = _G.SDK.Data
-	Cursor = _G.SDK.Cursor
+	if _G.SDK then
+		Orbwalker = _G.SDK.Orbwalker
+		TargetSelector = _G.SDK.TargetSelector
+		ObjectManager = _G.SDK.ObjectManager
+		HealthPrediction = _G.SDK.HealthPrediction
+		Attack = _G.SDK.Attack
+		Damage = _G.SDK.Damage
+		Spell = _G.SDK.Spell
+		Data = _G.SDK.Data
+	else
+		print('GGOrbwalker is not enabled,  SimpleSupports will exit')
+		return
+	end
 
 	if table.contains(Heroes, myHero.charName) then
 		_G[myHero.charName]()
@@ -96,7 +99,7 @@ end)
 
 local function IsReady(spell)
 	return myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 
-		and myHero:GetSpellData(spell).mana <= myHero.mana and Game.CanUseSpell(spell) == 0 and Cursor.Step == 0
+		and myHero:GetSpellData(spell).mana <= myHero.mana and Game.CanUseSpell(spell) == 0
 end
 
 local function IsValid(unit)
@@ -117,41 +120,8 @@ local function GetDistance(Pos1, Pos2)
 	return math.sqrt(GetDistanceSqr(Pos1, Pos2))
 end
 
-local function GetEnemyHeroes()
-	local EnemyHeroes = {}
-	for i = 1, GameHeroCount() do
-		local Hero = GameHero(i)
-		if Hero.isEnemy and not Hero.dead then
-			TableInsert(EnemyHeroes, Hero)
-		end
-	end
-	return EnemyHeroes
-end
-
-local function GetAllyHeroes()
-	local AllyHeroes = {}
-	for i = 1, GameHeroCount() do
-		local Hero = GameHero(i)
-		if Hero.isAlly then
-			TableInsert(AllyHeroes, Hero)
-		end
-	end
-	return AllyHeroes
-end
-
-local function GetEnemyTurrets()
-	local EnemyTurrets = {}
-	for i = 1, GameTurretCount() do
-		local turret = GameTurret(i)
-		if turret and turret.isEnemy then
-			TableInsert(EnemyTurrets, turret)
-		end
-	end
-	return EnemyTurrets
-end
-
 local function IsUnderTurret(unit)
-	for i, turret in ipairs(GetEnemyTurrets()) do
+	for i, turret in ipairs(ObjectManager:GetEnemyTurrets()) do
 		local range = (turret.boundingRadius + 750 + unit.boundingRadius / 2)
 		if not turret.dead then 
 			if turret.pos:DistanceTo(unit.pos) < range then
@@ -184,8 +154,8 @@ end
 
 local function GetEnemyCount(range, unit)
 	local count = 0
-	for i, hero in ipairs(GetEnemyHeroes()) do
-		local Range = range * range
+	local Range = range * range
+	for _, hero in ipairs(ObjectManager:GetEnemyHeroes()) do
 		if IsValid(hero) and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
@@ -195,10 +165,9 @@ end
 
 local function GetMinionCount(range, unit)
 	local count = 0
-	for i = 1,GameMinionCount() do
-		local hero = GameMinion(i)
-		local Range = range * range
-		if hero.team ~= myHero.team and hero.dead == false and GetDistanceSqr(unit, hero.pos) < Range then
+	local Range = range * range
+	for _, minion in ipairs(ObjectManager:GetEnemyMinions()) do
+		if IsValid(minion) and GetDistanceSqr(unit, minion.pos) < Range then
 			count = count + 1
 		end
 	end
@@ -207,8 +176,8 @@ end
 
 local function GetAllyCount(range, unit)
 	local count = 0
-	for i, hero in ipairs(GetAllyHeroes()) do
-		local Range = range * range
+	local Range = range * range
+	for _, hero in ipairs(ObjectManager:GetAllyHeroes()) do
 		if IsValid(hero) and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
@@ -439,7 +408,8 @@ end
 
 --------------------------------------
 
-Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/15.1.1/img/champion/"..myHero.charName..".png"})
+local championIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"
+Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName, leftIcon = championIcon})
 	Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
 	Menu:MenuElement({id = "SupportMode", name = "Support Mode (Disable Harass Lasthit)",value = true})
 
@@ -607,7 +577,7 @@ end
 
 function Lux:AutoE()
 	if IsReady(_E) then
-		for i, target in ipairs(GetEnemyHeroes()) do
+		for i, target in ipairs(ObjectManager:GetEnemyHeroes()) do
 			if IsValid(target) and target.pos2D.onScreen then
 				local LuxBuff = HaveBuff(myHero, "LuxLightStrikeKugel")
 				local targetBuff = HaveBuff(target, "luxeslow")
@@ -1880,7 +1850,7 @@ function Swain:OnTick()
 end
 
 function Swain:SemiManualW()
-	for i, enemy in ipairs(GetEnemyHeroes()) do
+	for i, enemy in ipairs(ObjectManager:GetEnemyHeroes()) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
 			if enemy.pos:DistanceTo(mousePos) < 500 and myHero.pos:DistanceTo(enemy.pos) <= self.WSpell.Range then
 				self:CastGGPred(HK_W, enemy)
@@ -1932,7 +1902,7 @@ function Swain:CastWAoE(unit)
 end
 
 function Swain:Auto()
-	for i, enemy in ipairs(GetEnemyHeroes()) do
+	for i, enemy in ipairs(ObjectManager:GetEnemyHeroes()) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
 			local buff, buffData = GetBuffData(enemy, "swaineroot")
 			if Menu.Auto.E2:Value() and IsReady(_E) and myHero:GetSpellData(_E).name == "SwainE2" and buff and buffData.duration < 1 then
@@ -2492,7 +2462,7 @@ end
 
 function Soraka:AutoR()
 	if Menu.Heal.R:Value() and IsReady(_R) then
-		for _, ally in ipairs(GetAllyHeroes()) do
+		for _, ally in ipairs(ObjectManager:GetAllyHeroes()) do
 			if Menu.Heal.RHealTarget[ally.charName] and Menu.Heal.RHealTarget[ally.charName]:Value() then		
 				if IsValid(ally) and ally.health/ally.maxHealth <= Menu.Heal.Rmin:Value()/100 then
 					if not Menu.Heal.Enemy:Value() or GetEnemyCount(1500, ally.pos) > 0 then

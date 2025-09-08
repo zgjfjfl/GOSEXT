@@ -1,4 +1,4 @@
-local Version = 2025.25
+local Version = 2025.26
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -60,20 +60,22 @@ local lastW = 0
 local lastE = 0
 local lastR = 0
 
-local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, ItemManager, Attack, Damage, Spell, Data, Cursor
+local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data
 
 Callback.Add("Load", function()
-
-	Orbwalker = _G.SDK.Orbwalker
-	TargetSelector = _G.SDK.TargetSelector
-	ObjectManager = _G.SDK.ObjectManager
-	HealthPrediction = _G.SDK.HealthPrediction
-	ItemManager = _G.SDK.ItemManager
-	Attack = _G.SDK.Attack
-	Damage = _G.SDK.Damage
-	Spell = _G.SDK.Spell
-	Data = _G.SDK.Data
-	Cursor = _G.SDK.Cursor
+	if _G.SDK then
+		Orbwalker = _G.SDK.Orbwalker
+		TargetSelector = _G.SDK.TargetSelector
+		ObjectManager = _G.SDK.ObjectManager
+		HealthPrediction = _G.SDK.HealthPrediction
+		Attack = _G.SDK.Attack
+		Damage = _G.SDK.Damage
+		Spell = _G.SDK.Spell
+		Data = _G.SDK.Data
+	else
+		print('GGOrbwalker is not enabled,  SimpleAIO will exit')
+		return
+	end
 
 	if table.contains(Heroes, myHero.charName) then
 		_G[myHero.charName]()
@@ -82,7 +84,7 @@ end)
 
 local function IsReady(spell)
 	return myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 
-		and myHero:GetSpellData(spell).mana <= myHero.mana and Game.CanUseSpell(spell) == 0 and Cursor.Step == 0
+		and myHero:GetSpellData(spell).mana <= myHero.mana and Game.CanUseSpell(spell) == 0
 end
 
 local function IsValid(unit)
@@ -114,30 +116,8 @@ local function GetEnemyHeroes()
 	return EnemyHeroes
 end
 
-local function getAllyHeroes()
-	local AllyHeroes = {}
-	for i = 1, GameHeroCount() do
-		local Hero = GameHero(i)
-		if Hero.isAlly then
-			TableInsert(AllyHeroes, Hero)
-		end
-	end
-	return AllyHeroes
-end
-
-local function getEnemyTurrets()
-	local EnemyTurrets = {}
-	for i = 1, GameTurretCount() do
-		local turret = GameTurret(i)
-		if turret and turret.isEnemy then
-			TableInsert(EnemyTurrets, turret)
-		end
-	end
-	return EnemyTurrets
-end
-
 local function isUnderTurret(unit)
-	for i, turret in ipairs(getEnemyTurrets()) do
+	for i, turret in ipairs(ObjectManager:GetEnemyTurrets()) do
 		local range = (turret.boundingRadius + 750 + unit.boundingRadius / 2)
 		if not turret.dead then 
 			if turret.pos:DistanceTo(unit.pos) < range then
@@ -149,7 +129,7 @@ local function isUnderTurret(unit)
 end
 
 local function isUnderTurret2(pos)
-	for i, turret in ipairs(getEnemyTurrets()) do
+	for i, turret in ipairs(ObjectManager:GetEnemyTurrets()) do
 		local range = (turret.boundingRadius + 750)
 		if not turret.dead then 
 			if turret.pos:DistanceTo(pos) < range then
@@ -253,8 +233,8 @@ end
 
 local function getEnemyCount(range, unit)
 	local count = 0
-	for i, hero in ipairs(GetEnemyHeroes()) do
-		local Range = range * range
+	local Range = range * range
+	for _, hero in ipairs(ObjectManager:GetEnemyHeroes()) do
 		if IsValid(hero) and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
@@ -264,10 +244,9 @@ end
 
 local function getMinionCount(range, unit)
 	local count = 0
-	for i = 1,GameMinionCount() do
-		local hero = GameMinion(i)
-		local Range = range * range
-		if hero.team ~= myHero.team and hero.dead == false and GetDistanceSqr(unit, hero.pos) < Range then
+	local Range = range * range
+	for _, minion in ipairs(ObjectManager:GetEnemyMinions()) do
+		if IsValid(minion) and GetDistanceSqr(unit, minion.pos) < Range then
 			count = count + 1
 		end
 	end
@@ -276,8 +255,8 @@ end
 
 local function getAllyCount(range, unit)
 	local count = 0
-	for i, hero in ipairs(getAllyHeroes()) do
-		local Range = range * range
+	local Range = range * range
+	for _, hero in ipairs(ObjectManager:GetAllyHeroes()) do
 		if IsValid(hero) and GetDistanceSqr(unit, hero.pos) < Range then
 			count = count + 1
 		end
@@ -532,7 +511,8 @@ end
 
 ------------------------------------
 
-Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Simple "..myHero.charName, leftIcon = "http://ddragon.leagueoflegends.com/cdn/15.2.1/img/champion/"..myHero.charName..".png"})
+local championIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"
+Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Simple "..myHero.charName, leftIcon = championIcon})
 	Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
 
 ------------------------------------
@@ -1178,7 +1158,7 @@ function Shyvana:LoadMenu()
 		Menu.Combo:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "R", name = "[R]", toggle = true, value = true})
-		Menu.Combo:MenuElement({id = "RHP", name = "[R] Use on target HP %", value = 50, min=0, max = 100 })
+		Menu.Combo:MenuElement({id = "RHP", name = "[R] Use on target HP %", value = 50, min = 0, max = 100, step = 5 })
 		Menu.Combo:MenuElement({id = "RC", name = "[R] Use X enemies in range", value = 1, min = 1, max = 5})	
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 		Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
@@ -1246,7 +1226,7 @@ function Shyvana:Combo()
 		local target = TargetSelector:GetTarget(self.rSpell.Range)
 		if IsValid(target) and (target.health/target.maxHealth <= Menu.Combo.RHP:Value() / 100) then
 			local numEnemies = GetEnemyHeroesWithinDistance(self.rSpell.Range)
-			if #numEnemies >= Menu.Combo.RC:Value() then
+			if getEnemyCount(self.rSpell.Radius, target.pos) >= Menu.Combo.RC:Value() then
 				castSpellHigh(self.rSpell, HK_R, target)
 			end
 		end
@@ -1610,7 +1590,7 @@ function Rakan:Flee()
 				local distance = ally.pos:DistanceTo(myHero.pos)
 				if mousePos:DistanceTo(ally.pos) < 500 then
 					if ally.charName == "Xayah" and distance <= 1000 or distance <= 700 then
-						Control.CastSpell(HK_E, hero)
+						Control.CastSpell(HK_E, ally)
 						lastE = GetTickCount()
 					end
 				end
@@ -1829,8 +1809,7 @@ function Nasus:onTick()
 		return
 	end
 	if IsCasting() then return end
-	local numEnemies = GetEnemyHeroesWithinDistance(700)
-	if #numEnemies >= 1 and myHero.health/myHero.maxHealth <= Menu.Combo.RHP:Value()/100 and Menu.Combo.R:Value() and IsReady(_R) then
+	if getEnemyCount(700, myHero.pos) >= 1 and myHero.health/myHero.maxHealth <= Menu.Combo.RHP:Value()/100 and Menu.Combo.R:Value() and IsReady(_R) then
 		Control.CastSpell(HK_R)
 	end
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
@@ -2649,6 +2628,7 @@ function Ivern:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "AutoE", name = "AutoE"})
 		Menu.AutoE:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 		Menu.AutoE:MenuElement({type = MENU,id = "Etarget", name = "Use On"})
+		Menu.AutoE.Etarget:MenuElement({id = "Daisy", name = "Daisy", value = true})
 			ObjectManager:OnAllyHeroLoad(function(args)
 				Menu.AutoE.Etarget:MenuElement({id = args.charName, name = args.charName, value = true})				
 			end)
@@ -2724,6 +2704,11 @@ function Ivern:AutoE()
 	if IsReady(_E) and lastE + 250 < GetTickCount() then
 		local allies = ObjectManager:GetAllyHeroes(self.eSpell.Range)
 		local validAllies = {}
+		
+		local daisy = self:GetDaisy()
+        if daisy and Menu.AutoE.Etarget.Daisy and Menu.AutoE.Etarget.Daisy:Value() then
+            table.insert(validAllies, daisy)
+        end
 		for _, ally in ipairs(allies) do
 			if Menu.AutoE.Etarget[ally.charName] and Menu.AutoE.Etarget[ally.charName]:Value() then
 				table.insert(validAllies, ally)
@@ -2744,7 +2729,7 @@ function Ivern:AutoE()
 			end
 			if urgentAlly then break end
 		end
-		if urgentAlly then
+		if urgentAlly and IsValid(urgentAlly) then
 			self:CastE(urgentAlly)
 			lastE = GetTickCount()
 			return
@@ -2762,11 +2747,25 @@ function Ivern:AutoE()
 				end
 			end
 		end
-		if bestAlly then
+		if bestAlly and IsValid(bestAlly) then
 			self:CastE(bestAlly)
 			lastE = GetTickCount()
 		end
 	end
+end
+
+function Ivern:GetDaisy()
+	if myHero:GetSpellData(_R).name ~= "IvernRRecast" then
+		return nil
+	end
+	local minions = ObjectManager:GetAllyMinions()
+	for i = 1, #minions do
+		local minion = minions[i]
+		if minion and minion.charName == "IvernMinion" then
+			return minion
+		end
+	end
+	return nil
 end
 
 function Ivern:DaisyControl()
@@ -5249,7 +5248,7 @@ function Aurora:AutoQ2()
 	local buff, buffData = getBuffData(myHero, "AuroraQRecast")
 	if myHero:GetSpellData(_Q).name == "AuroraQRecast" then
 		if Menu.Misc.AutoQ2:Value() and Game.CanUseSpell(_Q) == 0 then
-			for i, enemy in ipairs(GetEnemyHeroes()) do
+			for i, enemy in ipairs(ObjectManager:GetEnemyHeroes()) do
 				if IsValid(enemy) and haveBuff(enemy, "auroraqdebufftracker") then
 					local Q2Dmg = self:GetQ2Dmg(enemy) + self:GetPDmg(enemy)
 					if (enemy.health + enemy.shieldAD + enemy.shieldAP) <= Q2Dmg or buff and buffData.duration < 1 then
@@ -5636,7 +5635,7 @@ end
 
 function Mel:AutoR()	
 	if Menu.Misc.Rkill:Value() and IsReady(_R) then
-		for _, target in ipairs(GetEnemyHeroes()) do
+		for _, target in ipairs(ObjectManager:GetEnemyHeroes()) do
 			if IsValid(target) and haveBuff(target, "MelPassiveOverwhelm") then
 				local Dmg = self:GetRDmg(target) + self:GetPDmg(target)
 				if Dmg > target.health + target.shieldAD + target.shieldAP then
