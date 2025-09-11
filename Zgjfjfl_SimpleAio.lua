@@ -1,4 +1,4 @@
-local Version = 2025.26
+local Version = 2025.27
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -142,8 +142,9 @@ end
 
 local function getEnemyMinionsWithinDistanceOfLocation(location, distance)
 	local EnemyMinions = {}
-	for i = 1, GameMinionCount() do
-		local minion = GameMinion(i)
+	local minions = ObjectManager:GetEnemyMinions()
+	for i = 1, #minions do
+		local minion = minions[i]
 		if minion and minion.isEnemy and not minion.dead and minion.pos:DistanceTo(location) < distance then
 			TableInsert(EnemyMinions, minion)
 		end
@@ -154,8 +155,9 @@ end
 local function getAOEMinion(maxRange, abilityRadius) 
 	local bestCount = 0
 	local bestPosition = nil
-	for i = 1, GameMinionCount() do
-		local minion = GameMinion(i)
+	local minions = ObjectManager:GetEnemyMinions()
+	for i = 1, #minions do
+		local minion = minions[i]
 		local count = 0
 		if minion and not minion.dead and minion.isEnemy and myHero.pos:DistanceTo(minion.pos) < maxRange then 
 			local count = #getEnemyMinionsWithinDistanceOfLocation(minion.pos, abilityRadius)
@@ -2920,6 +2922,7 @@ function Taliyah:LoadMenu()
 		Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
 		Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
 		Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+		Menu.Draw:MenuElement({id = "QMis", name = "[Q] Missile Path", toggle = true, value = false})
 end
 
 local vectorCast = {}
@@ -3011,6 +3014,27 @@ function Taliyah:Harass()
 	end
 end
 
+function Taliyah:DrawLine3D(x,y,z,a,b,c,width,col)
+	local p1 = Vector(x,y,z):To2D()
+	local p2 = Vector(a,b,c):To2D()
+	Draw.Line(p1.x, p1.y, p2.x, p2.y, width, col)
+end
+
+function Taliyah:DrawRectangleOutline(x, y, z, x1, y1, z1, width, col)
+	local startPos = Vector(x,y,z)
+	local endPos = Vector(x1,y1,z1)
+	local c1 = startPos+Vector(Vector(endPos)-startPos):Perpendicular():Normalized()*width
+	local c2 = startPos+Vector(Vector(endPos)-startPos):Perpendicular2():Normalized()*width
+	local c3 = endPos+Vector(Vector(startPos)-endPos):Perpendicular():Normalized()*width
+	local c4 = endPos+Vector(Vector(startPos)-endPos):Perpendicular2():Normalized()*width
+	self:DrawLine3D(c1.x,c1.y,c1.z,c2.x,c2.y,c2.z,2,col)
+	self:DrawLine3D(c2.x,c2.y,c2.z,c3.x,c3.y,c3.z,2,col)
+	self:DrawLine3D(c3.x,c3.y,c3.z,c4.x,c4.y,c4.z,2,col)
+	self:DrawLine3D(c1.x,c1.y,c1.z,c4.x,c4.y,c4.z,2,col)
+end
+
+local lastQCastTime = 0
+local checkDuration = 2.5
 function Taliyah:Draw()
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
 		Draw.Circle(myHero.pos, self.qSpell.Range, Draw.Color(255, 225, 255, 10))
@@ -3020,6 +3044,32 @@ function Taliyah:Draw()
 	end
 	if Menu.Draw.E:Value() and IsReady(_E) then
 		Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(255, 225, 255, 10))
+	end
+
+	if not Menu.Draw.QMis:Value() then return end
+	if myHero.activeSpell.name == "TaliyahQ" then
+		lastQCastTime = Game.Timer()
+	end
+	if Game.Timer() - lastQCastTime > checkDuration then return end
+	local drawColor = Draw.Color(80, 0xFF, 0xFF, 0xFF)
+	local missileCount = Game.MissileCount()
+	local myHeroHandle = myHero.handle
+	for i = 1, missileCount do
+		local missile = Game.Missile(i)
+		if missile and missile.missileData then
+			local owner = missile.missileData.owner
+			local name = missile.missileData.name
+			if owner == myHeroHandle and (name == "TaliyahQMis" or name == "TaliyahQMisBig") then
+				Draw.Circle(missile.pos, missile.missileData.width, drawColor)
+				if missile.missileData.startPos and missile.missileData.endPos then
+					self:DrawRectangleOutline(
+						missile.missileData.startPos.x, missile.missileData.startPos.y, missile.missileData.startPos.z,
+						missile.missileData.endPos.x, missile.missileData.endPos.y, missile.missileData.endPos.z,
+						missile.missileData.width, drawColor
+					)
+				end
+			end
+		end
 	end
 end
 

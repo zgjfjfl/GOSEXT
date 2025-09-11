@@ -1,4 +1,4 @@
-local Version = 2025.37
+local Version = 2025.38
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -410,12 +410,6 @@ local function HasItem(unit, itemId)
 		end
 	end
 	return false
-end
-
-local function GetDistanceToLine(point, lineStart, lineDirection)
-	local AP = point - lineStart
-	local crossProduct = AP:CrossProduct(lineDirection)
-	return crossProduct:Len() / lineDirection:Len()
 end
 
 local function ShouldWait() 
@@ -1851,12 +1845,13 @@ function Lucian:LaneClear()
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 					if myHero.pos:DistanceTo(minion.pos) <= (self.QSpell.Range + myHero.boundingRadius + minion.boundingRadius) then
-						local direction = (minion.pos - myHero.pos):Normalized()
 						local hitCount = 1
 						for j, otherMinion in ipairs(minions) do
 							if IsValid(otherMinion) and otherMinion.networkID ~= minion.networkID then
-								local pointToLineDistance = GetDistanceToLine(otherMinion.pos, myHero.pos, direction)
-								if pointToLineDistance <= self.Q2Spell.Radius/2 + otherMinion.boundingRadius then
+								local endPos = myHero.pos:Extended(minion.pos, self.Q2Spell.Range)
+								local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(otherMinion.pos, minion.pos, endPos)
+								local width = self.Q2Spell.Radius/2 + otherMinion.boundingRadius
+								if isOnSegment and GGPrediction:IsInRange(point, otherMinion.pos, width) then
 									hitCount = hitCount + 1
 								end
 							end
