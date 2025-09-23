@@ -1,4 +1,4 @@
-local Version = 2025.38
+local Version = 2025.39
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -291,6 +291,16 @@ local function Recalling(unit)
 	return false
 end
 
+local function HasInvalidDashBuff(unit)
+    for i = 0, unit.buffCount do
+        local buff = unit:GetBuff(i)
+        if buff and (buff.type == 31 or buff.name == "ThreshQ") and buff.count > 0 then
+            return true
+        end
+    end
+    return false
+end
+
 local function GetMode()
 	if _G.SDK then
 		return 
@@ -452,6 +462,7 @@ function Nilah:__init()
 
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
+	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 600, Speed = MathHuge, Collision = false}
 	self.ESpell = { Range = 550 }
 	self.RSpell = { Range = 450 }
@@ -495,7 +506,7 @@ function Nilah:LoadMenu()
 	Menu.KS:MenuElement({id = "E", name = "Auto E KillSteal", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
-	Menu.Flee:MenuElement({id = "E", name = "[E] to mouse near target", toggle = true, value = true})
+	Menu.Flee:MenuElement({id = "E", name = "[E] To Mouse direction's Target", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
@@ -503,7 +514,6 @@ function Nilah:LoadMenu()
 	Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
-
 end
 
 function Nilah:OnTick()
@@ -530,6 +540,13 @@ function Nilah:OnTick()
 	elseif Mode == "Flee" then
 		self:Flee()
 	end	
+end
+
+function Nilah:OnPreAttack(args)
+	local Mode = GetMode()
+	if (Mode == "Combo" or Mode == "Harass") and IsReady(_Q) then
+		args.Process = false
+	end
 end
 
 function Nilah:Combo()
@@ -688,11 +705,34 @@ function Nilah:GetEDmg(target)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg)
 end
 
+function Nilah:GetFleeETarget()
+	local bestTarget = nil
+	local potentialTargets = {}
+	for _, hero in ipairs(ObjectManager:GetHeroes()) do
+		if IsValid(hero) and not hero.isMe then
+			TableInsert(potentialTargets, hero)
+		end
+	end
+	for _, minion in ipairs(ObjectManager:GetMinions()) do
+		if IsValid(minion) and minion.maxHealth ~= 1 then
+			TableInsert(potentialTargets, minion)
+		end
+	end
+	for _, target in ipairs(potentialTargets) do
+		if IsValid(target) then
+			local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(target.pos, myHero.pos, mousePos)
+			if isOnSegment then
+				bestTarget = target
+			end
+		end
+	end
+	return bestTarget
+end
+
 function Nilah:Flee()
-	if Menu.Flee.E:Value() and IsReady(_E) then
-		local FleeETarget, FleeEDistance = self:GetFleeETarget()
-		local distance = GetDistance(myHero.pos, mousePos)
-		if FleeETarget and FleeEDistance < distance and lastE + 1000 < GetTickCount() then
+	if Menu.Flee.E:Value() and IsReady(_E) and lastE + 1000 < GetTickCount() then
+		local FleeETarget = self:GetFleeETarget()
+		if IsValid(FleeETarget) and FleeETarget.distance <= self.ESpell.Range then
 			Control.CastSpell(HK_E, FleeETarget)
 			lastE = GetTickCount()
 		end
@@ -737,39 +777,6 @@ function Nilah:Draw()
 	if Menu.Draw.R:Value() and IsReady(_R)then
 		Draw.Circle(myHero.pos, self.RSpell.Range, 1, Draw.Color(255, 255, 0, 0))
 	end
-end
-
-function Nilah:GetFleeETarget()
-	local FleeETarget = nil
-	local FleeEDistance = MathHuge
-	
-	local heroes = ObjectManager:GetHeroes()
-	for i = 1, #heroes do
-		local hero = heroes[i]
-		if IsValid(hero) and not hero.isMe then
-			local distance = GetDistance(hero.pos, mousePos)
-			local distance2 = GetDistance(myHero.pos, hero.pos)
-			if distance < FleeEDistance and distance2 <= 550 then
-				FleeEDistance = distance
-				FleeETarget = hero
-			end
-		end
-	end
-	
-	local minions = ObjectManager:GetMinions()
-	for i = 1, #minions do
-		local minion = minion[i]
-		if IsValid(minion) and minion.maxHealth ~= 1 then
-			local distance = GetDistance(minion.pos, mousePos)
-			local distance2 = GetDistance(myHero.pos, minion.pos)
-			if distance < FleeEDistance and distance2 <= 550 then
-				FleeEDistance = distance
-				FleeETarget = minion
-			end
-		end
-	end
-
-	return FleeETarget, FleeEDistance
 end
 
 --------------------------------------
@@ -1266,7 +1273,7 @@ function Zeri:AntiGapcloser()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(1500)
 		for i, target in ipairs(enemies) do
-			if IsValid(target) and target.pathing.isDashing then
+			if IsValid(target) and target.pathing.isDashing and not HasInvalidDashBuff(target) then
 				if myHero.pos:DistanceTo(target.pathing.endPos) < 300 and IsFacingMe(target) then
 					local castPos = myHero.pos + (myHero.pos - target.pos):Normalized() * self.ESpell.Range
 					if castPos:To2D().onScreen then
@@ -1482,7 +1489,7 @@ function Zeri:QObject()
 		for i = 1, #buildings do
 			local building = buildings[i]
 			if building and (building.type == Obj_AI_Nexus or (building.type == Obj_AI_Barracks and building.distance < QRange + 250)) then
-				table.insert(targets, building)
+				TableInsert(targets, building)
 			end
 		end
 	end
@@ -1920,7 +1927,7 @@ function Lucian:AntiGapcloser()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(1500)
 		for i, target in ipairs(enemies) do
-			if IsValid(target) and target.pathing.isDashing then
+			if IsValid(target) and target.pathing.isDashing and not HasInvalidDashBuff(target) then
 				if myHero.pos:DistanceTo(target.pathing.endPos) < 300 and IsFacingMe(target) then -- Data:GetAutoAttackRange(myHero, target)
 					--local castPos = Vector(myHero.pos) + (Vector(target.pathing.endPos) - Vector(target.pathing.startPos)):Normalized() * self.ESpell.Range
 					local castPos = myHero.pos + (myHero.pos - target.pos):Normalized() * self.ESpell.Range
@@ -2542,7 +2549,7 @@ function Tristana:AntiGapcloser()
 	if Menu.Misc.Rgap:Value() and IsReady(_R) then
 		local enemies = ObjectManager:GetEnemyHeroes(1000)
 		for i, target in ipairs(enemies) do
-			if IsValid(target) and target.pathing.isDashing then
+			if IsValid(target) and target.pathing.isDashing and not HasInvalidDashBuff(target) then
 				if myHero.pos:DistanceTo(target.pathing.endPos) < Menu.Misc.RgapRange:Value() and IsFacingMe(target) then
 					Control.CastSpell(HK_R, target)
 				end
@@ -3210,7 +3217,7 @@ function Jayce:Gapcloser()
 	
 	local enemies = ObjectManager:GetEnemyHeroes(1500)
 	for i, target in ipairs(enemies) do
-		if IsValid(target) and target.pathing.isDashing then
+		if IsValid(target) and target.pathing.isDashing and not HasInvalidDashBuff(target) then
 			if myHero.pos:DistanceTo(target.pathing.endPos) <= 400 then
 				if self:IsRange() then
 					Control.CastSpell(HK_R)
@@ -3596,7 +3603,7 @@ function Kalista:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
 	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
-	Menu.Draw:MenuElement({id = "DragonBuffNums", name = "Draw Duplicate dragon buffs Status", toggle = true, value = true})
+	-- Menu.Draw:MenuElement({id = "DragonBuffNums", name = "Draw Duplicate dragon buffs Status", toggle = true, value = true})
 	Menu.Draw:MenuElement({id = "Q", name = "Draw Q Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
@@ -4969,7 +4976,10 @@ function Yunara:LoadMenu()
 	
 	Menu:MenuElement({type = MENU, id = "LastHit", name = "LastHit"})
 	Menu.LastHit:MenuElement({id = "W", name = "Use W| LastHit Not In AA Range", toggle = true, value = true})
-	
+
+	Menu:MenuElement({type = MENU, id = "AntiGapcloser", name = "AntiGapcloser"})
+	Menu.AntiGapcloser:MenuElement({id = "E2", name = "Auto E2 AntiGapcloser", toggle = true, value = true})
+
 	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
 	Menu.KillSteal:MenuElement({id = "W", name = "Auto W KillSteal(not in aa range)", toggle = true, value = true})
 
@@ -5081,10 +5091,10 @@ function Yunara:Harass()
 end
 
 function Yunara:AntiGapcloser()
-	if IsReady(_E) and myHero:GetSpellData(_E).name == "YunaraE2" then
+	if Menu.AntiGapcloser.E2:Value() and IsReady(_E) and myHero:GetSpellData(_E).name == "YunaraE2" then
 		local enemies = ObjectManager:GetEnemyHeroes(1500)
 		for i, target in ipairs(enemies) do
-			if IsValid(target) and target.pathing.isDashing then
+			if IsValid(target) and target.pathing.isDashing and not HasInvalidDashBuff(target) then
 				if myHero.pos:DistanceTo(target.pathing.endPos) < 300 and IsFacingMe(target) then
 					local castPos = myHero.pos + (myHero.pos - target.pos):Normalized() * 450
 					if castPos:To2D().onScreen then
