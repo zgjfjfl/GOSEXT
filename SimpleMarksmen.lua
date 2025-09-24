@@ -1,4 +1,4 @@
-local Version = 2025.39
+local Version = 2025.41
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -4991,7 +4991,7 @@ end
 
 function Yunara:OnPostAttack()
 	local target = Orbwalker:GetTarget()
-	if IsValid(target) and IsReady(_Q) then
+	if IsValid(target) and (IsReady(_Q) and myHero.hudAmmo == 8) then
 		if target.type == Obj_AI_Hero then
 			if GetMode() == "Combo" and Menu.Combo.Q:Value() or (GetMode() == "Harass" and Menu.Harass.Q:Value()--[[ and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100]]) then
 				Control.CastSpell(HK_Q)
