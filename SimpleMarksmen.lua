@@ -1,4 +1,4 @@
-local Version = 2025.41
+local Version = 2025.42
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2145,7 +2145,7 @@ end
 
 function Jinx:QmaxRange(unit)
 	local level = myHero:GetSpellData(_Q).level
-	return self.QSpell.Range + myHero.boundingRadius + unit.boundingRadius + ({80, 110, 140, 170, 200})[level]
+	return self.QSpell.Range + myHero.boundingRadius + unit.boundingRadius + ({100, 125, 150, 175, 200})[level]
 end
 
 function Jinx:CastW(target)
