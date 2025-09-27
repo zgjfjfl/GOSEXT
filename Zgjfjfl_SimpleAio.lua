@@ -1,4 +1,4 @@
-local Version = 2025.27
+local Version = 2025.28
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -304,6 +304,16 @@ local function Recalling(unit)
 		end
 	end
 	return false
+end
+
+local function HasInvalidDashBuff(unit)
+    for i = 0, unit.buffCount do
+        local buff = unit:GetBuff(i)
+        if buff and (buff.type == 31 or buff.name == "ThreshQ") and buff.count > 0 then
+            return true
+        end
+    end
+    return false
 end
 
 local function isInRange(v1, v2, range)
@@ -825,20 +835,21 @@ function JarvanIV:Combo()
 			local castPos = Vector(pred.CastPosition):Extended(Vector(myHero.pos), offset)
 			if Menu.Combo.EQ:Value() and IsReady(_Q) and IsReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
 				if myHero.pos:DistanceTo(castPos) <= self.eSpell.Range then
-					Control.SetCursorPos(castPos)
-					DelayAction(function() 
-						Control.KeyDown(HK_E)
-						Control.KeyUp(HK_E)
-						Orbwalker:SetMovement(false)
-						Orbwalker:SetAttack(false)
-						DelayAction(function()
-							Control.KeyDown(HK_Q)
-							Control.KeyUp(HK_Q)
-							Control.SetCursorPos(mousePos)
-							Orbwalker:SetMovement(true)
-							Orbwalker:SetAttack(true)
-						end, 0.05)
-					end, 0.05)
+					Control.CastSpell({HK_E, HK_Q}, castPos)
+					-- Control.SetCursorPos(castPos)
+					-- DelayAction(function() 
+						-- Control.KeyDown(HK_E)
+						-- Control.KeyUp(HK_E)
+						-- Orbwalker:SetMovement(false)
+						-- Orbwalker:SetAttack(false)
+						-- DelayAction(function()
+							-- Control.KeyDown(HK_Q)
+							-- Control.KeyUp(HK_Q)
+							-- Control.SetCursorPos(mousePos)
+							-- Orbwalker:SetMovement(true)
+							-- Orbwalker:SetAttack(true)
+						-- end, 0.05)
+					-- end, 0.05)
 				end
 			end
 		end
@@ -851,7 +862,7 @@ function JarvanIV:Combo()
 				lastW = GetTickCount()
 			end
 		end
-		if Menu.Combo.R:Value() and IsReady(_R) and not haveBuff(myHero, "JarvanIVCataclysm") then
+		if Menu.Combo.R:Value() and IsReady(_R) and not haveBuff(myHero, "JarvanIVCataclysm") and not myHero.pathing.isDashing then
 			if myHero.pos:DistanceTo(target.pos) <= self.rSpell.Range and (target.health/target.maxHealth <= Menu.Combo.RHp:Value()/100 or getEnemyCount(self.rSpell.Radius, target.pos) >= Menu.Combo.RCount:Value()) then
 				Control.CastSpell(HK_R, target)
 			end
@@ -933,16 +944,17 @@ function JarvanIV:Flee()
 	if Menu.Flee.EQ:Value() and IsReady(_Q) and IsReady(_E) and myHero.mana >= myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
 		local pos = myHero.pos:DistanceTo(Vector(mousePos)) > self.eSpell.Range and myHero.pos + (mousePos - myHero.pos)
 					or myHero.pos + (mousePos - myHero.pos):Normalized() * (self.eSpell.Range + 100)
-		Control.SetCursorPos(pos)
-		DelayAction(function() 
-			Control.KeyDown(HK_E)
-			Control.KeyUp(HK_E)
-			DelayAction(function()
-				Control.KeyDown(HK_Q)
-				Control.KeyUp(HK_Q)
-				Control.SetCursorPos(mousePos)
-			end, 0.05)
-		end, 0.05)
+		-- Control.SetCursorPos(pos)
+		-- DelayAction(function() 
+			-- Control.KeyDown(HK_E)
+			-- Control.KeyUp(HK_E)
+			-- DelayAction(function()
+				-- Control.KeyDown(HK_Q)
+				-- Control.KeyUp(HK_Q)
+				-- Control.SetCursorPos(mousePos)
+			-- end, 0.05)
+		-- end, 0.05)
+		Control.CastSpell({HK_E,HK_Q}, pos)
 	end
 	local target = TargetSelector:GetTarget(self.wSpell.Range)
 	if IsValid(target) then
@@ -963,6 +975,7 @@ function JarvanIV:Draw()
 		Draw.Circle(myHero.pos, self.eSpell.Range, Draw.Color(192, 255, 255, 255))
 	end
 end
+
 ------------------------------
 
 class "Poppy"
@@ -1093,7 +1106,7 @@ function Poppy:AutoW()
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) then
 			local blockobj = Menu.Antidash.Wtarget[enemy.charName] and Menu.Antidash.Wtarget[enemy.charName]:Value()
-			if blockobj and enemy.pathing.isDashing then
+			if blockobj and enemy.pathing.isDashing and not HasInvalidDashBuff(enemy) then
 				local vct = Vector(enemy.pathing.endPos.x, enemy.pathing.endPos.y, enemy.pathing.endPos.z)
 				if vct:DistanceTo(myHero.pos) < 400 then
 					if IsReady(_W) and lastW + 250 < GetTickCount() then
@@ -2334,7 +2347,7 @@ function Galio:AutoW()
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) then
 			local obj = Menu.Auto.WB[enemy.charName] and Menu.Auto.WB[enemy.charName]:Value()
-			if obj and enemy.pathing.isDashing then
+			if obj and enemy.pathing.isDashing and not HasInvalidDashBuff(enemy) then
 				local vct = Vector(enemy.pathing.endPos.x, enemy.pathing.endPos.y, enemy.pathing.endPos.z)
 				if vct:DistanceTo(myHero.pos) < self.wSpell.Range then
 					self:CastW(Menu.Auto.Wtime:Value())
@@ -2749,7 +2762,7 @@ function Ivern:AutoE()
 				end
 			end
 		end
-		if bestAlly and IsValid(bestAlly) then
+		if bestAlly and IsValid(bestAlly) and bestAlly.distance <= self.eSpell.Range then
 			self:CastE(bestAlly)
 			lastE = GetTickCount()
 		end
@@ -4438,7 +4451,7 @@ function Milio:AutoQAntiDash()
 	local enemies = ObjectManager:GetEnemyHeroes(self.qSpell.Range)
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) and Menu.AutoQ.AntiTarget[enemy.charName] and Menu.AutoQ.AntiTarget[enemy.charName]:Value()then
-			if enemy.pathing.isDashing and enemy.pathing.hasMovePath and enemy.pathing.dashSpeed > 0 then
+			if enemy.pathing.isDashing and enemy.pathing.hasMovePath and enemy.pathing.dashSpeed > 0 and not HasInvalidDashBuff(enemy) then
 				if myHero.pos:DistanceTo(enemy.pathing.startPos) > myHero.pos:DistanceTo(enemy.pathing.endPos) then
 					if IsReady(_Q) and lastQ + 350 < GetTickCount() then
 						local Pred = GGPrediction:SpellPrediction(self.qantidashSpell)
@@ -5314,7 +5327,7 @@ function Aurora:AntiGapcloser()
 	if Menu.Misc.EGap:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(Menu.Combo.Erange:Value())
 		for i, target in ipairs(enemies) do
-			if IsValid(target) and target.pathing.isDashing then
+			if IsValid(target) and target.pathing.isDashing and not HasInvalidDashBuff(target) then
 				if myHero.pos:DistanceTo(target.pathing.endPos) < myHero.pos:DistanceTo(target.pos) then
 					self:CastE(target)
 				end
@@ -5644,7 +5657,7 @@ function Mel:AutoE()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
 		for _, target in ipairs(enemies) do
-			if IsValid(target) and target.pathing.isDashing and target.posTo then
+			if IsValid(target) and target.pathing.isDashing and target.posTo and not HasInvalidDashBuff(target) then
 				if myHero.pos:DistanceTo(enemy.posTo) < myHero.pos:DistanceTo(target.pos) then
 					self:CastGGPred(HK_E, target)
 				end

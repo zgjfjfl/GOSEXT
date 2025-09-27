@@ -1,4 +1,4 @@
-local Version = 2025.19
+local Version = 2025.21
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -390,9 +390,6 @@ local function IsCasting()
 		then
 			return true
 		end
-	end
-	if myHero.pathing.isDashing then
-		return true
 	end
 	return false
 end
@@ -1244,7 +1241,7 @@ function Velkoz:Combo()
 			self:CastGGPred(HK_E, target)
 		end
 	end
-	if Menu.Combo.W:Value() and IsReady(_W) and myHero.pos:DistanceTo(target.pos) < self.WSpell.Range - 50 then
+	if Menu.Combo.W:Value() and IsReady(_W) then
 		local target = TargetSelector:GetTarget(self.WSpell.Range - 50)
 		if IsValid(target) and target.pos2D.onScreen then
 			self:CastGGPred(HK_W, target)
