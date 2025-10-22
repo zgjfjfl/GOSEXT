@@ -1,4 +1,4 @@
-local Version = 2025.42
+local Version = 2025.43
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -292,13 +292,13 @@ local function Recalling(unit)
 end
 
 local function HasInvalidDashBuff(unit)
-    for i = 0, unit.buffCount do
-        local buff = unit:GetBuff(i)
-        if buff and (buff.type == 31 or buff.name == "ThreshQ") and buff.count > 0 then
-            return true
-        end
-    end
-    return false
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
+		if buff and (buff.type == 31 or buff.name == "ThreshQ") and buff.count > 0 then
+			return true
+		end
+	end
+	return false
 end
 
 local function GetMode()
@@ -845,33 +845,26 @@ function Smolder:LoadMenu()
 end
 
 function Smolder:OnPreAttack(args)
-	local Mode = GetMode()
 	local target = args.Target
-	local QTotalDmg = self:GetQDmg(target) + self:GetPQDmg(target)
-	if target.type == Obj_AI_Minion then
-		if (Mode == "LaneClear" or Mode == "Harass" or Mode == "LastHit") and target.health < QTotalDmg and IsReady(_Q) then
-			args.Process = false
-			if target.maxHealth <= 8 then
-				args.Process = true
-			end
-		else
-			args.Process = true
-		end
+	local Mode = GetMode()
+	if HaveBuff(myHero, "SmolderE") then
+		args.Process = false
+		return
 	end
-	
-	if target.type == Obj_AI_Hero then
+	if target and target.type == Obj_AI_Hero then
 		if Menu.Misc.Q:Value() and IsReady(_Q) then
 			args.Process = false
-		else
-			args.Process = true
+		end
+		return
+	end
+	if target and target.type == Obj_AI_Minion then
+		if (Mode == "LaneClear" or Mode == "Harass" or Mode == "LastHit") then
+			local QTotalDmg = self:GetQDmg(target) + self:GetPQDmg(target)
+			if IsReady(_Q) and target.health < QTotalDmg and target.maxHealth > 8 then
+				args.Process = false
+			end
 		end
 	end
-
-	-- if HaveBuff(myHero, "SmolderE") then
-		-- args.Process = false
-	-- else
-		-- args.Process = true
-	-- end
 end
 
 function Smolder:OnTick()
@@ -1227,7 +1220,7 @@ function Zeri:OnPreAttack(args)
 		end
 	end
 end
-
+local lastTickTime = 0
 function Zeri:OnTick()
 	self.QSpell.Delay = myHero.attackData.windUpTime
 	if myHero.range == 650 then
@@ -2274,7 +2267,7 @@ function Jinx:AutoE()
 
 				for j, slot in ipairs(slots) do
 					local Data = target:GetSpellData(slot)
-					if Data.name == "GuardianAngel" and Data.currentCd == 0 and target.health == 0 then --G A
+					if Data.name == "GuardianAngel" and Data.currentCd == 0 and not target.alive then --G A
 						Control.CastSpell(HK_E, target)
 					end
 				end
@@ -4673,7 +4666,7 @@ function Caitlyn:Auto()
 				end
 				for j, slot in ipairs(slots) do
 					local Data = target:GetSpellData(slot)
-					if Data.name == "GuardianAngel" and Data.currentCd == 0 and target.health == 0 then
+					if Data.name == "GuardianAngel" and Data.currentCd == 0 and not target.alive then
 						Control.CastSpell(HK_W, target)
 						lastWcc = GetTickCount()
 					end
@@ -5165,11 +5158,11 @@ function Yunara:GetWDmg(target)
 	local wName = myHero:GetSpellData(_W).name
 	if wlevel > 0 then
 		if wName == "YunaraW2" then
-			local WDmg = ({50, 200, 350})[rlevel] + 1.75 * myHero.totalDamage + 0.75 * myHero.ap
-			return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, WDmg)
+			local WDmg = ({175, 350, 525})[rlevel] + 1.50 * myHero.bonusDamage + 0.75 * myHero.ap
+			return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg)
 		else
-			local WDmg = ({5, 30, 55, 80, 105})[wlevel] + 0.85 * myHero.totalDamage + 0.5 * myHero.ap
-			return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, WDmg)
+			local WDmg = ({55, 95, 135, 170, 215})[wlevel] + 0.85 * myHero.bonusDamage + 0.5 * myHero.ap
+			return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg)
 		end
 	else
 		return 0
