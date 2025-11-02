@@ -1,4 +1,4 @@
-local Version = 2025.43
+local Version = 2025.44
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1220,7 +1220,7 @@ function Zeri:OnPreAttack(args)
 		end
 	end
 end
-local lastTickTime = 0
+
 function Zeri:OnTick()
 	self.QSpell.Delay = myHero.attackData.windUpTime
 	if myHero.range == 650 then
@@ -2259,6 +2259,7 @@ function Jinx:AutoE()
 				if
 					GetImmobileDuration(target) > 0.5 --cc
 					or IsInvulnerable(target) --zhonya
+					or HaveBuff(target, "LissandraRSelf")
 					or HaveBuff(target, "Meditate") --yi w
 					or HaveBuff(target, "ChronoRevive") --zilean r
 				then
@@ -4454,7 +4455,6 @@ function Caitlyn:__init()
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 15, Range = 800, Speed = MathHuge, Collision = false}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.15, Radius = 70, Range = 750, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.375, Radius = 40, Range = 3500, Speed = 3200, Collision = false}
-	self.LastAttackId = nil
 end
 
 function Caitlyn:LoadMenu()
@@ -4658,11 +4658,15 @@ function Caitlyn:Auto()
 				if
 					(not HaveBuff(target, "caitlynwsight") and GetImmobileDuration(target) > 0.5)
 					or IsInvulnerable(target)
+					or HaveBuff(target, "LissandraRSelf")
 					or HaveBuff(target, "Meditate")
 					or HaveBuff(target, "ChronoRevive")
 				then
-					Control.CastSpell(HK_W, target)
-					lastWcc = GetTickCount()
+					local isKillableByAA = Data:IsInAutoAttackRange(myHero, target) and (target.health + target.shieldAD) <= Damage:GetAutoAttackDamage(myHero, target)
+					if not isKillableByAA then
+						Control.CastSpell(HK_W, target)
+						lastWcc = GetTickCount()
+					end
 				end
 				for j, slot in ipairs(slots) do
 					local Data = target:GetSpellData(slot)
@@ -4681,13 +4685,16 @@ function Caitlyn:Auto()
 			lastParticleCheckTime = now
 			for i = GameParticleCount(), 1, -1 do
 				local par = GameParticle(i)
-				if
-					par and par.pos:DistanceTo(myHero.pos) <= self.WSpell.Range 
-					and ((par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) or par.name:lower():find("gatemarker_red")) -- TP or TF-R
-				then
-					Control.CastSpell(HK_W, par)
-					lastWtp = GetTickCount()
-					break
+				if par and par.pos:DistanceTo(myHero.pos) <= self.WSpell.Range then
+					if (
+						(par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) -- TP
+						or par.name:lower():find("gatemarker_red") -- TF-R
+						or (par.name:lower():find("viego") and par.name:lower():find("p_spiritshader_inworld")) -- viego passive
+					) then						
+						Control.CastSpell(HK_W, par)
+						lastWtp = GetTickCount()
+						break
+					end
 				end
 			end
 		end
@@ -4719,7 +4726,7 @@ end
 function Caitlyn:Combo()
 	if Menu.Combo.E:Value() and IsReady(_E) then
 		local target = GetTarget(self.ESpell.Range)
-		if IsValid(target) and target.pos2D.onScreen then
+		if IsValid(target) and target.pos2D.onScreen and myHero.pos:DistanceTo(target.pos) <= Menu.Combo.ERange:Value() then
 			if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
 				self:CastEQ(target)
 			else
@@ -4800,7 +4807,7 @@ end
 function Caitlyn:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
-			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
+			local minions = ObjectManager:GetEnemyMinions(800)
 			TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 			for i, minion in ipairs(minions) do
 				if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -4854,20 +4861,23 @@ function Caitlyn:CastGGPred(spell, unit)
 		local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 		WPrediction:GetPrediction(unit, myHero)
 		if WPrediction:CanHit(3) and lastW + 1500 < GetTickCount() then
+			local isKillableByAA = Data:IsInAutoAttackRange(myHero, unit) and (unit.health + unit.shieldAD) <= Damage:GetAutoAttackDamage(myHero, unit)
+			local finalCastPos = nil
 			if IsFacingMe(unit) then
 				if unit.range < 300 and myHero.pos:DistanceTo(unit.pos) < Data:GetAutoAttackRange(unit, myHero) + 100 then
-					Control.CastSpell(HK_W, myHero.pos)
-					lastW = GetTickCount()
+					finalCastPos = myHero.pos
 				else
-					Control.CastSpell(HK_W, WPrediction.CastPosition)
-					lastW = GetTickCount()
+					finalCastPos = WPrediction.CastPosition
 				end
 			else
 				local castPos = WPrediction.CastPosition + (unit.pos - myHero.pos):Normalized() * 100
 				if myHero.pos:DistanceTo(castPos) <= self.WSpell.Range then
-					Control.CastSpell(HK_W, castPos)
-					lastW = GetTickCount()
+					finalCastPos = castPos
 				end
+			end
+			if finalCastPos and not isKillableByAA and not self:IsTrapParticleNearby(finalCastPos, 200) then
+				Control.CastSpell(HK_W, finalCastPos)
+				lastW = GetTickCount()
 			end
 		end
 	elseif spell == HK_E then
@@ -4878,6 +4888,19 @@ function Caitlyn:CastGGPred(spell, unit)
 			lastE = GetTickCount()
 		end	
 	end
+end
+
+function Caitlyn:IsTrapParticleNearby(castPos, radius)
+	for i = GameParticleCount(), 1, -1 do
+		local par = GameParticle(i)
+		if par and par.pos:DistanceTo(castPos) < radius then
+			local pName = par.name:lower()
+			if pName:find("caitlyn") and (pName:find("trap_idle_ally") or pName:find("trap_idle_green")) then
+				return true
+			end
+		end
+	end
+	return false 
 end
 
 function Caitlyn:GetQDmg(target)
