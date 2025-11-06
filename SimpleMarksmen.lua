@@ -1,4 +1,4 @@
-local Version = 2025.44
+local Version = 2025.45
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -4610,6 +4610,7 @@ end
 local lastWcc = 0
 local lastWgap = 0
 local lastWtp = 0
+local lastWtfr = 0
 local lastParticleCheckTime = 0
 local particleCheckInterval = 1.0
 function Caitlyn:AntiGapcloser()
@@ -4679,22 +4680,23 @@ function Caitlyn:Auto()
 		end
 	end
 
-	if Menu.Misc.Wtp:Value() and IsReady(_W) and lastWtp + 8000 < GetTickCount() then
+	if Menu.Misc.Wtp:Value() and IsReady(_W) then
 		local now = GetTickCount() / 1000
 		if now - lastParticleCheckTime > particleCheckInterval then
 			lastParticleCheckTime = now
 			for i = GameParticleCount(), 1, -1 do
 				local par = GameParticle(i)
 				if par and par.pos:DistanceTo(myHero.pos) <= self.WSpell.Range then
-					if (
-						(par.name:lower():find("teledash_end") and par.name:lower():find("wardenemy")) -- TP
-						or par.name:lower():find("gatemarker_red") -- TF-R
-						or (par.name:lower():find("viego") and par.name:lower():find("p_spiritshader_inworld")) -- viego passive
-					) then						
+					local name = par.name:lower()
+					if name:find("teledash_end") and name:find("wardenemy") and lastWtp + 8000 < GetTickCount() then -- TP
 						Control.CastSpell(HK_W, par)
 						lastWtp = GetTickCount()
-						break
+					elseif name:find("gatemarker_red") and lastWtfr + 2000 < GetTickCount() then -- TF-R
+						Control.CastSpell(HK_W, par)
+						lastWtfr = GetTickCount()
 					end
+						-- (name:find("viego") and name:find("p_spiritshader_inworld_enemy")) -- viego passive
+						-- (name:find("yone") and name:find("e_invulnerable_buf")) -- yone E
 				end
 			end
 		end
