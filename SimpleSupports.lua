@@ -1,4 +1,4 @@
-local Version = 2025.21
+local Version = 2025.22
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -16,16 +16,15 @@ do
 
 	DownloadFileAsync(Files.Version.Url, Files.Version.Path .. Files.Version.Name, function()
 		local file = io.open(Files.Version.Path .. Files.Version.Name, "r")
-		if not file then
-			return
-		end
-		local NewVersion = tonumber(file:read("*a"))
-		file:close()
-		if NewVersion and NewVersion > Version then
-			print("SimpleSupports: Found update! Downloading...")
-			DownloadFileAsync(Files.Lua.Url, Files.Lua.Path .. Files.Lua.Name, function()
-				print("SimpleSupports: Successfully updated. Press 2x F6!")
-			end)
+		if file then
+			local NewVersion = tonumber(file:read("*a"))
+			file:close()
+			if NewVersion and NewVersion > Version then
+				print("SimpleSupports: Found update! Downloading...")
+				DownloadFileAsync(Files.Lua.Url, Files.Lua.Path .. Files.Lua.Name, function()
+					print("SimpleSupports: Successfully updated. Press 2x F6!")
+				end)
+			end
 		end
 	end)
 end
@@ -68,34 +67,7 @@ local lastR = 0
 
 local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data
 
-Callback.Add("Load", function()
-	if _G.SDK then
-		Orbwalker = _G.SDK.Orbwalker
-		TargetSelector = _G.SDK.TargetSelector
-		ObjectManager = _G.SDK.ObjectManager
-		HealthPrediction = _G.SDK.HealthPrediction
-		Attack = _G.SDK.Attack
-		Damage = _G.SDK.Damage
-		Spell = _G.SDK.Spell
-		Data = _G.SDK.Data
-	else
-		print('GGOrbwalker is not enabled,  SimpleSupports will exit')
-		return
-	end
-
-	if table.contains(Heroes, myHero.charName) then
-		_G[myHero.charName]()
-	end
-
-	Orbwalker:OnPreAttack(function(args)
-		if args.Process and Menu.SupportMode:Value() and Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
-			if args.Target.type ~= Obj_AI_Hero then
-				args.Process = false
-				return
-			end
-		end
-	end)
-end)
+local Menu = nil
 
 local function IsReady(spell)
 	return myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 
@@ -405,20 +377,13 @@ end
 
 --------------------------------------
 
-local championIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"
-Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName, leftIcon = championIcon})
-	Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
-	Menu:MenuElement({id = "SupportMode", name = "Support Mode (Disable Harass Lasthit)",value = true})
-
---------------------------------------
-
 class "Lux"
 
 function Lux:__init()
 	print("Support Lux Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1300, Speed = 1200, Collision = true, MaxCollision = 1, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.WSpell = { Range = 1200 }
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 310, Range = 1250, Speed = 1200, Collision = false}
@@ -454,7 +419,7 @@ function Lux:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
 end
 
-function Lux:OnTick()
+function Lux:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -685,7 +650,7 @@ function Zyra:__init()
 	print("Support Zyra Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 100, Range = 800, Speed = MathHuge, Collision = false}
 	self.WSpell = {Range = 850}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1100, Speed = 1150, Collision = false}
@@ -721,7 +686,7 @@ function Zyra:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
 end
 
-function Zyra:OnTick()
+function Zyra:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -940,7 +905,7 @@ function Brand:__init()
 	print("Support Brand Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1100, Speed = 1600, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.877, Radius = 260, Range = 1030, Speed = MathHuge, Collision = false}
@@ -979,7 +944,7 @@ function Brand:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
 end
 
-function Brand:OnTick()
+function Brand:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -1170,7 +1135,7 @@ function Velkoz:__init()
 	print("Support Velkoz Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 50, Range = 1100, Speed = 1300, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_ENEMYHERO}}
 	self.QSplit = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 45, Range = 1000, Speed = 2100, Collision = true, MaxCollision = 0, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.QDummy = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 45, Range = MathSqrt(self.QSpell.Range^2 + self.QSplit.Range^2), Speed = 1200, Collision = false}
@@ -1206,7 +1171,7 @@ function Velkoz:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
 end
 
-function Velkoz:OnTick()
+function Velkoz:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -1507,7 +1472,7 @@ function Ziggs:__init()
 	print("Support Ziggs Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	self.Q1Spell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 180, Range = 850, Speed = 1700, Collision = false}
 	self.Q2Spell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 180, Range = 1400, Speed = 1700, Collision = false}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 400, Range = 1200, Speed = 1750, Collision = false}
@@ -1545,7 +1510,7 @@ function Ziggs:LoadMenu()
 	Menu.Draw:MenuElement({id = "Rmini", name = "Draw [R] Range in minimap", toggle = true, value = false})
 end
 
-function Ziggs:OnTick()
+function Ziggs:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -1800,7 +1765,7 @@ function Swain:__init()
 	print("Support Swain Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_CONE, Delay = 0.25, Angle = 32, Range = 725, Speed = MathHuge, Collision = false}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 325, Range = 5500, Speed = MathHuge, Collision = false}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 85, Range = 950, Speed = MathHuge, Collision = false}
@@ -1828,7 +1793,7 @@ function Swain:LoadMenu()
 	Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
 end
 
-function Swain:OnTick()
+function Swain:Tick()
 	self.WSpell.Range = 5000 + 500*myHero:GetSpellData(_W).level
 	if ShouldWait() then
 		return
@@ -1978,7 +1943,7 @@ function Seraphine:__init()
 	print("Support Seraphine Loaded")
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 350, Range = 900, Speed = 1200, Collision = false}
 	self.WSpell = {Range = 800}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1300, Speed = 1200, Collision = false}
@@ -2008,7 +1973,7 @@ function Seraphine:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw [R] Range", toggle = true, value = false})
 end
 
-function Seraphine:OnTick()
+function Seraphine:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -2186,7 +2151,7 @@ function Neeko:__init()
 	print("Support Neeko Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 250, Range = 900, Speed = 2000, Collision = false}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1000, Speed = 1300, Collision = false}
 end
@@ -2209,7 +2174,7 @@ function Neeko:LoadMenu()
 	Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
 end
 
-function Neeko:OnTick()
+function Neeko:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -2325,7 +2290,7 @@ function Soraka:__init()
 	print("Support Soraka Loaded")
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 230, Range = 915, Speed = 1750, Collision = false}
 	self.WSpell = {Range = 550}
@@ -2366,7 +2331,7 @@ function Soraka:LoadMenu()
 	Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
 end
 
-function Soraka:OnTick()
+function Soraka:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -2517,3 +2482,39 @@ function Soraka:Draw()
 		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 end
+
+------------------------------------------
+
+Callback.Add("Load", function()
+	if _G.SDK then
+		Orbwalker = _G.SDK.Orbwalker
+		TargetSelector = _G.SDK.TargetSelector
+		ObjectManager = _G.SDK.ObjectManager
+		HealthPrediction = _G.SDK.HealthPrediction
+		Attack = _G.SDK.Attack
+		Damage = _G.SDK.Damage
+		Spell = _G.SDK.Spell
+		Data = _G.SDK.Data
+	else
+		print('GGOrbwalker is not enabled,  SimpleSupports will exit')
+		return
+	end
+	
+	local championIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"
+	Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName, leftIcon = championIcon})
+		Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
+		Menu:MenuElement({id = "SupportMode", name = "Support Mode (Disable Harass Lasthit)",value = true})
+
+	if table.contains(Heroes, myHero.charName) then
+		_G[myHero.charName]()
+	end
+
+	Orbwalker:OnPreAttack(function(args)
+		if args.Process and Menu.SupportMode:Value() and Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
+			if args.Target.type ~= Obj_AI_Hero then
+				args.Process = false
+				return
+			end
+		end
+	end)
+end)

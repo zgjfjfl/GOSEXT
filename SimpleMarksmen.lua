@@ -1,4 +1,4 @@
-local Version = 2025.45
+local Version = 2025.46
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -16,16 +16,15 @@ do
 
 	DownloadFileAsync(Files.Version.Url, Files.Version.Path .. Files.Version.Name, function()
 		local file = io.open(Files.Version.Path .. Files.Version.Name, "r")
-		if not file then
-			return
-		end
-		local NewVersion = tonumber(file:read("*a"))
-		file:close()
-		if NewVersion and NewVersion > Version then
-			print("SimpleMarksmen: Found update! Downloading...")
-			DownloadFileAsync(Files.Lua.Url, Files.Lua.Path .. Files.Lua.Name, function()
-				print("SimpleMarksmen: Successfully updated. Press 2x F6!")
-			end)
+		if file then
+			local NewVersion = tonumber(file:read("*a"))
+			file:close()
+			if NewVersion and NewVersion > Version then
+				print("SimpleMarksmen: Found update! Downloading...")
+				DownloadFileAsync(Files.Lua.Url, Files.Lua.Path .. Files.Lua.Name, function()
+					print("SimpleMarksmen: Successfully updated. Press 2x F6!")
+				end)
+			end
 		end
 	end)
 end
@@ -82,25 +81,7 @@ local lastR = 0
 
 local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data
 
-Callback.Add("Load", function()
-	if _G.SDK then
-		Orbwalker = _G.SDK.Orbwalker
-		TargetSelector = _G.SDK.TargetSelector
-		ObjectManager = _G.SDK.ObjectManager
-		HealthPrediction = _G.SDK.HealthPrediction
-		Attack = _G.SDK.Attack
-		Damage = _G.SDK.Damage
-		Spell = _G.SDK.Spell
-		Data = _G.SDK.Data
-	else
-		print('GGOrbwalker is not enabled,  SimpleMarksmen will exit')
-		return
-	end
-
-	if table.contains(Heroes, myHero.charName) then
-		_G[myHero.charName]()
-	end
-end)
+local Menu = nil
 
 local function IsReady(spell)
 	return myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 and myHero:GetSpellData(spell).mana <= myHero.mana and GameCanUseSpell(spell) == 0
@@ -448,12 +429,6 @@ end
 
 ---------------------------------
 
-local championIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"
-Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName, leftIcon = championIcon})
-	Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
-
----------------------------------
-
 class "Nilah"
 
 function Nilah:__init()		 
@@ -461,7 +436,7 @@ function Nilah:__init()
 	self:LoadMenu()
 
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 75, Range = 600, Speed = MathHuge, Collision = false}
 	self.ESpell = { Range = 550 }
@@ -516,7 +491,7 @@ function Nilah:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 end
 
-function Nilah:OnTick()
+function Nilah:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -592,7 +567,7 @@ end
 function Nilah:AutoW()
 	if Menu.Auto.W:Value() and IsReady(_W) then
 		for i, hero in pairs(ObjectManager:GetEnemyHeroes()) do
-			if hero.alive and hero.visible then
+			if IsValid(hero) and hero.activeSpell.isAutoAttack then
 				if hero.activeSpell.target == myHero.handle and myHero.health/myHero.maxHealth <= Menu.Auto.WHP:Value()/100 then
 					Control.CastSpell(HK_W)
 				end
@@ -788,7 +763,7 @@ function Smolder:__init()
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	-- Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
 	self.QSpell = { Delay = 0.25, Range = 550, Speed = 1800}
@@ -867,17 +842,16 @@ function Smolder:OnPreAttack(args)
 	end
 end
 
-function Smolder:OnTick()
+function Smolder:Tick()
 	self.QSpell.Range = myHero.range + myHero.boundingRadius * 2
 	if ShouldWait() then
 		return
 	end
-
+	
+	if IsCasting() then return end
 	if Menu.Misc.Rsm:Value() and IsReady(_R) then
 		self:OneKeyCastR()
 	end
-	
-	if IsCasting() then return end
 	
 	if Menu.Misc.E:Value() and HaveBuff(myHero, "SmolderE") then return end
 
@@ -1137,7 +1111,7 @@ function Zeri:__init()
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.237, Radius = 40, Range = 750, Speed = 2600, Collision = false}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 40, Range = 1150, Speed = 2500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
@@ -1221,7 +1195,7 @@ function Zeri:OnPreAttack(args)
 	end
 end
 
-function Zeri:OnTick()
+function Zeri:Tick()
 	self.QSpell.Delay = myHero.attackData.windUpTime
 	if myHero.range == 650 then
 		self.QSpell.Range = 900 + Menu.Misc.QRange:Value()
@@ -1558,7 +1532,7 @@ function Lucian:__init()
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 65, Range = 500, Speed = MathHuge, Collision = false}
 	self.Q2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 65, Range = 1100, Speed = MathHuge, Collision = false}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 55, Range = 1000, Speed = 1600, Collision = false}
@@ -1617,7 +1591,7 @@ function Lucian:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
 end
 
-function Lucian:OnTick()
+function Lucian:Tick()
 	self.QSpell.Delay = 0.4 - 0.15 / 17 * (myHero.levelData.lvl - 1)
 	self.Q2Spell.Delay = self.QSpell.Delay
 	if self:CastingR() then
@@ -1975,7 +1949,7 @@ function Jinx:__init()
 	self:LoadMenu()
 
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = { Range = 525 }
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 60, Range = 1450, Speed = 3300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
@@ -2073,8 +2047,7 @@ function Jinx:OnPreAttack(args)
 	end
 end
 
-function Jinx:OnTick()
-
+function Jinx:Tick()
 	self.WSpell.Delay = MathMax(MathFloor((0.6 - 0.02 * ((myHero.attackSpeed - 1)/0.25)) * 100) / 100, 0.4)
 	
 	if ShouldWait() then
@@ -2390,7 +2363,7 @@ function Tristana:__init()
 	self:LoadMenu()
 
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	Orbwalker:OnPostAttack(function() self:OnPostAttack() end)
 end
@@ -2487,7 +2460,7 @@ function Tristana:OnPostAttack()
 	end
 end
 
-function Tristana:OnTick()
+function Tristana:Tick()
 
 	AAERRange = 550 + (150 / 17 * (myHero.levelData.lvl - 1)) + myHero.boundingRadius
 	--E.Delay = myHero.attackData.windUpTime
@@ -2631,7 +2604,7 @@ function MissFortune:__init()
 	print("Marksmen MissFortune Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	-- Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
 	self.QSpell = {Delay = 0.25, Range = 550, Speed = 1400}
@@ -2685,7 +2658,7 @@ function MissFortune:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
 end
 
-function MissFortune:OnTick()
+function MissFortune:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -3003,7 +2976,7 @@ function Jayce:__init()
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Callback.Add("WndMsg", function(...) self:OnWndMsg(...) end)
 	-- Spell:OnSpellCast(function(...) self:OnSpellCast(...) end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
@@ -3141,7 +3114,7 @@ function Jayce:OnPreAttack(args)
 end
 
 local Etick = 0
-function Jayce:OnTick()
+function Jayce:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -3556,7 +3529,7 @@ function Kalista:__init()
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 40, Range = 1150, Speed = 2400, Collision = false}
 	self.ESpell = {Range = 1000}
 	self.RSpell = {Range = 1150}
@@ -3603,7 +3576,7 @@ function Kalista:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
 end
 
-function Kalista:OnTick()
+function Kalista:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -3937,7 +3910,7 @@ function Ashe:__init()
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPostAttack(function() self:OnPostAttack() end)
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 20, Range = 1200, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 130, Range = 12500, Speed = 1600, Collision = false}
@@ -4003,12 +3976,12 @@ function Ashe:OnPostAttack()
 	end
 end
 
-function Ashe:OnTick()
+function Ashe:Tick()
 	if ShouldWait() then
 		return
 	end
-	self:SemiManualR()
 	if IsCasting() then return end
+	self:SemiManualR()
 	self:KillSteal()
 	local Mode = GetMode()
 	if Mode == "Combo" then
@@ -4164,7 +4137,7 @@ function Corki:__init()
 	self:LoadMenu()
 
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 275, Range = 950, Speed = 1100, Collision = false}
 	self.ESpell = {Range = 690}
@@ -4228,7 +4201,7 @@ function Corki:OnPreAttack(args)
 	end
 end
 
-function Corki:OnTick()
+function Corki:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -4448,7 +4421,7 @@ function Caitlyn:__init()
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.625, Radius = 60, Range = 1250, Speed = 2200, Collision = false}
@@ -4512,7 +4485,7 @@ function Caitlyn:LoadMenu()
 	Menu.Draw:MenuElement({id = "Rmin", name = "Draw R Range on minimap", toggle = true, value = false})
 end
 
-function Caitlyn:OnTick()
+function Caitlyn:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -4961,7 +4934,7 @@ function Yunara:__init()
 	self:LoadMenu()
 	
 	Callback.Add("Draw", function() self:Draw() end)
-	Callback.Add("Tick", function() self:OnTick() end)
+	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPostAttack(function() self:OnPostAttack() end)
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.45, Radius = 60, Range = 1150, Speed = 2150, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.W2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 90, Range = 1150, Speed = MathHuge, Collision = false}
@@ -5028,7 +5001,7 @@ function Yunara:OnPostAttack()
 	end
 end
 
-function Yunara:OnTick()
+function Yunara:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -5217,3 +5190,28 @@ function Yunara:Draw()
 		Draw.Circle(myHero.pos, 1150, 1, Draw.Color(255, 66, 229, 244))
 	end
 end
+
+
+Callback.Add("Load", function()
+	if _G.SDK then
+		Orbwalker = _G.SDK.Orbwalker
+		TargetSelector = _G.SDK.TargetSelector
+		ObjectManager = _G.SDK.ObjectManager
+		HealthPrediction = _G.SDK.HealthPrediction
+		Attack = _G.SDK.Attack
+		Damage = _G.SDK.Damage
+		Spell = _G.SDK.Spell
+		Data = _G.SDK.Data
+	else
+		print('GGOrbwalker is not enabled,  SimpleMarksmen will exit')
+		return
+	end
+
+	local championIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"
+	Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName, leftIcon = championIcon})
+		Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
+
+	if table.contains(Heroes, myHero.charName) then
+		_G[myHero.charName]()
+	end
+end)
