@@ -1,4 +1,4 @@
-local Version = 2025.46
+local Version = 2025.47
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -429,9 +429,9 @@ end
 
 ---------------------------------
 
-class "Nilah"
+class "zgNilah"
 
-function Nilah:__init()		 
+function zgNilah:__init()		 
 	print("Marksmen Nilah Loaded")
 	self:LoadMenu()
 
@@ -443,7 +443,7 @@ function Nilah:__init()
 	self.RSpell = { Range = 450 }
 end
 
-function Nilah:LoadMenu()
+function zgNilah:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -491,7 +491,7 @@ function Nilah:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
 end
 
-function Nilah:Tick()
+function zgNilah:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -517,14 +517,14 @@ function Nilah:Tick()
 	end	
 end
 
-function Nilah:OnPreAttack(args)
+function zgNilah:OnPreAttack(args)
 	local Mode = GetMode()
 	if (Mode == "Combo" or Mode == "Harass") and IsReady(_Q) then
 		args.Process = false
 	end
 end
 
-function Nilah:Combo()
+function zgNilah:Combo()
 	local target = GetTarget(self.QSpell.Range)
 	if IsValid(target) then
 		if Menu.Combo.Q:Value() and IsReady(_Q) then
@@ -548,7 +548,7 @@ function Nilah:Combo()
 	end
 end
 
-function Nilah:Harass()
+function zgNilah:Harass()
 	local target = GetTarget(self.QSpell.Range)
 	if IsValid(target) then	
 		if Menu.Harass.Q:Value() and IsReady(_Q) --[[and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value() / 100 ]]then
@@ -557,14 +557,14 @@ function Nilah:Harass()
 	end
 end
 
-function Nilah:FarmHarass()
+function zgNilah:FarmHarass()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.SpellHarass:Value() then
 		self:Harass()
 	end
 end
 
-function Nilah:AutoW()
+function zgNilah:AutoW()
 	if Menu.Auto.W:Value() and IsReady(_W) then
 		for i, hero in pairs(ObjectManager:GetEnemyHeroes()) do
 			if IsValid(hero) and hero.activeSpell.isAutoAttack then
@@ -576,7 +576,7 @@ function Nilah:AutoW()
 	end
 end
 
-function Nilah:LaneClear()
+function zgNilah:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
@@ -594,7 +594,7 @@ function Nilah:LaneClear()
 	end
 end
 
-function Nilah:JungleClear()
+function zgNilah:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
@@ -608,7 +608,7 @@ function Nilah:JungleClear()
 	end
 end
 
-function Nilah:LastHit()
+function zgNilah:LastHit()
 	if Menu.LastHit.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		for i, minion in ipairs(minions) do
@@ -623,7 +623,7 @@ function Nilah:LastHit()
 	end
 end
 
-function Nilah:QBuildings()
+function zgNilah:QBuildings()
 	if Menu.Clear.QT:Value() and IsReady(_Q) then
 		local turrets = ObjectManager:GetEnemyTurrets(self.QSpell.Range)
 		for i, turret in ipairs(turrets) do
@@ -646,7 +646,7 @@ function Nilah:QBuildings()
 	end
 end
 	
-function Nilah:KillSteal()
+function zgNilah:KillSteal()
 	local target = GetTarget(self.QSpell.Range)
 	if IsValid(target) then
 		local QDmg = self:GetQDmg(target)
@@ -664,7 +664,7 @@ function Nilah:KillSteal()
 	end
 end
 
-function Nilah:GetQDmg(target)
+function zgNilah:GetQDmg(target)
 	local qlvl = myHero:GetSpellData(_Q).level
 	local qbaseDmg = 5 * qlvl
 	local qadDmg = myHero.totalDamage * (0.05 *qlvl + 0.85 )
@@ -672,7 +672,7 @@ function Nilah:GetQDmg(target)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg)
 end
 
-function Nilah:GetEDmg(target)
+function zgNilah:GetEDmg(target)
 	local elvl = myHero:GetSpellData(_E).level
 	local ebaseDmg = 50 + elvl * 10
 	local eadDmg = myHero.bonusDamage * 0.2
@@ -680,7 +680,7 @@ function Nilah:GetEDmg(target)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, eDmg)
 end
 
-function Nilah:GetFleeETarget()
+function zgNilah:GetFleeETarget()
 	local bestTarget = nil
 	local potentialTargets = {}
 	for _, hero in ipairs(ObjectManager:GetHeroes()) do
@@ -704,7 +704,7 @@ function Nilah:GetFleeETarget()
 	return bestTarget
 end
 
-function Nilah:Flee()
+function zgNilah:Flee()
 	if Menu.Flee.E:Value() and IsReady(_E) and lastE + 1000 < GetTickCount() then
 		local FleeETarget = self:GetFleeETarget()
 		if IsValid(FleeETarget) and FleeETarget.distance <= self.ESpell.Range then
@@ -714,7 +714,7 @@ function Nilah:Flee()
 	end
 end
 
-function Nilah:CastGGPred(spell, target)
+function zgNilah:CastGGPred(spell, target)
 	if spell == HK_Q then
 		local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 		QPrediction:GetPrediction(target, myHero)
@@ -724,7 +724,7 @@ function Nilah:CastGGPred(spell, target)
 	end
 end
 
-function Nilah:Draw()
+function zgNilah:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -756,9 +756,9 @@ end
 
 --------------------------------------
 
-class "Smolder"
+class "zgSmolder"
 
-function Smolder:__init()
+function zgSmolder:__init()
 	print("Marksmen Smolder Loaded") 
 	self:LoadMenu()
 	
@@ -771,7 +771,7 @@ function Smolder:__init()
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 300, Range = 3650, Speed = 1700, Collision = false}
 end
 
-function Smolder:LoadMenu()
+function zgSmolder:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -819,7 +819,7 @@ function Smolder:LoadMenu()
 	Menu.Draw:MenuElement({id = "Rmin", name = "Draw R Range on minimap", toggle = true, value = false})
 end
 
-function Smolder:OnPreAttack(args)
+function zgSmolder:OnPreAttack(args)
 	local target = args.Target
 	local Mode = GetMode()
 	if HaveBuff(myHero, "SmolderE") then
@@ -842,7 +842,7 @@ function Smolder:OnPreAttack(args)
 	end
 end
 
-function Smolder:Tick()
+function zgSmolder:Tick()
 	self.QSpell.Range = myHero.range + myHero.boundingRadius * 2
 	if ShouldWait() then
 		return
@@ -875,7 +875,7 @@ function Smolder:Tick()
 	end
 end
 
---[[function Smolder:OnPostAttack()
+--[[function zgSmolder:OnPostAttack()
 	if GetMode() == "Combo" then
 		local target = Orbwalker:GetTarget()
 		if IsValid(target) and target.type == Obj_AI_Hero then
@@ -896,20 +896,20 @@ end
 	end
 end]]
 
-function Smolder:Flee()
+function zgSmolder:Flee()
 	if Menu.Flee.E:Value() and IsReady(_E) then
 		Control.CastSpell(HK_E)
 	end
 end
 
-function Smolder:OneKeyCastR()
+function zgSmolder:OneKeyCastR()
 	local Rtarget = GetTarget(Menu.Combo.RRange:Value())
 	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 		self:CastGGPred(HK_R, Rtarget)
 	end
 end
 
-function Smolder:Auto()	
+function zgSmolder:Auto()	
 	if Menu.Misc.Wcc:Value() and IsReady(_W) then
 		local enemies = ObjectManager:GetEnemyHeroes(self.WSpell.Range)
 		for i, target in ipairs(enemies) do
@@ -920,7 +920,7 @@ function Smolder:Auto()
 	end
 end
 
-function Smolder:Combo()
+function zgSmolder:Combo()
 	local Wtarget = GetTarget(self.WSpell.Range)
 	if IsValid(Wtarget) and Wtarget.pos2D.onScreen then
 		if Menu.Combo.W:Value() and IsReady(_W) then
@@ -950,7 +950,7 @@ function Smolder:Combo()
 	end
 end
 
-function Smolder:Harass()
+function zgSmolder:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		local Wtarget = GetTarget(self.WSpell.Range)
 		if IsValid(Wtarget) and Wtarget.pos2D.onScreen then
@@ -969,13 +969,13 @@ function Smolder:Harass()
 	-- end
 end
 
-function Smolder:FarmHarass()
+function zgSmolder:FarmHarass()
 	if Menu.Clear.SpellHarass:Value() then
 		self:Harass()
 	end
 end
 
-function Smolder:GetQDmg(target)
+function zgSmolder:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	if level > 0 then
 		local QDmg = (({65, 80, 95, 110, 125})[level] + 1.3 * myHero.bonusDamage) * (1 + 0.75 * myHero.critChance)
@@ -985,7 +985,7 @@ function Smolder:GetQDmg(target)
 	end
 end
 
-function Smolder:GetPQDmg(target)
+function zgSmolder:GetPQDmg(target)
 	local buff, buffData = GetBuffData(myHero, "SmolderQPassive")
 	if buff then
 		local Dmg = (0.4 * (1 + 0.75 * myHero.critChance)) * buffData.stacks
@@ -995,7 +995,7 @@ function Smolder:GetPQDmg(target)
 	end
 end
 
-function Smolder:LastHit()
+function zgSmolder:LastHit()
 	if Menu.LastHit.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		for i, minion in ipairs(minions) do
@@ -1010,7 +1010,7 @@ function Smolder:LastHit()
 	end
 end
 
-function Smolder:LaneClear()
+function zgSmolder:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
@@ -1028,7 +1028,7 @@ function Smolder:LaneClear()
 	end
 end
 
-function Smolder:JungleClear()
+function zgSmolder:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
 			local minions = ObjectManager:GetEnemyMinions(self.WSpell.Range)
@@ -1051,7 +1051,7 @@ function Smolder:JungleClear()
 	end
 end
 
-function Smolder:CastGGPred(spell, target)
+function zgSmolder:CastGGPred(spell, target)
 	if spell == HK_W then
 		local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 		WPrediction:GetPrediction(target, myHero)
@@ -1068,7 +1068,7 @@ function Smolder:CastGGPred(spell, target)
 	end
 end
 
-function Smolder:Draw()
+function zgSmolder:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -1103,9 +1103,9 @@ end
 
 -----------------------------------------
 
-class "Zeri"
+class "zgZeri"
 
-function Zeri:__init()
+function zgZeri:__init()
 	require "MapPositionGOS"
 	print("Marksmen Zeri Loaded") 
 	self:LoadMenu()
@@ -1120,7 +1120,7 @@ function Zeri:__init()
 	self.RSpell = { Delay = 0.25, Range = 825 }
 end
 
-function Zeri:LoadMenu()
+function zgZeri:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -1164,7 +1164,7 @@ function Zeri:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
 end
 
-function Zeri:OnPreAttack(args)
+function zgZeri:OnPreAttack(args)
 	local Mode = GetMode()
 	local target = args.Target 
 	if Mode == "Combo" then
@@ -1195,7 +1195,7 @@ function Zeri:OnPreAttack(args)
 	end
 end
 
-function Zeri:Tick()
+function zgZeri:Tick()
 	self.QSpell.Delay = myHero.attackData.windUpTime
 	if myHero.range == 650 then
 		self.QSpell.Range = 900 + Menu.Misc.QRange:Value()
@@ -1236,7 +1236,7 @@ function Zeri:Tick()
 	end
 end
 
-function Zeri:AntiGapcloser()
+function zgZeri:AntiGapcloser()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(1500)
 		for i, target in ipairs(enemies) do
@@ -1252,7 +1252,7 @@ function Zeri:AntiGapcloser()
 	end
 end
 
-function Zeri:QBarrel()
+function zgZeri:QBarrel()
 	if not Menu.Misc.QBarrel:Value() or not IsReady(_Q) then
 		return
 	end
@@ -1299,7 +1299,7 @@ function Zeri:QBarrel()
 	end
 end
 
-function Zeri:Combo()
+function zgZeri:Combo()
 	local Etarget = GetTarget(self.ESpell.Range + self.QSpell.Range - 50)
 	if IsValid(Etarget) and Etarget.pos2D.onScreen then
 		if Menu.Combo.E:Value() and IsReady(_E) then
@@ -1344,7 +1344,7 @@ function Zeri:Combo()
 	end
 end
 
-function Zeri:CastW(target)
+function zgZeri:CastW(target)
 	local pred = GGPrediction:SpellPrediction(self.W2Spell)
 	pred:GetPrediction(target, myHero)
 	if not pred:CanHit(Menu.Misc.WhitChance:Value() + 1) then return end
@@ -1367,7 +1367,7 @@ function Zeri:CastW(target)
 	end
 end
 
-function Zeri:Harass()
+function zgZeri:Harass()
 	local Qtarget = GetTarget(self.QSpell.Range)
 	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
 		if Menu.Harass.Q:Value() and IsReady(_Q) then
@@ -1380,14 +1380,14 @@ function Zeri:Harass()
 	end
 end
 
-function Zeri:FarmHarass()
+function zgZeri:FarmHarass()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.QHarass:Value() then
 		self:Harass()
 	end
 end
 
-function Zeri:GetQDmg(target)
+function zgZeri:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	local baseDmg = {15, 17, 19, 21, 23}
 	local bonusDmg = {1.04, 1.08, 1.12, 1.16, 1.2}
@@ -1395,7 +1395,7 @@ function Zeri:GetQDmg(target)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 
-function Zeri:LastHit()
+function zgZeri:LastHit()
 	if Menu.LastHit.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(750)
 		for i, minion in ipairs(minions) do
@@ -1411,7 +1411,7 @@ function Zeri:LastHit()
 	end
 end
 
-function Zeri:LaneClear()
+function zgZeri:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(750)
@@ -1424,7 +1424,7 @@ function Zeri:LaneClear()
 	end
 end
 
-function Zeri:JungleClear()
+function zgZeri:JungleClear()
 	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(750)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
@@ -1436,7 +1436,7 @@ function Zeri:JungleClear()
 	end
 end
 
-function Zeri:QObject()
+function zgZeri:QObject()
 	if not IsReady(_Q) then return end
 
 	local QRange = 750
@@ -1489,7 +1489,7 @@ function Zeri:QObject()
 	end
 end
 
-function Zeri:Draw()
+function zgZeri:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.ComboAA:Value() then
@@ -1524,9 +1524,9 @@ end
 
 -----------------------------------------
 
-class "Lucian"
+class "zgLucian"
 
-function Lucian:__init()
+function zgLucian:__init()
 	require "MapPositionGOS"
 	print("Marksmen Lucian Loaded") 
 	self:LoadMenu()
@@ -1540,7 +1540,7 @@ function Lucian:__init()
 	self.RSpell = { Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 110, Range = 1200, Speed = 2800, Collision = false }
 end
 
-function Lucian:LoadMenu()
+function zgLucian:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -1591,7 +1591,7 @@ function Lucian:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
 end
 
-function Lucian:Tick()
+function zgLucian:Tick()
 	self.QSpell.Delay = 0.4 - 0.15 / 17 * (myHero.levelData.lvl - 1)
 	self.Q2Spell.Delay = self.QSpell.Delay
 	if self:CastingR() then
@@ -1617,21 +1617,21 @@ function Lucian:Tick()
 	end
 end
 
-function Lucian:CastingR()
+function zgLucian:CastingR()
 	return HaveBuff(myHero, "LucianR")
 end
-function Lucian:Dashing()
+function zgLucian:Dashing()
 	return myHero.pathing.isDashing and myHero.pathing.dashSpeed > 0
 end
-function Lucian:HavePassive()
+function zgLucian:HavePassive()
 	return HaveBuff(myHero, "LucianPassiveBuff")
 end
-function Lucian:EToSideHoldDis()
+function zgLucian:EToSideHoldDis()
 	local Edis = Menu.Combo.Edis:Value()
 	return myHero.range == 650 and Edis + 150 or Edis
 end
 
-function Lucian:Combo()
+function zgLucian:Combo()
 	local target = GetTarget(self.Q2Spell.Range)
 	if IsValid(target) then
 		local eCastSuccess = false
@@ -1701,12 +1701,12 @@ function Lucian:Combo()
 	end	
 end
 
-function Lucian:CastERange(target)
+function zgLucian:CastERange(target)
 	local range = myHero.pos:DistanceTo(target.pos) < self:EToSideHoldDis() and 200 or 425
 	return range
 end
 
-function Lucian:CastE(target, mode, range)
+function zgLucian:CastE(target, mode, range)
 	local castPos = nil
 	if mode == 1 then
 		--local targetPred = target:GetPrediction(MathHuge, 0.25)
@@ -1740,7 +1740,7 @@ function Lucian:CastE(target, mode, range)
 	return false
 end
 
-function Lucian:CastW(target)
+function zgLucian:CastW(target)
 	local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 	WPrediction:GetPrediction(target, myHero)
 	if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
@@ -1751,7 +1751,7 @@ function Lucian:CastW(target)
 	end
 end
 
-function Lucian:CastQExt(target)
+function zgLucian:CastQExt(target)
 	local pred = GGPrediction:SpellPrediction(self.Q2Spell)
 	pred:GetPrediction(target, myHero)
 	if pred:CanHit(Menu.Misc.QhitChance:Value() + 1) then
@@ -1785,7 +1785,7 @@ function Lucian:CastQExt(target)
 	end
 end
 
-function Lucian:Harass()
+function zgLucian:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		local target = GetTarget(self.Q2Spell.Range)
 		if IsValid(target) then
@@ -1803,14 +1803,14 @@ function Lucian:Harass()
 	-- end
 end
 
-function Lucian:FarmHarass()
+function zgLucian:FarmHarass()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.SpellHarass:Value() then
 		self:Harass()
 	end
 end
 
-function Lucian:LaneClear()
+function zgLucian:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(self.Q2Spell.Range)
@@ -1847,7 +1847,7 @@ function Lucian:LaneClear()
 	end
 end
 
-function Lucian:JungleClear()
+function zgLucian:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(self.WSpell.Range)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
@@ -1890,7 +1890,7 @@ function Lucian:JungleClear()
 	end
 end
 
-function Lucian:AntiGapcloser()
+function zgLucian:AntiGapcloser()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(1500)
 		for i, target in ipairs(enemies) do
@@ -1907,7 +1907,7 @@ function Lucian:AntiGapcloser()
 	end
 end
 
-function Lucian:Draw()
+function zgLucian:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -1942,9 +1942,9 @@ end
 
 -----------------------------------------
 
-class "Jinx"
+class "zgJinx"
 
-function Jinx:__init()
+function zgJinx:__init()
 	print("Marksmen Jinx Loaded") 
 	self:LoadMenu()
 
@@ -1957,7 +1957,7 @@ function Jinx:__init()
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 140, Range = 25000, Speed = 1700, Collision = false}
 end
 
-function Jinx:LoadMenu()
+function zgJinx:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -2003,7 +2003,7 @@ function Jinx:LoadMenu()
 	Menu.Draw:MenuElement({id = "E", name = "Draw E Range", toggle = true, value = false})
 end
 
-function Jinx:OnPreAttack(args)
+function zgJinx:OnPreAttack(args)
 	local target = args.Target
 	if IsValid(target) then
 		if GetMode() == "LaneClear" and IsReady(_Q) and not IsCasting() then
@@ -2047,7 +2047,7 @@ function Jinx:OnPreAttack(args)
 	end
 end
 
-function Jinx:Tick()
+function zgJinx:Tick()
 	self.WSpell.Delay = MathMax(MathFloor((0.6 - 0.02 * ((myHero.attackSpeed - 1)/0.25)) * 100) / 100, 0.4)
 	
 	if ShouldWait() then
@@ -2072,7 +2072,7 @@ function Jinx:Tick()
 	end
 end
 
-function Jinx:Combo()
+function zgJinx:Combo()
 	local target = GetTarget(self.WSpell.Range)
 	if IsValid(target) then
 		if Menu.Combo.W:Value() and IsReady(_W) then
@@ -2088,7 +2088,7 @@ function Jinx:Combo()
 	end
 end
 
-function Jinx:ComboQ()	
+function zgJinx:ComboQ()	
 	local target = GetTarget(900)
 	if IsValid(target) then
 		if Menu.Combo.Q:Value() and IsReady(_Q) then
@@ -2105,16 +2105,16 @@ function Jinx:ComboQ()
 	end
 end
 
-function Jinx:QbaseRange(unit)
+function zgJinx:QbaseRange(unit)
 	return self.QSpell.Range + myHero.boundingRadius + unit.boundingRadius
 end
 
-function Jinx:QmaxRange(unit)
+function zgJinx:QmaxRange(unit)
 	local level = myHero:GetSpellData(_Q).level
 	return self.QSpell.Range + myHero.boundingRadius + unit.boundingRadius + ({100, 125, 150, 175, 200})[level]
 end
 
-function Jinx:CastW(target)
+function zgJinx:CastW(target)
 	local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 	WPrediction:GetPrediction(target, myHero)
 	if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
@@ -2122,7 +2122,7 @@ function Jinx:CastW(target)
 	end
 end
 
-function Jinx:CastE(target)
+function zgJinx:CastE(target)
 	local EPrediction = GGPrediction:SpellPrediction(self.ESpell)
 	EPrediction:GetPrediction(target, myHero)
 	if EPrediction:CanHit(Menu.Misc.EhitChance:Value() + 1) then
@@ -2130,7 +2130,7 @@ function Jinx:CastE(target)
 	end
 end
 
-function Jinx:CastR(target)
+function zgJinx:CastR(target)
 	local RPrediction = GGPrediction:SpellPrediction(self.RSpell)
 	RPrediction:GetPrediction(target, myHero)
 	if RPrediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
@@ -2138,7 +2138,7 @@ function Jinx:CastR(target)
 	end
 end
 
-function Jinx:Harass()
+function zgJinx:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		local target = GetTarget(self.WSpell.Range)
 		if IsValid(target) then
@@ -2159,14 +2159,14 @@ function Jinx:Harass()
 	-- end
 end
 
-function Jinx:FarmHarass()
+function zgJinx:FarmHarass()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.SpellHarass:Value() then
 		self:Harass()
 	end
 end
 
---[[ function Jinx:LaneClear()
+--[[ function zgJinx:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
@@ -2195,7 +2195,7 @@ end
 	end
 end ]]
 
-function Jinx:JungleClear()
+function zgJinx:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range + 130)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
@@ -2225,7 +2225,7 @@ end
 
 local lastParticleCheckTime = 0
 local particleCheckInterval = 1.0
-function Jinx:AutoE()
+function zgJinx:AutoE()
 	if Menu.Misc.Ecc:Value() and IsReady(_E) then
 		for i, target in ipairs(GetEnemyHeroes()) do
 			if target and myHero.pos:DistanceTo(target.pos) <= self.ESpell.Range then
@@ -2278,7 +2278,7 @@ function Jinx:AutoE()
 	end
 end
 
-function Jinx:SemiR()
+function zgJinx:SemiR()
 	if Menu.Misc.SemiR:Value() and IsReady(_R) then
 		local Rtarget = GetTarget(Menu.Misc.Rmax:Value())
 		if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
@@ -2287,7 +2287,7 @@ function Jinx:SemiR()
 	end
 end
 
-function Jinx:KillSteal()
+function zgJinx:KillSteal()
 	local enemies = ObjectManager:GetEnemyHeroes(Menu.Misc.Rmax:Value())
 	for i, enemy in ipairs(enemies) do
 		if enemy and not enemy.dead and enemy.pos2D.onScreen then
@@ -2314,20 +2314,20 @@ function Jinx:KillSteal()
 	end
 end
 
-function Jinx:GetWDmg(target)
+function zgJinx:GetWDmg(target)
 	local level = myHero:GetSpellData(_W).level
 	local WDmg = ({10, 60, 110, 160, 210})[level] + 1.4 * myHero.totalDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, WDmg)
 end
 
-function Jinx:GetRDmg(target)
+function zgJinx:GetRDmg(target)
 	local d = target.pos:DistanceTo(myHero.pos)
 	local level = myHero:GetSpellData(_R).level
 	local RDmg = (({300, 450, 600})[level] + 0.155 * myHero.bonusDamage) * (0.06 * MathMin(MathFloor(d/100), 15) + 0.1) + ({0.25, 0.3, 0.35})[level] * (target.maxHealth - target.health)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
 end
 
-function Jinx:Draw()
+function zgJinx:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -2356,9 +2356,9 @@ end
 
 -----------------------------------------
 
-class "Tristana"
+class "zgTristana"
 
-function Tristana:__init()
+function zgTristana:__init()
 	print("Marksmen Tristana Loaded") 
 	self:LoadMenu()
 
@@ -2368,7 +2368,7 @@ function Tristana:__init()
 	Orbwalker:OnPostAttack(function() self:OnPostAttack() end)
 end
 
-function Tristana:LoadMenu()
+function zgTristana:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -2405,7 +2405,7 @@ function Tristana:LoadMenu()
 	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
 end
 
-function Tristana:OnPreAttack(args)
+function zgTristana:OnPreAttack(args)
 	local target = args.Target
 	if IsValid(target) and target.type == Obj_AI_Hero then
 		if GetMode() == "Combo" then
@@ -2440,7 +2440,7 @@ function Tristana:OnPreAttack(args)
 	end
 end
 
-function Tristana:OnPostAttack()
+function zgTristana:OnPostAttack()
 	local target = Orbwalker:GetTarget()
 	if IsValid(target) and target.type == Obj_AI_Hero then
 		if GetMode() == "Combo" then
@@ -2460,7 +2460,7 @@ function Tristana:OnPostAttack()
 	end
 end
 
-function Tristana:Tick()
+function zgTristana:Tick()
 
 	AAERRange = 550 + (150 / 17 * (myHero.levelData.lvl - 1)) + myHero.boundingRadius
 	--E.Delay = myHero.attackData.windUpTime
@@ -2480,7 +2480,7 @@ function Tristana:Tick()
 	end
 end
 
-function Tristana:JungleClear()
+function zgTristana:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(AAERRange)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
@@ -2499,7 +2499,7 @@ function Tristana:JungleClear()
 	end
 end
 
-function Tristana:ForceE()
+function zgTristana:ForceE()
 	local enemies = ObjectManager:GetEnemyHeroes(1000)
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
@@ -2512,7 +2512,7 @@ function Tristana:ForceE()
 	Orbwalker.ForceTarget = nil
 end
 
-function Tristana:AntiGapcloser()
+function zgTristana:AntiGapcloser()
 	if Menu.Misc.Rgap:Value() and IsReady(_R) then
 		local enemies = ObjectManager:GetEnemyHeroes(1000)
 		for i, target in ipairs(enemies) do
@@ -2525,7 +2525,7 @@ function Tristana:AntiGapcloser()
 	end
 end
 
-function Tristana:SemiR()
+function zgTristana:SemiR()
 	local enemies = ObjectManager:GetEnemyHeroes(1000)
 	TableSort(enemies, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 	for i, enemy in ipairs(enemies) do
@@ -2537,7 +2537,7 @@ function Tristana:SemiR()
 	end
 end
 
-function Tristana:KillSteal()
+function zgTristana:KillSteal()
 	local enemies = ObjectManager:GetEnemyHeroes(1000)
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
@@ -2553,7 +2553,7 @@ function Tristana:KillSteal()
 	end
 end
 
-function Tristana:GetEDmg(unit)
+function zgTristana:GetEDmg(unit)
 	local Edmg = 0
 	local hasbuff, buffData = GetBuffData(unit, "tristanaecharge")
 	local hasIE = HasItem(myHero, 3031)
@@ -2568,7 +2568,7 @@ function Tristana:GetEDmg(unit)
 	return Edmg
 end
 
-function Tristana:GetRDmg(unit)
+function zgTristana:GetRDmg(unit)
 	local baseDmg = ({225, 275, 325})[myHero:GetSpellData(_R).level]
 	local bonusDmg = myHero.bonusDamage * 0.7 + myHero.ap * 1
 	local Rvalue = baseDmg + bonusDmg
@@ -2576,7 +2576,7 @@ function Tristana:GetRDmg(unit)
 	return Rdmg
 end
 
-function Tristana:Draw()
+function zgTristana:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -2598,9 +2598,9 @@ end
 
 --------------------------------------
 
-class "MissFortune"
+class "zgMissFortune"
 
-function MissFortune:__init()
+function zgMissFortune:__init()
 	print("Marksmen MissFortune Loaded") 
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
@@ -2613,7 +2613,7 @@ function MissFortune:__init()
 	-- LastAttackId = 0
 end
 
-function MissFortune:LoadMenu()
+function zgMissFortune:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -2658,7 +2658,7 @@ function MissFortune:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
 end
 
-function MissFortune:Tick()
+function zgMissFortune:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -2693,7 +2693,7 @@ function MissFortune:Tick()
 	end
 end
 
-function MissFortune:OnPreAttack(args)
+function zgMissFortune:OnPreAttack(args)
 	local target = args.Target
 	-- local manaPercentage = myHero.mana / myHero.maxMana
 	if GetMode() == "Combo" and IsValid(target) and target.type == Obj_AI_Hero then
@@ -2713,14 +2713,14 @@ function MissFortune:OnPreAttack(args)
 	end
 end
 
--- function MissFortune:OnPostAttack()
+-- function zgMissFortune:OnPostAttack()
 	-- local target = Orbwalker:GetTarget()
 	-- if target then
 		-- LastAttackId = target.networkID
 	-- end
 -- end
 
-function MissFortune:SemiRLogic()
+function zgMissFortune:SemiRLogic()
 	if Menu.Misc.R:Value() and IsReady(_R) and lastR + 3000 < GetTickCount() then
 		local Rtarget = GetTarget(self.RSpell.Range)
 		if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
@@ -2730,7 +2730,7 @@ function MissFortune:SemiRLogic()
 	end
 end
 
-function MissFortune:KillSteal()
+function zgMissFortune:KillSteal()
 	if Menu.KillSteal.Q:Value() and IsReady(_Q) then
 		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range+500)
 		for i, target in ipairs(enemies) do
@@ -2741,7 +2741,7 @@ function MissFortune:KillSteal()
 	end
 end
 
--- function MissFortune:newTarget()
+-- function zgMissFortune:newTarget()
 	-- if Menu.Misc.newTarget:Value() and GetMode() == "Combo" then
 		-- local orbT = Orbwalker:GetTarget()
 		-- if IsValid(orbT) and orbT.type == Obj_AI_Hero and orbT.networkID == LastAttackId then
@@ -2771,7 +2771,7 @@ end
 	-- end
 -- end
 
-function MissFortune:Combo()
+function zgMissFortune:Combo()
 	if IsReady(_Q) then
 		local Qtarget = GetTarget(self.QSpell.Range+500)
 		if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
@@ -2791,7 +2791,7 @@ function MissFortune:Combo()
 	end
 end
 
-function MissFortune:Harass()
+function zgMissFortune:Harass()
 	--if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if IsReady(_Q) then
 			local Qtarget = GetTarget(self.QSpell.Range+500)
@@ -2811,13 +2811,13 @@ function MissFortune:Harass()
 	--end
 end
 
-function MissFortune:FarmHarass()
+function zgMissFortune:FarmHarass()
 	if Menu.Clear.SpellHarass:Value() then
 		self:Harass()
 	end
 end
 
-function MissFortune:LaneClear()
+function zgMissFortune:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
@@ -2839,7 +2839,7 @@ function MissFortune:LaneClear()
 	end
 end
 
-function MissFortune:JungleClear()
+function zgMissFortune:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(self.ESpell.Range)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
@@ -2862,7 +2862,7 @@ function MissFortune:JungleClear()
 	end
 end
 
-function MissFortune:QLogic(target, UseQBounce)
+function zgMissFortune:QLogic(target, UseQBounce)
 	if target == nil then return end
 	if myHero.pos:DistanceTo(target.pos) <= self.QSpell.Range then
 		Control.CastSpell(HK_Q, target)
@@ -2921,7 +2921,7 @@ function MissFortune:QLogic(target, UseQBounce)
 	end
 end
 
-function MissFortune:CastGGPred(spell, unit)
+function zgMissFortune:CastGGPred(spell, unit)
 	if spell == HK_E then
 		local EPrediction = GGPrediction:SpellPrediction(self.ESpell)
 		EPrediction:GetPrediction(unit, myHero)
@@ -2931,13 +2931,13 @@ function MissFortune:CastGGPred(spell, unit)
 	end
 end
 
-function MissFortune:GetQDmg(target)
+function zgMissFortune:GetQDmg(target)
 		local level = myHero:GetSpellData(_Q).level
 		local QDmg = ({20, 45, 70, 95, 120})[level] + myHero.totalDamage + 0.35 * myHero.ap
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 
-function MissFortune:Draw()
+function zgMissFortune:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -2969,9 +2969,9 @@ end
 
 --------------------------------------
 
-class "Jayce"
+class "zgJayce"
 
-function Jayce:__init()
+function zgJayce:__init()
 	print("Jayce Loaded") 
 	self:LoadMenu()
 	
@@ -2989,7 +2989,7 @@ function Jayce:__init()
 	self.E2Spell = {Delay = 0.25, Range = 240}
 end
 
-function Jayce:LoadMenu()
+function zgJayce:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Q", name = "Q Config"})
 	Menu.Q:MenuElement({id = "Qr", name = "Use Q range", toggle = true, value = true})
@@ -3053,7 +3053,7 @@ end
 local Q1mana, W1mana, E1mana, Q2mana, W2mana, E2mana= 0, 0, 0, 0, 0, 0
 local Q1cdt, W1cdt, E1cdt, Q2cdt, W2cdt, E2cdt= 0, 0, 0, 0, 0, 0
 local Q1cd, W1cd, E1cd, Q2cd, W2cd, E2cd= 0, 0, 0, 0, 0, 0
-function Jayce:SetValue()
+function zgJayce:SetValue()
 	if self:IsRange() then
 		Q1cdt = myHero:GetSpellData(_Q).castTime
 		W1cdt = myHero:GetSpellData(_W).castTime
@@ -3081,7 +3081,7 @@ end
 
 local isQmanualCast = false
 local QmanualTimer = nil
-function Jayce:OnWndMsg(msg, wParam)
+function zgJayce:OnWndMsg(msg, wParam)
 	if self:IsRange() and GameCanUseSpell(_Q) == 0 then
 		if msg == KEY_DOWN and wParam == HK_Q then
 		-- print('q')
@@ -3091,7 +3091,7 @@ function Jayce:OnWndMsg(msg, wParam)
 	end
 end
 
--- function Jayce:OnSpellCast(spell)
+-- function zgJayce:OnSpellCast(spell)
 	-- if not self:IsRange() then
 		-- if spell == _Q then
 			-- if IsReady(_W) and Menu.W.Wm:Value() and myHero.mana > 80 then
@@ -3101,7 +3101,7 @@ end
 	-- end	
 -- end
 
-function Jayce:OnPreAttack(args)
+function zgJayce:OnPreAttack(args)
 	if IsReady(_W) and Menu.W.Wr:Value() and self:IsRange() and args.Target.type == Obj_AI_Hero then
 		if GetMode() == "Combo" then
 			Control.CastSpell(HK_W)
@@ -3114,7 +3114,7 @@ function Jayce:OnPreAttack(args)
 end
 
 local Etick = 0
-function Jayce:Tick()
+function zgJayce:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -3174,7 +3174,7 @@ function Jayce:Tick()
 	self:LaneClear()
 end
 
-function Jayce:Gapcloser()
+function zgJayce:Gapcloser()
 	if not Menu.E.gapE:Value() or E2cd > 0.1 then
 		return
 	end
@@ -3196,7 +3196,7 @@ function Jayce:Gapcloser()
 	end
 end
 
-function Jayce:Flee()
+function zgJayce:Flee()
 	if self:IsRange() then
 		if IsReady(_E) then
 			Control.CastSpell(HK_E, myHero.pos:Extended(mousePos, 150))
@@ -3227,7 +3227,7 @@ function Jayce:Flee()
 	end	
 end
 
-function Jayce:Q1Logic()
+function zgJayce:Q1Logic()
 	local Qtype = self.Q1Spell
 	if self:CanUseQE() then Qtype = self.Q1extSpell end
 	
@@ -3263,13 +3263,13 @@ function Jayce:Q1Logic()
 	-- end
 end
 
-function Jayce:W1Logic()
+function zgJayce:W1Logic()
 	if GetMode() == "Combo" and IsReady(_W) and Orbwalker:GetTarget() ~= nil and Orbwalker:GetTarget().type == Obj_AI_Hero then
 		Control.CastSpell(HK_W)
 	end
 end
 
-function Jayce:Q2Logic()
+function zgJayce:Q2Logic()
 	local target = GetTarget(self.Q2Spell.Range)
 	if IsValid(target) then
 		if self:GetQ2Dmg(target) > target.health then
@@ -3282,13 +3282,13 @@ function Jayce:Q2Logic()
 	end
 end
 
-function Jayce:W2Logic()
+function zgJayce:W2Logic()
 	if GetEnemyCount(300, myHero.pos) > 0 and myHero.mana > 80 then
 		Control.CastSpell(HK_W)
 	end
 end
 
-function Jayce:E2Logic()
+function zgJayce:E2Logic()
 	local target = GetTarget(self.E2Spell.Range+150)
 	if IsValid(target) then
 		if self:GetE2Dmg(target) > target.health then
@@ -3301,7 +3301,7 @@ function Jayce:E2Logic()
 	end
 end
 
-function Jayce:RLogic()
+function zgJayce:RLogic()
 	if self:IsRange() and Menu.R.Rm:Value() then
 		local target = GetTarget(self.Q2Spell.Range+200)
 		if GetMode() == "Combo" and Q1cd > 0.5 and IsValid(target) and
@@ -3330,7 +3330,7 @@ function Jayce:RLogic()
 	end
 end
 
-function Jayce:CastQ1(target)
+function zgJayce:CastQ1(target)
 	if not self:CanUseQE() then
 		local Pred = GGPrediction:SpellPrediction(self.Q1Spell)
 		Pred:GetPrediction(target, myHero)
@@ -3363,7 +3363,7 @@ function Jayce:CastQ1(target)
 	end
 end
 
-function Jayce:CanUseQE()
+function zgJayce:CanUseQE()
 	if IsReady(_E) and myHero.mana > Q1mana + E1mana and Menu.E.Er:Value() then
 		return true
 	else
@@ -3371,11 +3371,11 @@ function Jayce:CanUseQE()
 	end
 end
 
-function Jayce:IsRange()
+function zgJayce:IsRange()
 	return myHero:GetSpellData(_Q).name:lower() == "jayceshockblast"
 end
 
-function Jayce:LaneClear()
+function zgJayce:LaneClear()
 	if GetMode() ~= "LaneClear" then return end
 	if IsUnderTurret(myHero) then return end
 	if Menu.Farm.spellFarm:Value() --[[and myHero.mana/myHero.maxMana > Menu.Farm.Mana:Value()/100 ]]then
@@ -3415,7 +3415,7 @@ function Jayce:LaneClear()
 	end
 end
 
-function Jayce:JungleClear()
+function zgJayce:JungleClear()
 	if GetMode() == "LaneClear" and Menu.Farm.jungleC:Value() then
 		local minions = ObjectManager:GetEnemyMinions(700)
 		for i = 1, #minions do
@@ -3461,25 +3461,25 @@ function Jayce:JungleClear()
 	end
 end
 
-function Jayce:GetQ1Dmg(target)
+function zgJayce:GetQ1Dmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	local QDmg = ({60, 110, 160, 210, 260, 310})[level] + 1.40 * myHero.bonusDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 
-function Jayce:GetQ2Dmg(target)
+function zgJayce:GetQ2Dmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	local QDmg = ({60, 105, 150, 195, 240, 285})[level] + 1.35 * myHero.bonusDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 
-function Jayce:GetE2Dmg(target)
+function zgJayce:GetE2Dmg(target)
 	local level = myHero:GetSpellData(_E).level
 	local EDmg = ({8, 10.8, 13.6, 16.4, 19.2, 22})[level]/100 * target.maxHealth + myHero.bonusDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
 end
 
-function Jayce:Draw()
+function zgJayce:Draw()
 	if myHero.dead then return end
 	if Menu.Draw.DrawFarm:Value() then
 		if Menu.Farm.spellFarm:Value() then
@@ -3522,9 +3522,9 @@ end
 
 --------------------------------------
 
-class "Kalista"
+class "zgKalista"
 
-function Kalista:__init()
+function zgKalista:__init()
 	print("Marksmen Kalista Loaded") 
 	self:LoadMenu()
 	
@@ -3535,7 +3535,7 @@ function Kalista:__init()
 	self.RSpell = {Range = 1150}
 end
 
-function Kalista:LoadMenu()
+function zgKalista:LoadMenu()
  
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -3576,7 +3576,7 @@ function Kalista:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
 end
 
-function Kalista:Tick()
+function zgKalista:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -3595,7 +3595,7 @@ function Kalista:Tick()
 	self:AutoR()
 end
 
-function Kalista:KillSteal()
+function zgKalista:KillSteal()
 	if Menu.KillSteal.E:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
 		for i, target in ipairs(enemies) do
@@ -3625,7 +3625,7 @@ function Kalista:KillSteal()
 	end
 end
 
-function Kalista:CastQ(target)
+function zgKalista:CastQ(target)
 	local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 	QPrediction:GetPrediction(target, myHero)
 	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) and not IsCasting() and not myHero.pathing.isDashing then
@@ -3650,7 +3650,7 @@ function Kalista:CastQ(target)
 	end
 end
 
-function Kalista:Combo()
+function zgKalista:Combo()
 	if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
 		local Qtarget = GetTarget(self.QSpell.Range)
 		if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
@@ -3675,7 +3675,7 @@ function Kalista:Combo()
 	end
 end
 
-function Kalista:Harass()
+function zgKalista:Harass()
 	if IsUnderTurret(myHero) then return end
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if Menu.Harass.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_Q).mana + myHero:GetSpellData(_E).mana then
@@ -3703,13 +3703,13 @@ function Kalista:Harass()
 	-- end
 end
 
-function Kalista:FarmHarass()
+function zgKalista:FarmHarass()
 	if Menu.Clear.SpellHarass:Value() then
 		self:Harass()
 	end
 end
 
-function Kalista:LaneClear()
+function zgKalista:LaneClear()
 	if Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.E:Value() and IsReady(_E) then
 			local killCount = 0
@@ -3767,7 +3767,7 @@ function Kalista:LaneClear()
 	end
 end
 
-function Kalista:JungleClear()
+function zgKalista:JungleClear()
 	if Menu.Clear.JungleClear.E:Value() and IsReady(_E) then
 		local minions = ObjectManager:GetMonsters(self.ESpell.Range)
 		for i, minion in ipairs(minions) do
@@ -3784,7 +3784,7 @@ function Kalista:JungleClear()
 	end
 end
 
-function Kalista:AutoKillEpicMonster()
+function zgKalista:AutoKillEpicMonster()
 	if Menu.Misc.E:Value() and IsReady(_E) then
 		local minions = ObjectManager:GetMonsters(self.ESpell.Range)
 		for i, minion in ipairs(minions) do
@@ -3801,7 +3801,7 @@ function Kalista:AutoKillEpicMonster()
 	end
 end
 
-function Kalista:AutoR()
+function zgKalista:AutoR()
 	if Menu.Misc.R:Value() and IsReady(_R) then
 		local allies = ObjectManager:GetAllyHeroes(self.RSpell.Range)
 		for i, ally in ipairs(allies) do
@@ -3814,7 +3814,7 @@ function Kalista:AutoR()
 	end
 end
 
-function Kalista:GetQDmg(target)
+function zgKalista:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	if level > 0 then
 		local QDmg = ({10, 75, 140, 205, 270})[level] + 1.05 * myHero.totalDamage
@@ -3829,7 +3829,7 @@ function Kalista:GetQDmg(target)
 	end
 end
 
-function Kalista:GetEDmg(target, isEpicMonster)
+function zgKalista:GetEDmg(target, isEpicMonster)
 	local buff, buffData = GetBuffData(target, "kalistaexpungemarker")
 	local level = myHero:GetSpellData(_E).level
 	local targetName = target.charName:lower()
@@ -3871,7 +3871,7 @@ function Kalista:GetEDmg(target, isEpicMonster)
 	end
 end
 
-function Kalista:Draw()
+function zgKalista:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -3903,9 +3903,9 @@ end
 
 --------------------------------------
 
-class "Ashe"
+class "zgAshe"
 
-function Ashe:__init()
+function zgAshe:__init()
 	print("Marksmen Ashe Loaded") 
 	self:LoadMenu()
 	
@@ -3916,7 +3916,7 @@ function Ashe:__init()
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 130, Range = 12500, Speed = 1600, Collision = false}
 end
 
-function Ashe:LoadMenu()
+function zgAshe:LoadMenu()
  
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -3955,7 +3955,7 @@ function Ashe:LoadMenu()
 	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
 end
 
-function Ashe:OnPostAttack()
+function zgAshe:OnPostAttack()
 	local target = Orbwalker:GetTarget()
 	if IsValid(target) and IsReady(_Q) then
 		if target.type == Obj_AI_Hero then
@@ -3976,7 +3976,7 @@ function Ashe:OnPostAttack()
 	end
 end
 
-function Ashe:Tick()
+function zgAshe:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -3995,7 +3995,7 @@ function Ashe:Tick()
 	end
 end
 
-function Ashe:KillSteal()
+function zgAshe:KillSteal()
 	if Menu.KillSteal.W:Value() and IsReady(_W) then
 		local enemies = ObjectManager:GetEnemyHeroes(self.WSpell.Range)
 		for i, target in ipairs(enemies) do
@@ -4009,7 +4009,7 @@ function Ashe:KillSteal()
 	end
 end
 
-function Ashe:SemiManualR()
+function zgAshe:SemiManualR()
 	if Menu.Misc.Rsm:Value() and IsReady(_R) then
 		local enemies = ObjectManager:GetEnemyHeroes(self.RSpell.Range)
 		TableSort(enemies, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
@@ -4019,7 +4019,7 @@ function Ashe:SemiManualR()
 	end
 end
 
-function Ashe:CastW(target)
+function zgAshe:CastW(target)
 	local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 	WPrediction:GetPrediction(target, myHero)
 	if WPrediction:CanHit(Menu.Misc.WhitChance:Value() + 1) then
@@ -4027,7 +4027,7 @@ function Ashe:CastW(target)
 	end
 end
 
-function Ashe:CastR(target)
+function zgAshe:CastR(target)
 	local RPrediction = GGPrediction:SpellPrediction(self.RSpell)
 	RPrediction:GetPrediction(target, myHero)
 	if RPrediction:CanHit(Menu.Misc.RhitChance:Value() + 1) then
@@ -4035,7 +4035,7 @@ function Ashe:CastR(target)
 	end
 end
 
-function Ashe:Combo()
+function zgAshe:Combo()
 	if Menu.Combo.W:Value() and IsReady(_W) then
 		local target = GetTarget(self.WSpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
@@ -4050,7 +4050,7 @@ function Ashe:Combo()
 	end
 end
 
-function Ashe:Harass()
+function zgAshe:Harass()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Harass.W:Value() and IsReady(_W) --[[and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 ]]then
 		local target = GetTarget(self.WSpell.Range)
@@ -4060,13 +4060,13 @@ function Ashe:Harass()
 	end
 end
 
-function Ashe:FarmHarass()
+function zgAshe:FarmHarass()
 	if Menu.Clear.SpellHarass:Value() then
 		self:Harass()
 	end
 end
 
-function Ashe:LaneClear()
+function zgAshe:LaneClear()
 	if Menu.Clear.SpellFarm:Value() then
 		if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
 			local minions = ObjectManager:GetEnemyMinions(self.WSpell.Range)
@@ -4081,7 +4081,7 @@ function Ashe:LaneClear()
 	end
 end
 
-function Ashe:JungleClear()
+function zgAshe:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
 			local minions = ObjectManager:GetEnemyMinions(600)
@@ -4094,7 +4094,7 @@ function Ashe:JungleClear()
 	end
 end
 
-function Ashe:GetWDmg(target)
+function zgAshe:GetWDmg(target)
 	local level = myHero:GetSpellData(_W).level
 	if level > 0 then
 		local WDmg = ({20, 35, 50, 65, 80})[level] + myHero.totalDamage
@@ -4104,7 +4104,7 @@ function Ashe:GetWDmg(target)
 	end
 end
 
-function Ashe:Draw()
+function zgAshe:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -4130,9 +4130,9 @@ end
 
 -----------------------------------------
 
-class "Corki"
+class "zgCorki"
 
-function Corki:__init()
+function zgCorki:__init()
 	print("Marksmen Corki Loaded") 
 	self:LoadMenu()
 
@@ -4145,7 +4145,7 @@ function Corki:__init()
 	self.R2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1450, Speed = 2000, Collision = false}
 end
 
-function Corki:LoadMenu()
+function zgCorki:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -4187,7 +4187,7 @@ function Corki:LoadMenu()
 	Menu.Draw:MenuElement({id = "R", name = "Draw R Range", toggle = true, value = false})
 end
 
-function Corki:OnPreAttack(args)
+function zgCorki:OnPreAttack(args)
 	local target = args.Target
 	if IsValid(target) and target.type == Obj_AI_Hero and not self:HaveSheenBuff() then
 		if GetMode() == "Combo" and Menu.Combo.E:Value() and IsReady(_E) then
@@ -4201,7 +4201,7 @@ function Corki:OnPreAttack(args)
 	end
 end
 
-function Corki:Tick()
+function zgCorki:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -4221,7 +4221,7 @@ function Corki:Tick()
 	end
 end
 
-function Corki:Combo()
+function zgCorki:Combo()
 	if Menu.Combo.Q:Value() and IsReady(_Q) then
 		local target = GetTarget(self.QSpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
@@ -4237,7 +4237,7 @@ function Corki:Combo()
 	end
 end
 
-function Corki:AutoQ()
+function zgCorki:AutoQ()
 	if Menu.Misc.Qcc:Value() and IsReady(_Q) then
 		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 		for i, target in ipairs(enemies) do
@@ -4248,7 +4248,7 @@ function Corki:AutoQ()
 	end
 end
 
-function Corki:CastQ(target)
+function zgCorki:CastQ(target)
 	local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 	QPrediction:GetPrediction(target, myHero)
 	if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
@@ -4261,7 +4261,7 @@ function Corki:CastQ(target)
 	end
 end
 
-function Corki:CastR(target)
+function zgCorki:CastR(target)
 	if HaveBuff(myHero, "mbcheck2") then
 		local R2Prediction = GGPrediction:SpellPrediction(self.R2Spell)
 		R2Prediction:GetPrediction(target, myHero)
@@ -4293,7 +4293,7 @@ function Corki:CastR(target)
 	end
 end
 
-function Corki:Harass()
+function zgCorki:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if Menu.Harass.Q:Value() and IsReady(_Q) then
 			local target = GetTarget(self.QSpell.Range)
@@ -4311,14 +4311,14 @@ function Corki:Harass()
 	-- end
 end
 
-function Corki:FarmHarass()
+function zgCorki:FarmHarass()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.SpellHarass:Value() then
 		self:Harass()
 	end
 end
 
-function Corki:LaneClear()
+function zgCorki:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
@@ -4343,7 +4343,7 @@ function Corki:LaneClear()
 	end
 end
 
-function Corki:JungleClear()
+function zgCorki:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
@@ -4360,7 +4360,7 @@ function Corki:JungleClear()
 	end
 end
 
-function Corki:SemiR()
+function zgCorki:SemiR()
 	if Menu.Misc.SemiR:Value() and IsReady(_R) then
 		local Rtarget = GetTarget(1500)
 		if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
@@ -4369,7 +4369,7 @@ function Corki:SemiR()
 	end
 end
 
-function Corki:HaveSheenBuff()
+function zgCorki:HaveSheenBuff()
 	local target = Orbwalker:GetTarget()
 	if IsValid(target) and (HaveBuff(myHero, "sheen") or HaveBuff(myHero, "6662buff") or HaveBuff(myHero, "3078trinityforce") or HaveBuff(myHero, "lichbane")) then
 		return true
@@ -4378,7 +4378,7 @@ function Corki:HaveSheenBuff()
 	end
 end
 
-function Corki:Draw()
+function zgCorki:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -4414,9 +4414,9 @@ end
 
 ---------------------------------------------
 
-class "Caitlyn"
+class "zgCaitlyn"
 
-function Caitlyn:__init()
+function zgCaitlyn:__init()
 	print("Marksmen Caitlyn Loaded") 
 	self:LoadMenu()
 	
@@ -4424,13 +4424,13 @@ function Caitlyn:__init()
 	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.625, Radius = 60, Range = 1250, Speed = 2200, Collision = false}
-	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 15, Range = 800, Speed = MathHuge, Collision = false}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.625, Radius = 60, Range = 1240, Speed = 2200, Collision = false}
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1.25, Radius = 15, Range = 800, Speed = MathHuge, Collision = false}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.15, Radius = 70, Range = 750, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.375, Radius = 40, Range = 3500, Speed = 3200, Collision = false}
 end
 
-function Caitlyn:LoadMenu()
+function zgCaitlyn:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -4485,7 +4485,7 @@ function Caitlyn:LoadMenu()
 	Menu.Draw:MenuElement({id = "Rmin", name = "Draw R Range on minimap", toggle = true, value = false})
 end
 
-function Caitlyn:Tick()
+function zgCaitlyn:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -4526,7 +4526,7 @@ _G.lastEProc = 0
 _G.lastWProc = {}
 local currentBuffTarget = nil
 
-function Caitlyn:OnPreAttack(args)
+function zgCaitlyn:OnPreAttack(args)
 	local heroes = ObjectManager:GetEnemyHeroes(1300)
 	local Buff = _G.SDK.BuffManager
 	local bestTarget = nil
@@ -4561,7 +4561,7 @@ function Caitlyn:OnPreAttack(args)
 	end
 end
 
-function Caitlyn:OnPostAttack()
+function zgCaitlyn:OnPostAttack()
 	if currentBuffTarget and currentBuffTarget.target then
 		local target = currentBuffTarget.target
 		if currentBuffTarget.buffType == "E" then
@@ -4573,7 +4573,7 @@ function Caitlyn:OnPostAttack()
 	end
 end
 
-function Caitlyn:OneKeyCastR()
+function zgCaitlyn:OneKeyCastR()
 	local Rtarget = GetTarget(self.RSpell.Range)
 	if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 		Control.CastSpell(HK_R, Rtarget)
@@ -4586,7 +4586,7 @@ local lastWtp = 0
 local lastWtfr = 0
 local lastParticleCheckTime = 0
 local particleCheckInterval = 1.0
-function Caitlyn:AntiGapcloser()
+function zgCaitlyn:AntiGapcloser()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
 		for i, target in ipairs(enemies) do
@@ -4597,7 +4597,7 @@ function Caitlyn:AntiGapcloser()
 				end
 			end	
 		end
-	elseif Menu.Misc.Wgap:Value() and IsReady(_W) and lastWgap + 1500 < GetTickCount() then
+	elseif Menu.Misc.Wgap:Value() and IsReady(_W) and lastWgap + 3000 < GetTickCount() then
 		local enemies = ObjectManager:GetEnemyHeroes(self.WSpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing then
@@ -4610,7 +4610,7 @@ function Caitlyn:AntiGapcloser()
 	end
 end
 
-function Caitlyn:Auto()
+function zgCaitlyn:Auto()
 	if Menu.Misc.Qcc:Value() and IsReady(_Q) and GetMode() ~= "Combo" and GetMode() ~= "Harass" then
 		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 		for i, target in ipairs(enemies) do
@@ -4664,7 +4664,7 @@ function Caitlyn:Auto()
 					if name:find("teledash_end") and name:find("wardenemy") and lastWtp + 8000 < GetTickCount() then -- TP
 						Control.CastSpell(HK_W, par)
 						lastWtp = GetTickCount()
-					elseif name:find("gatemarker_red") and lastWtfr + 2000 < GetTickCount() then -- TF-R
+					elseif name:find("gatemarker_red") and lastWtfr + 3000 < GetTickCount() then -- TF-R
 						Control.CastSpell(HK_W, par)
 						lastWtfr = GetTickCount()
 					end
@@ -4676,7 +4676,7 @@ function Caitlyn:Auto()
 	end
 end
 
-function Caitlyn:KillSteal()
+function zgCaitlyn:KillSteal()
 	if Menu.KillSteal.Q:Value() and IsReady(_Q) then
 		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 		for i, target in ipairs(enemies) do
@@ -4698,7 +4698,7 @@ function Caitlyn:KillSteal()
 	end
 end
 
-function Caitlyn:Combo()
+function zgCaitlyn:Combo()
 	if Menu.Combo.E:Value() and IsReady(_E) then
 		local target = GetTarget(self.ESpell.Range)
 		if IsValid(target) and target.pos2D.onScreen and myHero.pos:DistanceTo(target.pos) <= Menu.Combo.ERange:Value() then
@@ -4749,7 +4749,7 @@ function Caitlyn:Combo()
 	end
 end
 
-function Caitlyn:Harass()
+function zgCaitlyn:Harass()
 	-- if myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 then
 		if Menu.Harass.Q:Value() and IsReady(_Q) then
 			local target = GetTarget(self.QSpell.Range)
@@ -4760,7 +4760,7 @@ function Caitlyn:Harass()
 	-- end
 end
 
-function Caitlyn:LaneClear()
+function zgCaitlyn:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
@@ -4779,7 +4779,7 @@ function Caitlyn:LaneClear()
 	end
 end
 
-function Caitlyn:JungleClear()
+function zgCaitlyn:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 			local minions = ObjectManager:GetEnemyMinions(800)
@@ -4794,7 +4794,7 @@ function Caitlyn:JungleClear()
 	end
 end
 
-function Caitlyn:Flee()
+function zgCaitlyn:Flee()
 	if Menu.Flee.E:Value() and IsReady(_E) then
 		local castPos = myHero.pos - (mousePos - myHero.pos):Normalized() * 200
 		if castPos:To2D().onScreen then
@@ -4804,7 +4804,7 @@ function Caitlyn:Flee()
 	end
 end
 
-function Caitlyn:OneKeyEQ()
+function zgCaitlyn:OneKeyEQ()
 	if IsReady(_E) and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
 		local target = GetTarget(self.ESpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
@@ -4816,7 +4816,7 @@ function Caitlyn:OneKeyEQ()
 	end
 end
 
-function Caitlyn:CastEQ(target)
+function zgCaitlyn:CastEQ(target)
 	local Prediction = GGPrediction:SpellPrediction(self.ESpell)
 	Prediction:GetPrediction(target, myHero)
 	if Prediction:CanHit(3) then
@@ -4824,7 +4824,7 @@ function Caitlyn:CastEQ(target)
 	end
 end
 
-function Caitlyn:CastGGPred(spell, unit)
+function zgCaitlyn:CastGGPred(spell, unit)
 	if spell == HK_Q then
 		local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 		QPrediction:GetPrediction(unit, myHero)
@@ -4835,7 +4835,7 @@ function Caitlyn:CastGGPred(spell, unit)
 	elseif spell == HK_W then
 		local WPrediction = GGPrediction:SpellPrediction(self.WSpell)
 		WPrediction:GetPrediction(unit, myHero)
-		if WPrediction:CanHit(3) and lastW + 1500 < GetTickCount() then
+		if WPrediction:CanHit(3) and lastW + 3000 < GetTickCount() then
 			local isKillableByAA = Data:IsInAutoAttackRange(myHero, unit) and (unit.health + unit.shieldAD) <= Damage:GetAutoAttackDamage(myHero, unit)
 			local finalCastPos = nil
 			if IsFacingMe(unit) then
@@ -4865,7 +4865,7 @@ function Caitlyn:CastGGPred(spell, unit)
 	end
 end
 
-function Caitlyn:IsTrapParticleNearby(castPos, radius)
+function zgCaitlyn:IsTrapParticleNearby(castPos, radius)
 	for i = GameParticleCount(), 1, -1 do
 		local par = GameParticle(i)
 		if par and par.pos:DistanceTo(castPos) < radius then
@@ -4878,25 +4878,25 @@ function Caitlyn:IsTrapParticleNearby(castPos, radius)
 	return false 
 end
 
-function Caitlyn:GetQDmg(target)
+function zgCaitlyn:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	local QDmg = ({50, 90, 130, 170, 210})[level] + ({1.25, 1.45, 1.65, 1.85, 2.05})[level] * myHero.totalDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 
-function Caitlyn:GetRDmg(target)
+function zgCaitlyn:GetRDmg(target)
 	local level = myHero:GetSpellData(_R).level
 	local RDmg = (({300, 475, 650})[level] + 1.0 * myHero.bonusDamage) * (1 + 0.5 * myHero.critChance)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
 end
 
-function Caitlyn:GetEDmg(target)
+function zgCaitlyn:GetEDmg(target)
 	local level = myHero:GetSpellData(_E).level
 	local EDmg = ({80, 130, 180, 230, 280})[level] + 0.8 * myHero.ap
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
 end
 
-function Caitlyn:Draw()
+function zgCaitlyn:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -4926,9 +4926,9 @@ end
 
 --------------------------------------
 
-class "Yunara"
+class "zgYunara"
 
-function Yunara:__init()
+function zgYunara:__init()
 
 	print("Marksmen Yunara Loaded") 
 	self:LoadMenu()
@@ -4940,7 +4940,7 @@ function Yunara:__init()
 	self.W2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 90, Range = 1150, Speed = MathHuge, Collision = false}
 end
 
-function Yunara:LoadMenu()
+function zgYunara:LoadMenu()
  
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -4980,7 +4980,7 @@ function Yunara:LoadMenu()
 	Menu.Draw:MenuElement({id = "W", name = "Draw W Range", toggle = true, value = false})
 end
 
-function Yunara:OnPostAttack()
+function zgYunara:OnPostAttack()
 	local target = Orbwalker:GetTarget()
 	if IsValid(target) and (IsReady(_Q) and myHero.hudAmmo == 8) then
 		if target.type == Obj_AI_Hero then
@@ -5001,7 +5001,7 @@ function Yunara:OnPostAttack()
 	end
 end
 
-function Yunara:Tick()
+function zgYunara:Tick()
 	if ShouldWait() then
 		return
 	end
@@ -5024,7 +5024,7 @@ function Yunara:Tick()
 	end
 end
 
-function Yunara:KillSteal()
+function zgYunara:KillSteal()
 	if Menu.KillSteal.W:Value() and IsReady(_W) then
 		local enemies = ObjectManager:GetEnemyHeroes(1100)
 		for i, target in ipairs(enemies) do
@@ -5038,7 +5038,7 @@ function Yunara:KillSteal()
 	end
 end
 
-function Yunara:CastW(target)
+function zgYunara:CastW(target)
 	local wName = myHero:GetSpellData(_W).name
 	local spell =  wName == "YunaraW2" and self.W2Spell or self.WSpell
 	local WPrediction = GGPrediction:SpellPrediction(spell)
@@ -5048,7 +5048,7 @@ function Yunara:CastW(target)
 	end
 end
 
-function Yunara:Combo()
+function zgYunara:Combo()
 	if Menu.Combo.W:Value() and IsReady(_W) then
 		local target = GetTarget(1100)
 		if IsValid(target) and target.pos2D.onScreen then
@@ -5064,7 +5064,7 @@ function Yunara:Combo()
 	end
 end
 
-function Yunara:Harass()
+function zgYunara:Harass()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Harass.W:Value() and IsReady(_W) --[[and myHero.mana/myHero.maxMana >= Menu.Harass.Mana:Value()/100 ]]then
 		local target = GetTarget(1100)
@@ -5081,7 +5081,7 @@ function Yunara:Harass()
 	end
 end
 
-function Yunara:AntiGapcloser()
+function zgYunara:AntiGapcloser()
 	if Menu.AntiGapcloser.E2:Value() and IsReady(_E) and myHero:GetSpellData(_E).name == "YunaraE2" then
 		local enemies = ObjectManager:GetEnemyHeroes(1500)
 		for i, target in ipairs(enemies) do
@@ -5097,13 +5097,13 @@ function Yunara:AntiGapcloser()
 	end
 end
 
-function Yunara:FarmHarass()
+function zgYunara:FarmHarass()
 	if Menu.Clear.SpellHarass:Value() then
 		self:Harass()
 	end
 end
 
-function Yunara:CanUseW()
+function zgYunara:CanUseW()
 	local QData = myHero:GetSpellData(_Q)
 	local WData = myHero:GetSpellData(_W)
 	local EData = myHero:GetSpellData(_E)
@@ -5116,7 +5116,7 @@ function Yunara:CanUseW()
 	return true
 end
 
-function Yunara:LastHitW()
+function zgYunara:LastHitW()
 	if Menu.LastHit.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "YunaraW" then
 		local minions = ObjectManager:GetEnemyMinions(1150)
 		for i, minion in ipairs(minions) do
@@ -5134,7 +5134,7 @@ function Yunara:LastHitW()
 	end
 end
 
-function Yunara:JungleClear()
+function zgYunara:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
 		if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
 			local minions = ObjectManager:GetEnemyMinions(600)
@@ -5150,7 +5150,7 @@ function Yunara:JungleClear()
 	end
 end
 
-function Yunara:GetWDmg(target)
+function zgYunara:GetWDmg(target)
 	local wlevel = myHero:GetSpellData(_W).level
 	local rlevel = myHero:GetSpellData(_R).level
 	local wName = myHero:GetSpellData(_W).name
@@ -5167,7 +5167,7 @@ function Yunara:GetWDmg(target)
 	end
 end
 
-function Yunara:Draw()
+function zgYunara:Draw()
 	if myHero.dead then return end
 
 	if Menu.Draw.DrawFarm:Value() then
@@ -5212,6 +5212,6 @@ Callback.Add("Load", function()
 		Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
 
 	if table.contains(Heroes, myHero.charName) then
-		_G[myHero.charName]()
+		_G["zg" .. myHero.charName]()
 	end
 end)
