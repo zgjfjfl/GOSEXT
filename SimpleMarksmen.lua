@@ -1,4 +1,4 @@
-local Version = 2025.47
+local Version = 2025.48
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2323,7 +2323,7 @@ end
 function zgJinx:GetRDmg(target)
 	local d = target.pos:DistanceTo(myHero.pos)
 	local level = myHero:GetSpellData(_R).level
-	local RDmg = (({300, 450, 600})[level] + 0.155 * myHero.bonusDamage) * (0.06 * MathMin(MathFloor(d/100), 15) + 0.1) + ({0.25, 0.3, 0.35})[level] * (target.maxHealth - target.health)
+	local RDmg = (({250, 400, 550})[level] + 1.3 * myHero.bonusDamage) * (0.06 * MathMin(MathFloor(d/100), 15) + 0.1) + ({0.25, 0.3, 0.35})[level] * (target.maxHealth - target.health)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
 end
 
