@@ -1,4 +1,4 @@
-local Version = 2025.31
+local Version = 2025.32
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -5828,8 +5828,10 @@ function zgZaahen:LoadMenu()
 	Menu.Combo:MenuElement({id = "Wrange", name = "Use W| Max Range", value = 750, min = 200, max = 850, step = 10})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", value = true})
 	Menu.Combo:MenuElement({id = "Erange", name = "Use E| Outer edge range", value = 300, min = 200, max = 375, step = 5})
+	Menu.Combo:MenuElement({id = "R", name = "Use R", value = true})
+	Menu.Combo:MenuElement({id = "Rmode", name = "Use R| Mode: ", value = 1, drop = {"After Q2 Knockup", "After W Pull", "Killable"}})
 	Menu.Combo:MenuElement({id = "Rsm", name = "Semi-manual R Key", key = string.byte("T")})
-	Menu.Combo:MenuElement({id = "RCount", name = "Use R CanHit Targets [Semi-manual Only]", value = 2, min = 1, max = 5, step = 1})
+	Menu.Combo:MenuElement({id = "RCount", name = "Semi-manual R| CanHit Targets", value = 2, min = 1, max = 5, step = 1})
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "W", name = "Use W", value = true})
 	Menu.Harass:MenuElement({id = "Wrange", name = "Use W| Max Range", value = 750, min = 200, max = 850, step = 10})
@@ -5879,6 +5881,13 @@ function zgZaahen:OnPostAttack()
 end
 
 function zgZaahen:OnTick()
+	if haveBuff(myHero,"zaahenrlockout") then
+		Orbwalker:SetAttack(false)
+		Orbwalker:SetMovement(false)
+	else
+		Orbwalker:SetAttack(true)
+		Orbwalker:SetMovement(true)
+	end
 	if IsCasting() or ShouldWait() then return end
 	self:SemiManualR()
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
@@ -5954,6 +5963,19 @@ function zgZaahen:Combo()
 			self:CastW(target)
 		end
 	end
+	if Menu.Combo.R:Value() and IsReady(_R) then
+		local target = TargetSelector:GetTarget(RSpell.Range)
+		if IsValid(target) then
+			local Rmode = Menu.Combo.Rmode:Value()
+			local conditionMet = 
+				(Rmode == 1 and haveBuff(target, "zaahenqknockup")) or
+				(Rmode == 2 and haveBuff(target, "zaahenwpull")) or
+				(Rmode == 3 and (target.health + target.shieldAD < self:GetRDmg(target)))
+			if conditionMet then
+				self:CastR(target)
+			end
+        end
+	end
 end
 
 function zgZaahen:Harass()
@@ -5971,6 +5993,22 @@ function zgZaahen:CastW(target)
 	if Pred:CanHit(3) then
 		Control.CastSpell(HK_W, Pred.CastPosition)
 	end
+end
+
+function zgZaahen:CastR(target)
+	local Pred = GGPrediction:SpellPrediction(RSpell)
+	Pred:GetPrediction(target, myHero)
+	if Pred:CanHit(3) then
+		Control.CastSpell(HK_R, Pred.CastPosition)
+	end
+end
+
+function zgZaahen:GetRDmg(target)
+	local rlvl = myHero:GetSpellData(_R).level
+	local baseDmg = 150 * rlvl + 100
+	local adDmg = myHero.bonusDamage * 2.0
+	local rDmg = baseDmg + adDmg
+	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, rDmg)
 end
 
 function zgZaahen:LaneClear()
