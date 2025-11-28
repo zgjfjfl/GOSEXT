@@ -1,4 +1,4 @@
-local Version = 2025.48
+local Version = 2025.49
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -81,17 +81,28 @@ local lastR = 0
 
 local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data
 
-local Menu = nil
+local Menu, championIcon
+
+local blockFlag = false -- Prevent recursive callback
+local function CheckChatBlock(menuElement, newValue) -- Block menu toggle when chat is open
+    if GameIsChatOpen() and not blockFlag then
+        blockFlag = true
+        if menuElement then
+            menuElement:Value(not newValue)
+        end
+        blockFlag = false
+        return true
+    end
+    return false
+end
 
 local function IsReady(spell)
-	return myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 and myHero:GetSpellData(spell).mana <= myHero.mana and GameCanUseSpell(spell) == 0
+	local spellData = myHero:GetSpellData(spell)
+	return spellData.currentCd == 0 and spellData.level > 0 and spellData.mana <= myHero.mana and GameCanUseSpell(spell) == 0
 end
 
 local function IsValid(unit)
-	if (unit and unit.valid and unit.isTargetable and unit.alive and unit.visible and unit.networkID and unit.health > 0 and not unit.dead) then
-		return true
-	end
-	return false
+	return unit and unit.valid and unit.isTargetable and unit.alive and unit.visible and unit.networkID and unit.health > 0 and not unit.dead
 end
 
 local function GetDistanceSqr(Pos1, Pos2)
@@ -384,13 +395,7 @@ local epicMonsters = {
 	["sru_dragon_elder"] = true
 }
 
-local slots = {}
-	TableInsert(slots, ITEM_1);
-	TableInsert(slots, ITEM_2);
-	TableInsert(slots, ITEM_3);
-	TableInsert(slots, ITEM_4);
-	TableInsert(slots, ITEM_5);
-	TableInsert(slots, ITEM_6);
+local slots = {ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6}
 	
 local function HasItem(unit, itemId)
 	for i = 1, #slots do
@@ -462,8 +467,12 @@ function zgNilah:LoadMenu()
 	Menu.Auto:MenuElement({id = "WHP", name = "when self HP %", value = 60, min = 5, max = 100, step = 5})
 	
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = true, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = true, key = string.byte("H")})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = true, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({id = "QT", name = "Use Q| Turret, Barrack, Nexus", toggle = true, value = true})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -787,10 +796,15 @@ function zgSmolder:LoadMenu()
 	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
 	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
 	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
@@ -1561,11 +1575,14 @@ function zgLucian:LoadMenu()
 	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
 	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
@@ -1968,10 +1985,14 @@ function zgJinx:LoadMenu()
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
-
+	
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
@@ -2379,8 +2400,12 @@ function zgTristana:LoadMenu()
 	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "Use Q| Near Minion Counts >= ", value = 3, min = 1, max = 6, step = 1})
@@ -2628,8 +2653,12 @@ function zgMissFortune:LoadMenu()
 	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
@@ -3547,8 +3576,12 @@ function zgKalista:LoadMenu()
 	-- Menu.Harass:MenuElement({id = "Mana", name = "Harass When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = true, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = true, key = string.byte("H")})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = true, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = true, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanKill Counts >= ", value = 2, min = 1, max = 6, step = 1})
@@ -3929,8 +3962,12 @@ function zgAshe:LoadMenu()
 	-- Menu.Harass:MenuElement({id = "Mana", name = "Harass When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = true, key = string.byte("H")})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = true, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
@@ -4160,8 +4197,12 @@ function zgCorki:LoadMenu()
 	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 2, min = 1, max = 6, step = 1})
@@ -4450,7 +4491,9 @@ function zgCaitlyn:LoadMenu()
 	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 5, step = 1})
@@ -4584,6 +4627,12 @@ local lastWcc = 0
 local lastWgap = 0
 local lastWtp = 0
 local lastWtfr = 0
+-- Separate timestamps for different WCC scenarios
+local lastWInvulnerable = 0
+local lastWLissandraR = 0
+local lastWMeditate = 0
+local lastWChronoRevive = 0
+local lastWGA = 0
 local lastParticleCheckTime = 0
 local particleCheckInterval = 1.0
 function zgCaitlyn:AntiGapcloser()
@@ -4626,27 +4675,60 @@ function zgCaitlyn:Auto()
 		end
 	end
 	
-	if Menu.Misc.Wcc:Value() and IsReady(_W) and lastWcc + 3000 < GetTickCount() then
+	-- WCC for various scenarios with independent timing
+	if Menu.Misc.Wcc:Value() and IsReady(_W) then
 		for i, target in ipairs(GetEnemyHeroes()) do
 			if target and myHero.pos:DistanceTo(target.pos) <= self.WSpell.Range then
-				if
-					(not HaveBuff(target, "caitlynwsight") and GetImmobileDuration(target) > 0.5)
-					or IsInvulnerable(target)
-					or HaveBuff(target, "LissandraRSelf")
-					or HaveBuff(target, "Meditate")
-					or HaveBuff(target, "ChronoRevive")
-				then
-					local isKillableByAA = Data:IsInAutoAttackRange(myHero, target) and (target.health + target.shieldAD) <= Damage:GetAutoAttackDamage(myHero, target)
-					if not isKillableByAA then
+				local isKillableByAA = Data:IsInAutoAttackRange(myHero, target) and (target.health + target.shieldAD) <= Damage:GetAutoAttackDamage(myHero, target)
+				
+				-- Immobile targets (CC)
+				if (not HaveBuff(target, "caitlynwsight") and GetImmobileDuration(target) > 0.5) then
+					if not isKillableByAA and lastWcc + 3000 < GetTickCount() then
 						Control.CastSpell(HK_W, target)
 						lastWcc = GetTickCount()
 					end
 				end
+				
+				-- General invulnerable targets
+				if IsInvulnerable(target) then
+					if lastWInvulnerable + 2500 < GetTickCount() then
+						Control.CastSpell(HK_W, target)
+						lastWInvulnerable = GetTickCount()
+					end
+				end
+				
+				-- Lissandra R targets
+				if HaveBuff(target, "LissandraRSelf") then
+					if lastWccLissandraR + 2500 < GetTickCount() then
+						Control.CastSpell(HK_W, target)
+						lastWLissandraR = GetTickCount()
+					end
+				end
+				
+				-- Meditate targets (Master Yi)
+				if HaveBuff(target, "Meditate") then
+					if not isKillableByAA and lastWMeditate + 4000 < GetTickCount() then
+						Control.CastSpell(HK_W, target)
+						lastWMeditate = GetTickCount()
+					end
+				end
+				
+				-- Chrono Revive targets (Zilean R)
+				if HaveBuff(target, "ChronoRevive") then
+					if lastWChronoRevive + 3000 < GetTickCount() then
+						Control.CastSpell(HK_W, target)
+						lastWChronoRevive = GetTickCount()
+					end
+				end
+				
+				-- Guardian Angel targets
 				for j, slot in ipairs(slots) do
 					local Data = target:GetSpellData(slot)
 					if Data.name == "GuardianAngel" and Data.currentCd == 0 and not target.alive then
-						Control.CastSpell(HK_W, target)
-						lastWcc = GetTickCount()
+						if lastWGA + 4000 < GetTickCount() then
+							Control.CastSpell(HK_W, target)
+							lastWGA = GetTickCount()
+						end
 					end
 				end
 			end
@@ -4664,7 +4746,8 @@ function zgCaitlyn:Auto()
 					if name:find("teledash_end") and name:find("wardenemy") and lastWtp + 8000 < GetTickCount() then -- TP
 						Control.CastSpell(HK_W, par)
 						lastWtp = GetTickCount()
-					elseif name:find("gatemarker_red") and lastWtfr + 3000 < GetTickCount() then -- TF-R
+					end
+					if name:find("gatemarker_red") and lastWtfr + 3000 < GetTickCount() then -- TF-R
 						Control.CastSpell(HK_W, par)
 						lastWtfr = GetTickCount()
 					end
@@ -4954,8 +5037,12 @@ function zgYunara:LoadMenu()
 	-- Menu.Harass:MenuElement({id = "Mana", name = "Harass When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
-	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H")})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
@@ -5207,7 +5294,7 @@ Callback.Add("Load", function()
 		return
 	end
 
-	local championIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"
+	championIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"
 	Menu = MenuElement({type = MENU, id = "Marksmen "..myHero.charName, name = "Marksmen "..myHero.charName, leftIcon = championIcon})
 		Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
 

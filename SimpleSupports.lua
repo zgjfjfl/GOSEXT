@@ -1,4 +1,4 @@
-local Version = 2025.23
+local Version = 2025.24
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -67,18 +67,15 @@ local lastR = 0
 
 local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data
 
-local Menu = nil
+local Menu, championIcon
 
 local function IsReady(spell)
-	return myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 
-		and myHero:GetSpellData(spell).mana <= myHero.mana and Game.CanUseSpell(spell) == 0
+	local spellData = myHero:GetSpellData(spell)
+	return spellData.currentCd == 0 and spellData.level > 0 and spellData.mana <= myHero.mana and Game.CanUseSpell(spell) == 0
 end
 
 local function IsValid(unit)
-	if (unit and unit.valid and unit.isTargetable and unit.alive and unit.visible and unit.networkID and unit.health > 0 and not unit.dead) then
-		return true
-	end
-	return false
+	return unit and unit.valid and unit.isTargetable and unit.alive and unit.visible and unit.health > 0 and not unit.dead
 end
 
 local function GetDistanceSqr(Pos1, Pos2)
@@ -2500,7 +2497,7 @@ Callback.Add("Load", function()
 		return
 	end
 	
-	local championIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"
+	championIcon = "http://ddragon.leagueoflegends.com/cdn/15.14.1/img/champion/"..myHero.charName..".png"
 	Menu = MenuElement({type = MENU, id = "Support "..myHero.charName, name = "Support "..myHero.charName, leftIcon = championIcon})
 		Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
 		Menu:MenuElement({id = "SupportMode", name = "Support Mode (Disable Harass Lasthit)",value = true})

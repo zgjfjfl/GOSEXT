@@ -1,4 +1,4 @@
-local Version = 2025.32
+local Version = 2025.33
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -61,18 +61,28 @@ local lastR = 0
 
 local Orbwalker, TargetSelector, ObjectManager, HealthPrediction, Attack, Damage, Spell, Data
 
-local Menu = nil
+local Menu, championIcon
+
+local blockFlag = false -- Prevent recursive callback
+local function CheckChatBlock(menuElement, newValue) -- Block menu toggle when chat is open
+    if Game.IsChatOpen() and not blockFlag then
+        blockFlag = true
+        if menuElement then
+            menuElement:Value(not newValue)
+        end
+        blockFlag = false
+        return true
+    end
+    return false
+end
 
 local function IsReady(spell)
-	return myHero:GetSpellData(spell).currentCd == 0 and myHero:GetSpellData(spell).level > 0 
-		and myHero:GetSpellData(spell).mana <= myHero.mana and Game.CanUseSpell(spell) == 0
+	local spellData = myHero:GetSpellData(spell)
+	return spellData.currentCd == 0 and spellData.level > 0 and spellData.mana <= myHero.mana and Game.CanUseSpell(spell) == 0
 end
 
 local function IsValid(unit)
-	if (unit and unit.valid and unit.isTargetable and unit.alive and unit.visible and unit.networkID and unit.health > 0 and not unit.dead) then
-		return true
-	end
-	return false
+	return unit and unit.valid and unit.isTargetable and unit.alive and unit.visible and unit.health > 0 and not unit.dead
 end
 
 local function GetDistanceSqr(Pos1, Pos2)
@@ -5550,7 +5560,9 @@ function zgMel:LoadMenu()
 	-- Menu.Harass:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
@@ -5836,7 +5848,9 @@ function zgZaahen:LoadMenu()
 	Menu.Harass:MenuElement({id = "W", name = "Use W", value = true})
 	Menu.Harass:MenuElement({id = "Wrange", name = "Use W| Max Range", value = 750, min = 200, max = 850, step = 10})
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
-	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", value = true})
@@ -6096,7 +6110,7 @@ Callback.Add("Load", function()
 		return
 	end
 	
-	local championIcon = "http://ddragon.leagueoflegends.com/cdn/15.23.1/img/champion/"..myHero.charName..".png"
+	championIcon = "http://ddragon.leagueoflegends.com/cdn/15.23.1/img/champion/"..myHero.charName..".png"
 	Menu = MenuElement({type = MENU, id = "zg"..myHero.charName, name = "Simple "..myHero.charName, leftIcon = championIcon})
 		Menu:MenuElement({name = " ", drop = {"AIO-Version: " .. Version}})
 
