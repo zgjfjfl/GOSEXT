@@ -1,4 +1,4 @@
-local Version = 2025.49
+local Version = 2025.51
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1132,6 +1132,7 @@ function zgZeri:__init()
 	self.W2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 100, Range = 2500, Speed = 2500, Collision = false}
 	self.ESpell = { Range = 300 }
 	self.RSpell = { Delay = 0.25, Range = 825 }
+	self.BonusAttackRange = 0
 end
 
 function zgZeri:LoadMenu()
@@ -1163,7 +1164,6 @@ function zgZeri:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "QhitChance", name = "Q | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "WhitChance", name = "W | hitChance", value = 1, drop = {"Normal", "High"}})
-	Menu.Misc:MenuElement({id = "QRange", name = "Q Range = RealRange + X", value = 0, min = -50, max = 50, step = 5})
 	Menu.Misc:MenuElement({id = "QBarrel", name = "Q Attack GP's Barrel", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "ComboAA", name = "Disable AA when no Qpassive in combo", toggle = true, value = true, key = string.byte("T")})
@@ -1211,11 +1211,8 @@ end
 
 function zgZeri:Tick()
 	self.QSpell.Delay = myHero.attackData.windUpTime
-	if myHero.range == 650 then
-		self.QSpell.Range = 900 + Menu.Misc.QRange:Value()
-	else
-		self.QSpell.Range = 750 + Menu.Misc.QRange:Value()
-	end
+	self.BonusAttackRange = myHero.range - 500
+	self.QSpell.Range = 750 + self.BonusAttackRange
 
 	if HaveBuff(myHero, "ZeriR") then
 		self.QSpell.Speed = 3400
@@ -1285,7 +1282,7 @@ function zgZeri:QBarrel()
 		return
 	end
 
-	local plants = ObjectManager:GetPlants(750)
+	local plants = ObjectManager:GetPlants(self.QSpell.Range)
 	local level = gangplank.levelData.lvl
 	local healthDecayRate = level >= 13 and 0.5 or (level >= 7 and 1 or 2)
 	local currentTime = GameTimer()
@@ -1411,7 +1408,7 @@ end
 
 function zgZeri:LastHit()
 	if Menu.LastHit.Q:Value() and IsReady(_Q) then
-		local minions = ObjectManager:GetEnemyMinions(750)
+		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
 				local Hp = HealthPrediction:GetPrediction(minion, myHero.pos:DistanceTo(minion.pos) / self.QSpell.Speed)
@@ -1428,7 +1425,7 @@ end
 function zgZeri:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
-		local minions = ObjectManager:GetEnemyMinions(750)
+		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		--TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
@@ -1440,7 +1437,7 @@ end
 
 function zgZeri:JungleClear()
 	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
-		local minions = ObjectManager:GetEnemyMinions(750)
+		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -1453,7 +1450,7 @@ end
 function zgZeri:QObject()
 	if not IsReady(_Q) then return end
 
-	local QRange = 750
+	local QRange = self.QSpell.Range
 	local targets = {}
 
 	if Menu.Clear.QBuildings:Value() then
@@ -2387,6 +2384,8 @@ function zgTristana:__init()
 	Callback.Add("Tick", function() self:Tick() end)
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	Orbwalker:OnPostAttack(function() self:OnPostAttack() end)
+
+	self.ERRange = 0 
 end
 
 function zgTristana:LoadMenu()
@@ -2486,8 +2485,7 @@ function zgTristana:OnPostAttack()
 end
 
 function zgTristana:Tick()
-
-	AAERRange = 550 + (150 / 17 * (myHero.levelData.lvl - 1)) + myHero.boundingRadius
+	self.ERRange = 550 + (150 / 17 * (myHero.levelData.lvl - 1)) + myHero.boundingRadius
 	--E.Delay = myHero.attackData.windUpTime
 	
 	self:ForceE()
@@ -2507,7 +2505,7 @@ end
 
 function zgTristana:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(AAERRange)
+		local minions = ObjectManager:GetEnemyMinions(self.ERRange)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -2525,10 +2523,10 @@ function zgTristana:JungleClear()
 end
 
 function zgTristana:ForceE()
-	local enemies = ObjectManager:GetEnemyHeroes(1000)
+	local enemies = ObjectManager:GetEnemyHeroes()
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
-			if Menu.Misc.ForceE:Value() and HaveBuff(enemy, "tristanaechargesound") and myHero.pos:DistanceTo(enemy.pos) <= AAERRange + enemy.boundingRadius then
+			if Menu.Misc.ForceE:Value() and HaveBuff(enemy, "tristanaechargesound") and Data:IsInAutoAttackRange(myHero, enemy) then
 				Orbwalker.ForceTarget = enemy
 				return
 			end
@@ -2555,7 +2553,7 @@ function zgTristana:SemiR()
 	TableSort(enemies, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
-			if Menu.Misc.SemiR:Value() and IsReady(_R) and myHero.pos:DistanceTo(enemy.pos) <= AAERRange + enemy.boundingRadius then
+			if Menu.Misc.SemiR:Value() and IsReady(_R) and myHero.pos:DistanceTo(enemy.pos) <= self.ERRange + enemy.boundingRadius then
 				Control.CastSpell(HK_R, enemy)
 			end
 		end
@@ -2566,11 +2564,11 @@ function zgTristana:KillSteal()
 	local enemies = ObjectManager:GetEnemyHeroes(1000)
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
-			if Menu.KillSteal.R:Value() and IsReady(_R) and myHero.pos:DistanceTo(enemy.pos) <= AAERRange + enemy.boundingRadius then
-				local Edmg = self:GetEDmg(enemy)
-				local Rdmg = self:GetRDmg(enemy)
+			if Menu.KillSteal.R:Value() and IsReady(_R) and myHero.pos:DistanceTo(enemy.pos) <= self.ERRange + enemy.boundingRadius then
+				local Edmg = self:GetEDmg(enemy) - enemy.shieldAD
+				local Rdmg = self:GetRDmg(enemy) - enemy.shieldAP
 				local hasbuff = HaveBuff(enemy, "sionpassivezombie")
-				if not hasbuff and Edmg + Rdmg > enemy.health and Edmg < enemy.health and enemy.health > Damage:GetAutoAttackDamage(myHero, enemy) then
+				if not hasbuff and (Edmg + Rdmg) > (enemy.health + enemy.hpRegen * 4) and Edmg < (enemy.health + enemy.hpRegen * 4) and enemy.health > Damage:GetAutoAttackDamage(myHero, enemy) then
 					Control.CastSpell(HK_R, enemy)
 				end
 			end
@@ -2698,6 +2696,7 @@ function zgMissFortune:Tick()
 	if HaveBuff(myHero, "missfortunebulletsound") then
 		Orbwalker:SetAttack(false)
 		Orbwalker:SetMovement(false)
+		return
 	else
 		Orbwalker:SetAttack(true)
 		Orbwalker:SetMovement(true)
@@ -5278,6 +5277,7 @@ function zgYunara:Draw()
 	end
 end
 
+-----------------------------------------
 
 Callback.Add("Load", function()
 	if _G.SDK then
