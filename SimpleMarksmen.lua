@@ -1,4 +1,4 @@
-local Version = 2025.51
+local Version = 2025.52
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1581,6 +1581,7 @@ function zgLucian:LoadMenu()
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
 	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
 	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
