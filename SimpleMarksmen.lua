@@ -1,4 +1,4 @@
-local Version = 2025.52
+local Version = 2025.53
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1199,7 +1199,7 @@ function zgZeri:OnPreAttack(args)
 			end
 			if IsValid(target) and target.health < AADamage and Data:IsInAutoAttackRange(myHero, target) then
 				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
-				if collisionCount > 0 or not IsReady(_Q) then
+				if collisionCount > 0 or not self:CanUseQ() then
 					args.Process = true
 				end
 			end
@@ -1247,6 +1247,11 @@ function zgZeri:Tick()
 	end
 end
 
+function zgZeri:CanUseQ()
+	local spellData = myHero:GetSpellData(_Q)
+	return (spellData.currentCd < (HaveBuff(myHero, "ZeriR") and 0.05 or 0.25)) and spellData.level > 0 and spellData.mana <= myHero.mana
+end
+
 function zgZeri:AntiGapcloser()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(1500)
@@ -1264,7 +1269,7 @@ function zgZeri:AntiGapcloser()
 end
 
 function zgZeri:QBarrel()
-	if not Menu.Misc.QBarrel:Value() or not IsReady(_Q) then
+	if not Menu.Misc.QBarrel:Value() or not self:CanUseQ() then
 		return
 	end
 
@@ -1320,7 +1325,7 @@ function zgZeri:Combo()
 
 	local Qtarget = GetTarget(self.QSpell.Range)
 	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
-		if Menu.Combo.Q:Value() and IsReady(_Q) then
+		if Menu.Combo.Q:Value() and self:CanUseQ() then
 			local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 			QPrediction:GetPrediction(Qtarget, myHero)
 			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
@@ -1381,7 +1386,7 @@ end
 function zgZeri:Harass()
 	local Qtarget = GetTarget(self.QSpell.Range)
 	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
-		if Menu.Harass.Q:Value() and IsReady(_Q) then
+		if Menu.Harass.Q:Value() and self:CanUseQ() then
 			local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 			QPrediction:GetPrediction(Qtarget, myHero)
 			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
@@ -1407,7 +1412,7 @@ function zgZeri:GetQDmg(target)
 end
 
 function zgZeri:LastHit()
-	if Menu.LastHit.Q:Value() and IsReady(_Q) then
+	if Menu.LastHit.Q:Value() and self:CanUseQ() then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
@@ -1424,7 +1429,7 @@ end
 
 function zgZeri:LaneClear()
 	if IsUnderTurret(myHero) then return end
-	if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
+	if Menu.Clear.LaneClear.Q:Value() and self:CanUseQ() then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		--TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
@@ -1436,7 +1441,7 @@ function zgZeri:LaneClear()
 end
 
 function zgZeri:JungleClear()
-	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
+	if Menu.Clear.JungleClear.Q:Value() and self:CanUseQ() then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
@@ -1448,7 +1453,7 @@ function zgZeri:JungleClear()
 end
 
 function zgZeri:QObject()
-	if not IsReady(_Q) then return end
+	if not self:CanUseQ() then return end
 
 	local QRange = self.QSpell.Range
 	local targets = {}
@@ -1580,8 +1585,8 @@ function zgLucian:LoadMenu()
 	end})
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
 	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
-	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
+	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 6, step = 1})
 	-- Menu.Clear.LaneClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 60, min = 0, max = 100, step = 5})
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
@@ -1970,6 +1975,7 @@ function zgJinx:__init()
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 60, Range = 1450, Speed = 3300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 115, Range = 925, Speed = MathHuge, Collision = false}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 140, Range = 25000, Speed = 1700, Collision = false}
+	self.BonusAttackRange = 0
 end
 
 function zgJinx:LoadMenu()
@@ -2068,7 +2074,12 @@ end
 
 function zgJinx:Tick()
 	self.WSpell.Delay = MathMax(MathFloor((0.6 - 0.02 * ((myHero.attackSpeed - 1)/0.25)) * 100) / 100, 0.4)
-	
+	if HaveBuff(myHero, "JinxQ") then
+		local level = myHero:GetSpellData(_Q).level
+		self.BonusAttackRange = myHero.range - 525 - ({100, 125, 150, 175, 200})[level]
+	else
+		self.BonusAttackRange = myHero.range - 525
+	end
 	if ShouldWait() then
 		return
 	end
@@ -2108,7 +2119,7 @@ function zgJinx:Combo()
 end
 
 function zgJinx:ComboQ()	
-	local target = GetTarget(900)
+	local target = GetTarget(1200)
 	if IsValid(target) then
 		if Menu.Combo.Q:Value() and IsReady(_Q) then
 			if myHero.pos:DistanceTo(target.pos) > self:QbaseRange(target) and HaveBuff(myHero, "jinxqicon") then
@@ -2125,12 +2136,12 @@ function zgJinx:ComboQ()
 end
 
 function zgJinx:QbaseRange(unit)
-	return self.QSpell.Range + myHero.boundingRadius + unit.boundingRadius
+	return self.QSpell.Range + self.BonusAttackRange + myHero.boundingRadius + unit.boundingRadius
 end
 
 function zgJinx:QmaxRange(unit)
 	local level = myHero:GetSpellData(_Q).level
-	return self.QSpell.Range + myHero.boundingRadius + unit.boundingRadius + ({100, 125, 150, 175, 200})[level]
+	return self.QSpell.Range + self.BonusAttackRange + myHero.boundingRadius + unit.boundingRadius + ({100, 125, 150, 175, 200})[level]
 end
 
 function zgJinx:CastW(target)
