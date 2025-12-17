@@ -1,4 +1,4 @@
-local Version = 2025.24
+local Version = 2025.25
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -602,7 +602,7 @@ end
 
 function zgLux:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
-	local QDmg = ({80, 120, 160, 200, 240})[level] + 0.65 * myHero.ap
+	local QDmg = ({80, 120, 160, 200, 240})[level] + 0.75 * myHero.ap
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
 end
 

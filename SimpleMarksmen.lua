@@ -1,4 +1,4 @@
-local Version = 2025.53
+local Version = 2025.54
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2103,7 +2103,7 @@ function zgJinx:Tick()
 end
 
 function zgJinx:Combo()
-	local target = GetTarget(self.WSpell.Range)
+	local target = Orbwalker:GetTarget() or GetTarget(self.WSpell.Range)
 	if IsValid(target) then
 		if Menu.Combo.W:Value() and IsReady(_W) then
 			if myHero.pos:DistanceTo(target.pos) > Data:GetAutoAttackRange(myHero, target) then
