@@ -1,4 +1,4 @@
-local Version = 2025.54
+local Version = 2026.01
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -677,7 +677,8 @@ function zgNilah:GetQDmg(target)
 	local qlvl = myHero:GetSpellData(_Q).level
 	local qbaseDmg = 5 * qlvl
 	local qadDmg = myHero.totalDamage * (0.05 *qlvl + 0.85 )
-	local qDmg = qbaseDmg * (myHero.critChance + 1) + qadDmg * (myHero.critChance + 1)
+	local hasIE = HasItem(myHero, 3031)
+	local qDmg = (qbaseDmg + qadDmg) * (1 + myHero.critChance * (hasIE and 0.8 or 1.04))
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg)
 end
 
@@ -991,8 +992,9 @@ end
 
 function zgSmolder:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
+	local hasIE = HasItem(myHero, 3031)
 	if level > 0 then
-		local QDmg = (({65, 80, 95, 110, 125})[level] + 1.3 * myHero.bonusDamage) * (1 + 0.75 * myHero.critChance)
+		local QDmg = (({65, 80, 95, 110, 125})[level] + 1.3 * myHero.bonusDamage) * (1 + myHero.critChance * (hasIE and 0.65 or 0.5))
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 	else
 		return 0
@@ -1001,8 +1003,9 @@ end
 
 function zgSmolder:GetPQDmg(target)
 	local buff, buffData = GetBuffData(myHero, "SmolderQPassive")
+	local hasIE = HasItem(myHero, 3031)
 	if buff then
-		local Dmg = (0.4 * (1 + 0.75 * myHero.critChance)) * buffData.stacks
+		local Dmg = (0.4 * (1 + myHero.critChance * (hasIE and 0.65 or 0.5))) * buffData.stacks
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
 	else
 		return 0
@@ -1166,8 +1169,12 @@ function zgZeri:LoadMenu()
 	Menu.Misc:MenuElement({id = "WhitChance", name = "W | hitChance", value = 1, drop = {"Normal", "High"}})
 	Menu.Misc:MenuElement({id = "QBarrel", name = "Q Attack GP's Barrel", toggle = true, value = true})
 	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
-	Menu.Misc:MenuElement({id = "ComboAA", name = "Disable AA when no Qpassive in combo", toggle = true, value = true, key = string.byte("T")})
-	Menu.Misc:MenuElement({id = "ClearAA", name = "Disable AA when in Clear(Mouse Scroll)", toggle = true, value = true, key = 4})	
+	Menu.Misc:MenuElement({id = "ComboAA", name = "Disable AA when no Qpassive in combo", toggle = true, value = true, key = string.byte("T"), callback = function(newValue)
+		if CheckChatBlock(Menu.Misc.ComboAA, newValue) then return end
+	end})
+	Menu.Misc:MenuElement({id = "ClearAA", name = "Disable AA when in Clear(Mouse Scroll)", toggle = true, value = true, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Misc.ClearAA, newValue) then return end
+	end})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 	Menu.Draw:MenuElement({id = "ComboAA", name = "Draw Combo AA Status", toggle = true, value = true})
@@ -2353,7 +2360,7 @@ end
 function zgJinx:GetRDmg(target)
 	local d = target.pos:DistanceTo(myHero.pos)
 	local level = myHero:GetSpellData(_R).level
-	local RDmg = (({250, 400, 550})[level] + 1.3 * myHero.bonusDamage) * (0.06 * MathMin(MathFloor(d/100), 15) + 0.1) + ({0.25, 0.3, 0.35})[level] * (target.maxHealth - target.health)
+	local RDmg = (({200, 350, 500})[level] + 1.2 * myHero.bonusDamage) * (0.06 * MathMin(MathFloor(d/100), 15) + 0.1) + ({0.25, 0.3, 0.35})[level] * (target.maxHealth - target.health)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
 end
 
@@ -2594,10 +2601,10 @@ function zgTristana:GetEDmg(unit)
 	local hasIE = HasItem(myHero, 3031)
 
 	if hasbuff then
-		local EbaseDmg = ({60, 70, 80, 90, 100})[myHero:GetSpellData(_E).level]
-		local Ead = myHero.bonusDamage * ({1.0, 1.1, 1.2, 1.3, 1.4})[myHero:GetSpellData(_E).level]
+		local EbaseDmg = ({60, 85, 110, 135, 160})[myHero:GetSpellData(_E).level]
+		local Ead = myHero.bonusDamage * 0.8
 		local Eap = myHero.ap * 0.5
-		local Evalue = (EbaseDmg + Ead+ Eap) * (buffData.count * 0.25 + 1) * (myHero.critChance * (hasIE and 1.15 or 0.75) + 1)
+		local Evalue = (EbaseDmg + Ead+ Eap) * (buffData.count * 0.25 + 1) * (myHero.critChance * (hasIE and 0.52 or 0.4) + 1)
 		Edmg = Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_PHYSICAL, Evalue)
 	end
 	return Edmg
@@ -3304,7 +3311,8 @@ function zgJayce:Q1Logic()
 end
 
 function zgJayce:W1Logic()
-	if GetMode() == "Combo" and IsReady(_W) and Orbwalker:GetTarget() ~= nil and Orbwalker:GetTarget().type == Obj_AI_Hero then
+	local target = Orbwalker:GetTarget()
+	if GetMode() == "Combo" and IsReady(_W) and target ~= nil and target.type == Obj_AI_Hero then
 		Control.CastSpell(HK_W)
 	end
 end
@@ -3906,7 +3914,7 @@ function zgKalista:GetEDmg(target, isEpicMonster)
 			end
 			if targetName:find("sru_dragon") and targetName ~= "sru_dragon_elder" then
 				local buffNums = HaveBuffContainsNameNums(myHero, "SRX_DragonBuff")
-				totalDmg = totalDmg * (1 - 0.07 * buffNums)
+				totalDmg = totalDmg * (1 - 0.15 * buffNums)
 			end
 		end
 		return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, totalDmg)
@@ -4710,7 +4718,7 @@ function zgCaitlyn:Auto()
 				
 				-- Lissandra R targets
 				if HaveBuff(target, "LissandraRSelf") then
-					if lastWccLissandraR + 2500 < GetTickCount() then
+					if lastWLissandraR + 2500 < GetTickCount() then
 						Control.CastSpell(HK_W, target)
 						lastWLissandraR = GetTickCount()
 					end
@@ -4980,7 +4988,8 @@ end
 
 function zgCaitlyn:GetRDmg(target)
 	local level = myHero:GetSpellData(_R).level
-	local RDmg = (({300, 475, 650})[level] + 1.0 * myHero.bonusDamage) * (1 + 0.5 * myHero.critChance)
+	local mod = HasItem(myHero, 3031) and 0.39 or 0.3
+	local RDmg = (({300, 475, 650})[level] + 1.0 * myHero.bonusDamage) * (1 + mod * myHero.critChance)
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, RDmg)
 end
 
@@ -5254,7 +5263,7 @@ function zgYunara:GetWDmg(target)
 	local wName = myHero:GetSpellData(_W).name
 	if wlevel > 0 then
 		if wName == "YunaraW2" then
-			local WDmg = ({175, 350, 525})[rlevel] + 1.50 * myHero.bonusDamage + 0.75 * myHero.ap
+			local WDmg = ({160, 320, 480})[rlevel] + 1.20 * myHero.bonusDamage + 0.75 * myHero.ap
 			return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg)
 		else
 			local WDmg = ({55, 95, 135, 170, 215})[wlevel] + 0.85 * myHero.bonusDamage + 0.5 * myHero.ap
