@@ -1,4 +1,4 @@
-local Version = 2026.01
+local Version = 2026.02
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -678,7 +678,7 @@ function zgNilah:GetQDmg(target)
 	local qbaseDmg = 5 * qlvl
 	local qadDmg = myHero.totalDamage * (0.05 *qlvl + 0.85 )
 	local hasIE = HasItem(myHero, 3031)
-	local qDmg = (qbaseDmg + qadDmg) * (1 + myHero.critChance * (hasIE and 0.8 or 1.04))
+	local qDmg = (qbaseDmg + qadDmg) * (1 + myHero.critChance * (hasIE and 0.7 or 0.91))
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg)
 end
 
@@ -1980,7 +1980,7 @@ function zgJinx:__init()
 	Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = { Range = 525 }
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 60, Range = 1450, Speed = 3300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
-	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 115, Range = 925, Speed = MathHuge, Collision = false}
+	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.75, Radius = 115, Range = 925, Speed = MathHuge, Collision = false}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 140, Range = 25000, Speed = 1700, Collision = false}
 	self.BonusAttackRange = 0
 end
@@ -3511,13 +3511,13 @@ end
 
 function zgJayce:GetQ1Dmg(target)
 	local level = myHero:GetSpellData(_Q).level
-	local QDmg = ({60, 110, 160, 210, 260, 310})[level] + 1.40 * myHero.bonusDamage
+	local QDmg = ({80, 121, 162, 203, 244, 285})[level] + 1.40 * myHero.bonusDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 
 function zgJayce:GetQ2Dmg(target)
 	local level = myHero:GetSpellData(_Q).level
-	local QDmg = ({60, 105, 150, 195, 240, 285})[level] + 1.35 * myHero.bonusDamage
+	local QDmg = ({60, 110, 160, 210, 260, 310})[level] + 1.35 * myHero.bonusDamage
 	return Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 

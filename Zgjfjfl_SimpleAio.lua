@@ -1,4 +1,4 @@
-local Version = 2025.33
+local Version = 2026.01
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2144,13 +2144,23 @@ function zgUdyr:Combo()
 		local hasAwakenedR = doesMyChampionHaveBuff("udyrrrecastready")
 		local R1Buff, R1BuffData = getBuffData(myHero, "UdyrRActivation")
 		local haspassiveAA = doesMyChampionHaveBuff("UdyrPAttackReady")
-		if Menu.Combo.E:Value() and IsReady(_E) and lastE + 250 < GetTickCount() and not hasAwakenedE and not hasAwakenedR then
-			Control.CastSpell(HK_E)
-			lastE = GetTickCount()
+		if Menu.Combo.E:Value() and IsReady(_E) and lastE + 250 < GetTickCount() and not hasAwakenedE then
+			if (Menu.Style.MainR:Value() and not hasAwakenedR) or (Menu.Style.MainQ:Value() and not hasAwakenedQ) then
+				Control.CastSpell(HK_E)
+				lastE = GetTickCount()
+			end
+		end
+		if myHero.health/myHero.maxHealth <= Menu.Combo.Whp:Value()/100 and Menu.Combo.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount() and getEnemyCount(600, myHero.pos) >= 1 and not hasAwakenedW then
+			Control.CastSpell(HK_W)
+			lastW = GetTickCount()
+		end
+		if myHero.health/myHero.maxHealth <= Menu.Combo.W2hp:Value()/100 and Menu.Combo.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount() and hasAwakenedW and getEnemyCount(600, myHero.pos) >= 1 then
+			Control.CastSpell(HK_W)
+			lastW = GetTickCount()
 		end
 		if Menu.Style.MainR:Value() then
 			if Menu.Combo.R:Value() and IsReady(_R) and lastR + 250 < GetTickCount() then
-				if (not IsReady(_E) or hasAwakenedE or hasAwakenedR) and R1Buff and R1BuffData.duration < 1.5 and myHero.pos:DistanceTo(target.pos) < 450 then
+				if ((not IsReady(_E) and not hasAwakenedR) or hasAwakenedE or (hasAwakenedR and R1Buff and R1BuffData.duration < 1.5)) and myHero.pos:DistanceTo(target.pos) < 450 then
 					Control.CastSpell(HK_R)
 					lastR = GetTickCount()
 				end
@@ -2164,7 +2174,7 @@ function zgUdyr:Combo()
 		end
 		if Menu.Style.MainQ:Value() then
 			if Menu.Combo.Q:Value() and IsReady(_Q) and lastQ + 250 < GetTickCount() then
-				if (not IsReady(_E) or hasAwakenedE or (hasAwakenedQ and not haspassiveAA)) and myHero.pos:DistanceTo(target.pos) < 300 then
+				if ((not IsReady(_E) and not hasAwakenedQ) or hasAwakenedE or (hasAwakenedQ and not haspassiveAA)) and myHero.pos:DistanceTo(target.pos) < 300 then
 					Control.CastSpell(HK_Q)
 					lastQ = GetTickCount()
 				end
@@ -2175,14 +2185,6 @@ function zgUdyr:Combo()
 					lastR = GetTickCount()
 				end
 			end
-		end
-		if myHero.health/myHero.maxHealth <= Menu.Combo.Whp:Value()/100 and Menu.Combo.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount() and getEnemyCount(600, myHero.pos) >= 1 then
-			Control.CastSpell(HK_W)
-			lastW = GetTickCount()
-		end
-		if myHero.health/myHero.maxHealth <= Menu.Combo.W2hp:Value()/100 and Menu.Combo.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount() and hasAwakenedW and getEnemyCount(600, myHero.pos) >= 1 then
-			Control.CastSpell(HK_W)
-			lastW = GetTickCount()
 		end
 	end
 end
@@ -5546,8 +5548,8 @@ function zgMel:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 250, Range = 950, Speed = 4500, Collision = false}
-	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 150, Range = 1050, Speed = 1000, Collision = false}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.35, Radius = 200, Range = 950, Speed = 3800, Collision = false}
+	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 115, Range = 1000, Speed = 1100, Collision = false}
 end
 
 function zgMel:LoadMenu()
@@ -5670,7 +5672,7 @@ function zgMel:GetRDmg(target)
 	local buff, buffData = getBuffData(target, "MelPassiveOverwhelm")
 	local RDmg = 0
 	if buff then
-		RDmg = (({100, 150, 200})[level] + 0.30 * myHero.ap) + (({4, 7, 10})[level] + 0.035 * myHero.ap) * buffData.stacks
+		RDmg = (({100, 150, 200})[level] + 0.30 * myHero.ap) + (({4, 7, 10})[level] + 0.04 * myHero.ap) * buffData.stacks
 	end
 	if HasItem(myHero, 4645) and target.health / target.maxHealth < 0.4 then
 		RDmg = RDmg * 1.2
