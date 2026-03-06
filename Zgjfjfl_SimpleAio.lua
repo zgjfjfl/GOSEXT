@@ -1,4 +1,4 @@
-local Version = 2026.01
+local Version = 2026.02
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -5672,7 +5672,7 @@ function zgMel:GetRDmg(target)
 	local buff, buffData = getBuffData(target, "MelPassiveOverwhelm")
 	local RDmg = 0
 	if buff then
-		RDmg = (({100, 150, 200})[level] + 0.30 * myHero.ap) + (({4, 7, 10})[level] + 0.04 * myHero.ap) * buffData.stacks
+		RDmg = (({125, 200, 275})[level] + 0.30 * myHero.ap) + (({4, 7, 10})[level] + 0.04 * myHero.ap) * buffData.stacks
 	end
 	if HasItem(myHero, 4645) and target.health / target.maxHealth < 0.4 then
 		RDmg = RDmg * 1.2
