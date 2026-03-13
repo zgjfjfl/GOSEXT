@@ -1,4 +1,4 @@
-local Version = 2026.02
+local Version = 2026.03
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -2693,8 +2693,10 @@ function zgIvern:CastE(unit)
 	if unit.isMe then
 		Control.KeyDown(0x12)  -- Alt key
 		Control.KeyDown(HK_E)
-		Control.KeyUp(HK_E)
-		Control.KeyUp(0x12)
+		DelayAction(function()
+			Control.KeyUp(HK_E)
+			Control.KeyUp(0x12)
+		end, 0.01)
 	else
 		Control.CastSpell(HK_E, unit)
 	end
@@ -4386,8 +4388,10 @@ function zgMilio:CastE(unit)
 	if unit.isMe then
 		Control.KeyDown(0x12)  -- Alt key
 		Control.KeyDown(HK_E)
-		Control.KeyUp(HK_E)
-		Control.KeyUp(0x12)
+		DelayAction(function()
+			Control.KeyUp(HK_E)
+			Control.KeyUp(0x12)
+		end, 0.01)
 	else
 		Control.CastSpell(HK_E, unit)
 	end
