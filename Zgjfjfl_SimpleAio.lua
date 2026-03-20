@@ -1,4 +1,4 @@
-local Version = 2026.03
+local Version = 2026.04
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1147,9 +1147,9 @@ function zgShyvana:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
-	self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 925, Speed = 1600, Collision = false}
-	self.e2Spell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.333, Radius = 345, Range = 1200, Speed = 1575, Collision = false}
-	self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 160, Range = 850, Speed = 700, Collision = false}
+	self.eSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 150, Range = 800, Speed = 1500, Collision = false}
+	self.e2Spell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 345, Range = 1000, Speed = 1600, Collision = false}
+	self.rSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 225, Range = 1050, Speed = 1050, Collision = false}
 end
 
 function zgShyvana:LoadMenu()		
@@ -1195,7 +1195,7 @@ end
 
 function zgShyvana:Combo()
 	if Menu.Combo.E:Value() and IsReady(_E) then
-		local DragonForm = doesMyChampionHaveBuff("ShyvanaTransform")
+		local DragonForm = doesMyChampionHaveBuff("ShyvanaRTransform")
 		if DragonForm then
 			local target = TargetSelector:GetTarget(self.e2Spell.Range)
 			if IsValid(target) then
@@ -1209,14 +1209,14 @@ function zgShyvana:Combo()
 		end
 	end
 	if Menu.Combo.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount()then
-		local target = TargetSelector:GetTarget(400)
+		local target = TargetSelector:GetTarget(500)
 		if IsValid(target) then
 			Control.CastSpell(HK_W)
 			lastW = GetTickCount()
 		end
 	end
 	if Menu.Combo.Q:Value() and IsReady(_Q) and lastQ + 250 < GetTickCount() then
-		local target = TargetSelector:GetTarget(350)
+		local target = TargetSelector:GetTarget(myHero.range + 200)
 		if IsValid(target) then
 			Control.CastSpell(HK_Q)
 			lastQ = GetTickCount()
