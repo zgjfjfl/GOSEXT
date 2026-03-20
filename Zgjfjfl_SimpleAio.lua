@@ -1,4 +1,4 @@
-local Version = 2026.04
+local Version = 2026.05
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1239,11 +1239,11 @@ function zgShyvana:LaneClear()
 		target = HealthPrediction:GetLaneClearTarget()
 	end
 	if IsValid(target) then
-		if myHero.pos:DistanceTo(target.pos) < 400 and Menu.Clear.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount() then
+		if myHero.pos:DistanceTo(target.pos) < 500 and Menu.Clear.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount() then
 			Control.CastSpell(HK_W)
 			lastW = GetTickCount()
 		end
-		if myHero.pos:DistanceTo(target.pos) <= 300 and Menu.Clear.Q:Value() and IsReady(_Q) and lastQ + 250 < GetTickCount() then
+		if myHero.pos:DistanceTo(target.pos) < myHero.range + 200 and Menu.Clear.Q:Value() and IsReady(_Q) and lastQ + 250 < GetTickCount() then
 			Control.CastSpell(HK_Q)
 			lastQ = GetTickCount()
 		end
@@ -1258,7 +1258,7 @@ end
 
 function zgShyvana:Harass()
 	if Menu.Harass.E:Value() and IsReady(_E) then
-		local DragonForm = doesMyChampionHaveBuff("ShyvanaTransform")
+		local DragonForm = doesMyChampionHaveBuff("ShyvanaRTransform")
 		if DragonForm then
 			local target = TargetSelector:GetTarget(self.e2Spell.Range)
 			if IsValid(target) then
