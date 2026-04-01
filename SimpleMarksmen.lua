@@ -1,4 +1,4 @@
-local Version = 2026.02
+local Version = 2026.03
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -232,7 +232,7 @@ end
 local function IsImmobile(unit)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
-		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
+		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 29 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
 			return true
 		end
 	end
@@ -243,7 +243,7 @@ local function GetImmobileDuration(unit)
 	local MaxDuration = 0
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
-		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
+		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 29 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
 			local BuffDuration = buff.duration
 			if BuffDuration > MaxDuration then
 				MaxDuration = BuffDuration
@@ -3887,7 +3887,7 @@ function zgKalista:GetEDmg(target, isEpicMonster)
 	local targetName = target.charName:lower()
 	if buff and level > 0 then
 		local baseDmg = ({5, 15, 25, 35, 45})[level] + 0.7 * myHero.totalDamage + 0.65 * myHero.ap
-		local bonusDmg = (buffData.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.25, 0.3, 0.35, 0.4})[level] * myHero.totalDamage + 0.5 * myHero.ap)
+		local bonusDmg = (buffData.count - 1) * (({7, 14, 21, 28, 35})[level] + ({0.2, 0.275, 0.35, 0.425, 0.5})[level] * myHero.totalDamage + 0.5 * myHero.ap)
 		local totalDmg = baseDmg + bonusDmg
 		if HasBuffContainsName(myHero, "PressTheAttackLockout") then
 			totalDmg = totalDmg * 1.08
@@ -4683,12 +4683,8 @@ function zgCaitlyn:Auto()
 		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pos2D.onScreen and IsImmobile(target) then
-				if not IsReady(_W) then
+				if not IsReady(_W) or myHero.pos:DistanceTo(target.pos) > self.WSpell.Range then
 					self:CastGGPred(HK_Q, target)
-				else
-					if myHero.pos:DistanceTo(target.pos) > self.WSpell.Range then
-						self:CastGGPred(HK_Q, target)
-					end
 				end
 			end
 		end
@@ -4779,7 +4775,7 @@ function zgCaitlyn:Auto()
 end
 
 function zgCaitlyn:KillSteal()
-	if Menu.KillSteal.Q:Value() and IsReady(_Q) then
+	if Menu.KillSteal.Q:Value() and IsReady(_Q) and GetEnemyCount(400, myHero.pos) == 0 then
 		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and (target.health + target.shieldAD) < self:GetQDmg(target) then
@@ -4804,21 +4800,24 @@ function zgCaitlyn:Combo()
 	if Menu.Combo.E:Value() and IsReady(_E) then
 		local target = GetTarget(self.ESpell.Range)
 		if IsValid(target) and target.pos2D.onScreen and myHero.pos:DistanceTo(target.pos) <= Menu.Combo.ERange:Value() then
-			if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
-				self:CastEQ(target)
-			else
-				self:CastGGPred(HK_E, target)
+			local eToPos = myHero.pos:Extended(target.pos, -400)
+			if GetEnemyCount(700, eToPos) < 2 then
+				if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.mana > myHero:GetSpellData(_E).mana + myHero:GetSpellData(_Q).mana then
+					self:CastEQ(target)
+				else
+					self:CastGGPred(HK_E, target)
+				end
 			end
 		end
 	end
 
-	if Menu.Combo.Q:Value() and IsReady(_Q) then
+	if Menu.Combo.Q:Value() and IsReady(_Q) and GetEnemyCount(400, myHero.pos) == 0 then
 		local target = GetTarget(self.QSpell.Range)
 		if IsValid(target) and target.pos2D.onScreen and myHero.pos:DistanceTo(target.pos) > Menu.Combo.QRange:Value() then
 			if Menu.Combo.QSlow:Value() and IsSlow(target) then
 				self:CastGGPred(HK_Q, target)
 			end
-			if Menu.Combo.QAoe:Value() then
+			if Menu.Combo.QAoe:Value() and GetEnemyCount(720 + myHero.boundingRadius, myHero.pos) == 0 then
 				CastSpellAOE(HK_Q, self.QSpell, 2, myHero)
 			end
 		end
