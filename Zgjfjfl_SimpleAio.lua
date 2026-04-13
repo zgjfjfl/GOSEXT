@@ -1,4 +1,4 @@
-local Version = 2026.05
+local Version = 2026.06
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -260,7 +260,7 @@ end
 local function isImmobile(unit)
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
-		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 22 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
+		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 12 or buff.type == 29 or buff.type == 23 or buff.type == 25 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
 			return true
 		end
 	end
@@ -2905,8 +2905,14 @@ function zgTaliyah:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
 	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1000, Speed = 3600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1, Radius = 225, Range = 900, Speed = math.huge, Collision = false}
+	self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 225, Range = 900, Speed = math.huge, Collision = false}
 	self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 200, Range = 950, Speed = 1700, Collision = false}
+	self.isCastingW = false
+    self.stage = 0
+    self.stageTick = 0
+    self.startPos = nil
+    self.endPos = nil
+    self.mPos = nil
 end
 
 function zgTaliyah:LoadMenu()
@@ -2925,59 +2931,69 @@ function zgTaliyah:LoadMenu()
 		Menu.Draw:MenuElement({id = "QMis", name = "[Q] Missile Path", toggle = true, value = false})
 end
 
-local vectorCast = {}
-local mouseReturnPos = mousePos
-local mouseCurrentPos = mousePos
-local nextVectorCast = 0
-function zgTaliyah:CastVectorSpell(key, pos1, pos2)
-	if nextVectorCast > Game.Timer() then return end
-	nextVectorCast = Game.Timer() + 1.5
-	Orbwalker:SetMovement(false)
-	Orbwalker:SetAttack(false)
-	vectorCast[#vectorCast + 1] = function () 
-		mouseReturnPos = mousePos
-		mouseCurrentPos = pos1
-		Control.SetCursorPos(pos1)
-	end
-	vectorCast[#vectorCast + 1] = function () 
-		Control.KeyDown(key)
-	end
-	vectorCast[#vectorCast + 1] = function () 
-		local deltaMousePos = mousePos-mouseCurrentPos
-		mouseReturnPos = mouseReturnPos + deltaMousePos
-		Control.SetCursorPos(pos2)
-		mouseCurrentPos = pos2
-	end
-	vectorCast[#vectorCast + 1] = function ()
-		Control.KeyUp(key)
-	end
-	vectorCast[#vectorCast + 1] = function ()	
-		local deltaMousePos = mousePos -mouseCurrentPos
-		mouseReturnPos = mouseReturnPos + deltaMousePos
-		Control.SetCursorPos(mouseReturnPos)
-	end
-	vectorCast[#vectorCast + 1] = function () 
-		Orbwalker:SetMovement(true)
-		Orbwalker:SetAttack(true)
-	end
-end
-
 function zgTaliyah:Tick()
+	self:UpdateCastW()
 	if ShouldWait() then
 		return
 	end
-	if #vectorCast > 0 then
-		vectorCast[1]()
-		table.remove(vectorCast, 1)
-		return
-	end
-	if IsCasting() then return end
+	if IsCasting() or self.isCastingW then return end
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
 		self:Combo()
 	end
 	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_HARASS] then
 		self:Harass()
 	end
+end
+
+function zgTaliyah:CastW(startPos, endPos)
+    if self.isCastingW then return false end
+
+    self.isCastingW = true
+    self.stage = 1
+    self.stageTick = GetTickCount()
+    self.startPos = startPos
+    self.endPos = endPos
+    self.mPos = mousePos
+
+    _G.SDK.Orbwalker:SetMovement(false)
+    _G.SDK.Orbwalker:SetAttack(false)
+
+    return true
+end
+
+function zgTaliyah:UpdateCastW()
+    if not self.isCastingW then return end
+
+    local now = GetTickCount()
+
+    if now > self.stageTick then
+        if self.stage == 1 then
+            Control.SetCursorPos(self.startPos)
+            Control.KeyDown(HK_W)
+
+            self.stage = 2
+            self.stageTick = now
+
+        elseif self.stage == 2 then
+            Control.SetCursorPos(self.endPos)
+            Control.KeyUp(HK_W)
+
+            self.stage = 3
+            self.stageTick = now
+
+        elseif self.stage == 3 then
+            Control.SetCursorPos(self.mPos)
+
+            self.stage = 4
+            self.stageTick = now + 150
+
+        elseif self.stage == 4 then
+            _G.SDK.Orbwalker:SetMovement(true)
+            _G.SDK.Orbwalker:SetAttack(true)
+
+            self.isCastingW = false
+        end
+    end
 end
 
 function zgTaliyah:Combo()
@@ -2990,16 +3006,21 @@ function zgTaliyah:Combo()
 			Control.CastSpell(HK_E, target)
 		end
 		if Menu.Combo.W:Value() and IsReady(_W) and lastW + 1100 < GetTickCount() then
-			local predPos = target:GetPrediction(self.wSpell.Speed, self.wSpell.Delay)
-			local d = myHero.pos:DistanceTo(predPos)
-			if d < self.wSpell.Range then
-				local endPos = predPos + (myHero.pos - predPos):Normalized() * 225
-				if d <= Menu.Combo.Wpush:Value() then
-					endPos = predPos + (predPos - myHero.pos):Normalized() * 225
+			local wPred = GGPrediction:SpellPrediction(self.wSpell)
+			wPred:GetPrediction(target, myHero)
+			if wPred:CanHit(GGPrediction.HITCHANCE_HIGH) then
+				local predPos = wPred.CastPosition
+				local d = myHero.pos:DistanceTo(predPos)
+				if d < self.wSpell.Range then
+					local endPos = predPos + (myHero.pos - predPos):Normalized() * 225
+					if d <= Menu.Combo.Wpush:Value() then
+						endPos = predPos + (predPos - myHero.pos):Normalized() * 225
+					end
+					if self:CastW(predPos, endPos) then
+						lastW = GetTickCount()
+						return
+					end
 				end
-				self:CastVectorSpell(HK_W, predPos, endPos)
-				lastW = GetTickCount()
-				return
 			end
 		end
 	end
@@ -5560,6 +5581,7 @@ function zgMel:LoadMenu()
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "ERange", name = "Use E|Max Range", value = 900, min = 0, max = 1000, step = 50})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
@@ -5646,7 +5668,7 @@ function zgMel:AutoE()
 		local enemies = ObjectManager:GetEnemyHeroes(self.ESpell.Range)
 		for _, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing and target.posTo and not HasInvalidDashBuff(target) then
-				if myHero.pos:DistanceTo(enemy.posTo) < myHero.pos:DistanceTo(target.pos) then
+				if myHero.pos:DistanceTo(target.posTo) < myHero.pos:DistanceTo(target.pos) then
 					self:CastGGPred(HK_E, target)
 				end
 			end
@@ -5698,7 +5720,7 @@ function zgMel:AutoR()
 end
 
 function zgMel:Combo()
-	local Etarget = TargetSelector:GetTarget(self.ESpell.Range)
+	local Etarget = TargetSelector:GetTarget(Menu.Combo.ERange:Value())
 	if IsValid(Etarget) and Etarget.pos2D.onScreen then
 		if Menu.Combo.E:Value() and IsReady(_E) then
 			self:CastGGPred(HK_E, Etarget)
@@ -5707,7 +5729,7 @@ function zgMel:Combo()
 
 	local Qtarget = TargetSelector:GetTarget(self.QSpell.Range)
 	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
-		if Menu.Combo.Q:Value() and IsReady(_Q) then
+		if Menu.Combo.Q:Value() and IsReady(_Q) and not IsReady(_E) then
 			self:CastGGPred(HK_Q, Qtarget)
 		end
 	end
@@ -5958,7 +5980,7 @@ end
 
 function zgZaahen:Combo()
 	if Menu.Combo.Q:Value() and IsReady(_Q) and myHero:GetSpellData(_Q).name == "ZaahenQ2" and lastQ + 300 < GetTickCount() then
-		local target = TargetSelector:GetTarget(330)
+		local target = TargetSelector:GetTarget(350)
 		if IsValid(target) then
 			Control.CastSpell(HK_Q)
 			lastQ = GetTickCount()
