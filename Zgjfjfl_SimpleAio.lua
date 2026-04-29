@@ -1,4 +1,4 @@
-local Version = 2026.06
+local Version = 2026.07
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -5406,7 +5406,7 @@ function zgAmbessa:__init()
 	self.Q2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.225, Radius = 15, Range = 650, Speed = MathHuge, Collision = false}
 	self.WSpell = { Range = 325 }
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.225, Radius = 100, Range = 325, Speed = MathHuge, Collision = false}
-	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.55, Radius = 15, Range = 1250, Speed = MathHuge, Collision = false}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.7, Radius = 15, Range = 1250, Speed = MathHuge, Collision = false}
 end
 
 function zgAmbessa:LoadMenu()
