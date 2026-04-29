@@ -1,4 +1,4 @@
-local Version = 2026.03
+local Version = 2026.04
 --[[ AutoUpdate ]]
 do
 	local Files = {
@@ -1206,7 +1206,7 @@ function zgZeri:OnPreAttack(args)
 			end
 			if IsValid(target) and target.health < AADamage and Data:IsInAutoAttackRange(myHero, target) then
 				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, target.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
-				if collisionCount > 0 or not self:CanUseQ() then
+				if collisionCount > 0 or (not IsReady(_Q) or not Menu.LastHit.Q:Value()) then
 					args.Process = true
 				end
 			end
@@ -1254,11 +1254,6 @@ function zgZeri:Tick()
 	end
 end
 
-function zgZeri:CanUseQ()
-	local spellData = myHero:GetSpellData(_Q)
-	return (spellData.currentCd < (HaveBuff(myHero, "ZeriR") and 0.05 or 0.25)) and spellData.level > 0 and spellData.mana <= myHero.mana
-end
-
 function zgZeri:AntiGapcloser()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
 		local enemies = ObjectManager:GetEnemyHeroes(1500)
@@ -1276,7 +1271,7 @@ function zgZeri:AntiGapcloser()
 end
 
 function zgZeri:QBarrel()
-	if not Menu.Misc.QBarrel:Value() or not self:CanUseQ() then
+	if not Menu.Misc.QBarrel:Value() or not IsReady(_Q) then
 		return
 	end
 
@@ -1332,7 +1327,7 @@ function zgZeri:Combo()
 
 	local Qtarget = GetTarget(self.QSpell.Range)
 	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
-		if Menu.Combo.Q:Value() and self:CanUseQ() then
+		if Menu.Combo.Q:Value() and IsReady(_Q) then
 			local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 			QPrediction:GetPrediction(Qtarget, myHero)
 			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
@@ -1393,7 +1388,7 @@ end
 function zgZeri:Harass()
 	local Qtarget = GetTarget(self.QSpell.Range)
 	if IsValid(Qtarget) and Qtarget.pos2D.onScreen then
-		if Menu.Harass.Q:Value() and self:CanUseQ() then
+		if Menu.Harass.Q:Value() and IsReady(_Q) then
 			local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 			QPrediction:GetPrediction(Qtarget, myHero)
 			if QPrediction:CanHit(Menu.Misc.QhitChance:Value() + 1) then
@@ -1419,7 +1414,7 @@ function zgZeri:GetQDmg(target)
 end
 
 function zgZeri:LastHit()
-	if Menu.LastHit.Q:Value() and self:CanUseQ() then
+	if Menu.LastHit.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
@@ -1436,7 +1431,7 @@ end
 
 function zgZeri:LaneClear()
 	if IsUnderTurret(myHero) then return end
-	if Menu.Clear.LaneClear.Q:Value() and self:CanUseQ() then
+	if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		--TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
@@ -1448,7 +1443,7 @@ function zgZeri:LaneClear()
 end
 
 function zgZeri:JungleClear()
-	if Menu.Clear.JungleClear.Q:Value() and self:CanUseQ() then
+	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
@@ -1460,7 +1455,7 @@ function zgZeri:JungleClear()
 end
 
 function zgZeri:QObject()
-	if not self:CanUseQ() then return end
+	if not IsReady(_Q) then return end
 
 	local QRange = self.QSpell.Range
 	local targets = {}
