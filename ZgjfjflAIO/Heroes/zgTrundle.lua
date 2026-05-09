@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -59,7 +59,7 @@ function zgTrundle:Combo()
 	if Menu.Combo.E:Value() and IsReady(_E) then
 		local target = GetTarget(self.eSpell.Range)
 		if IsValid(target) and myHero.pos:DistanceTo(target.pos) > 350 then
-			local offset = IsFacing(target) and 100 or 200
+			local offset = IsFacingMe(target) and 100 or 200
 			local castPos = Vector(myHero.pos) + Vector(Vector(target.pos) - Vector(myHero.pos)):Normalized() * (myHero.pos:DistanceTo(target.pos) + offset)
 			if myHero.pos:DistanceTo(castPos) <= self.eSpell.Range then
 				Control.CastSpell(HK_E, castPos)
