@@ -31,11 +31,9 @@ local function ParseVersionContent(content)
 end
 
 do
-    local GGPredictionFile = COMMON_PATH .. "GGPrediction.lua"
     local UtilsFile = BasePath .. "Utils.lua"
     local HeroFile = HeroPath .. "zg" .. charName .. ".lua"
     local VersionUrl = BaseUrl .. "ZgjfjflAIO.version"
-    local GGPredictionUrl = "https://raw.githubusercontent.com/4risto/GoS/master/GGPrediction.lua"
     local UtilsUrl = BaseUrl .. "Utils.lua"
     local HeroUrl = BaseUrl .. "Heroes/zg" .. charName .. ".lua"
     GetWebResultAsync(VersionUrl, function(content)
@@ -47,11 +45,6 @@ do
         if not remoteVersion["zg" .. charName] then
             print("Zgjfjfl AIO: " .. charName .. " is not supported yet")
             return
-        end
-        if not FileExists(GGPredictionFile) then
-            DownloadFileAsync(GGPredictionUrl, GGPredictionFile, function()
-                print("Zgjfjfl AIO: Downloaded GGPrediction File, F6 to Reload")
-            end)
         end
         if not FileExists(UtilsFile) then
             print("Zgjfjfl AIO: First time setup, Downloading Utils File")
