@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 lastQ, lastW, lastE, lastR = 0, 0, 0, 0
 
@@ -203,9 +203,13 @@ function IsPoison(unit)
 end
 
 function Recalling(unit)
+	local as = unit.activeSpell
+	if as and as.valid and (as.name == "SuperRecall" or as.name == "recall") then
+		return true
+	end
 	for i = 0, unit.buffCount do
 		local buff = unit:GetBuff(i)
-		if buff and buff.name:lower():find("recall") and buff.count > 0 then
+		if buff and (buff.name == "recall" or buff.name == "SuperRecall") and buff.count > 0 then
 			return true
 		end
 	end
