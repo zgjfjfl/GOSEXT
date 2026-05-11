@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("MapPositionGOS")
@@ -25,7 +25,6 @@ end
 function zgOrnn:LoadMenu()
 	local championIcon = "http://ddragon.leagueoflegends.com/cdn/16.1.1/img/champion/"..myHero.charName..".png"
 	Menu = MenuElement({type = MENU, id = "Zgjfjfl_AIO_"..myHero.charName, name = "Zgjfjfl AIO - "..myHero.charName.." V: "..Version, leftIcon = championIcon})
-	Menu:MenuElement({id = "SupportMode", name = "Support Mode (Disable Harass Lasthit)", value = false})	
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 		Menu.Combo:MenuElement({id = "DisableAA", name = "Disable [AA] in Combo(when spell ready)", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "Q", name = "[Q]", toggle = true, value = true})
