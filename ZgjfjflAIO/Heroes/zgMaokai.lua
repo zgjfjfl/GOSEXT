@@ -1,7 +1,6 @@
 local Version = 1.02
 
 require("GGPrediction")
-require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgMaokai"
