@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -144,14 +144,14 @@ function zgTaliyah:Combo()
 			self:CastQ(target)
 		end
 		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
-			if (IsReady(_W) or myHero:GetSpellData(_W).currentCd < 0.9 or myHero:GetSpellData(_W).currentCd > 2) then
+			if (IsReady(_W) or myHero:GetSpellData(_W).currentCd < 0.5 or myHero:GetSpellData(_W).currentCd > 2) then
 				if Control.CastSpell(HK_E, target) then
 					lastE = GetTickCount()
 				end
 			end
 		end
 		if Menu.Combo.W:Value() and IsReady(_W) and lastW + 1100 < GetTickCount() then
-			if not IsReady(_E) and ((lastE + 500 < GetTickCount() and lastE + 2500 > GetTickCount()) or myHero:GetSpellData(_E).currentCd > 1) then
+			if not IsReady(_E) and lastE + 500 < GetTickCount() and (lastE + 2500 > GetTickCount() or myHero:GetSpellData(_E).currentCd > 2) then
 				local wPred = GGPrediction:SpellPrediction(self.wSpell)
 				wPred:GetPrediction(target, myHero)
 				if wPred:CanHit(GGPrediction.HITCHANCE_HIGH) then
@@ -175,7 +175,7 @@ end
 
 function zgTaliyah:Harass()
 	if Menu.Harass.Q:Value() and IsReady(_Q) then
-		local target = GetTarget(Menu.Harass.Q.Qmaxrange:Value())
+		local target = GetTarget(Menu.Harass.Qmaxrange:Value())
 		if IsValid(target) then
 			self:CastQ(target)
 		end
