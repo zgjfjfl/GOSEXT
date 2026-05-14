@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -210,7 +210,7 @@ end
 function zgZaahen:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(ESpell.Range + ESpell.Radius)
+		local minions = _G.SDK.ObjectManager:GetEnemyMinions(ESpell.Range + ESpell.Radius)
 		table.sort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		local eCount = 0
 		for i, minion in ipairs(minions) do
@@ -237,7 +237,7 @@ end
 
 function zgZaahen:JungleClear()
 	if Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetMonsters(ESpell.Range + ESpell.Radius)
+		local minions = _G.SDK.ObjectManager:GetMonsters(ESpell.Range + ESpell.Radius)
 		table.sort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
