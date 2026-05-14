@@ -1,7 +1,7 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
-require("MapPositionGOS")
+-- require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgLucian"
@@ -213,11 +213,11 @@ function zgLucian:CastE(target, mode, range)
 	
 	if castPos ~= nil then
 		local underTurret = IsUnderTurret2(castPos)
-		local inWall = MapPosition:inWall(castPos) -- Game.IsWall(castPos)
+		local inWall = Game.isWall(castPos) -- MapPosition:inWall(castPos)
 		local enemyCheck = Menu.Combo.enemyCheck:Value()
 		local enemyCount = GetEnemyCount(600, castPos)
 
-		if Menu.Combo.Echeck:Value() and (underTurret or inWall) then return false end
+		if Menu.Combo.Echeck:Value() and (underTurret or inWall ~= nil) then return false end
 		if Menu.Combo.EsafeCheck:Value() and enemyCount >= enemyCheck then return false end
 
 		Control.CastSpell(HK_E, castPos)
@@ -245,8 +245,8 @@ function zgLucian:CastQExt(target)
 		
 		local targetPos = myHero.pos:Extended(predPos, GetDistance(myHero.pos, predPos))
 
-		local minions = ObjectManager:GetEnemyMinions(self.QSpell.Range + myHero.boundingRadius + target.boundingRadius)
-		local enemies = ObjectManager:GetEnemyHeroes(self.QSpell.Range + myHero.boundingRadius + target.boundingRadius)
+		local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.QSpell.Range + myHero.boundingRadius + target.boundingRadius)
+		local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.QSpell.Range + myHero.boundingRadius + target.boundingRadius)
 		
 		local objTable = {}
 		for i = 1, #minions do
@@ -301,7 +301,7 @@ end
 function zgLucian:LaneClear()
 	if IsUnderTurret(myHero) then return end
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.LaneClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(self.Q2Spell.Range)
+		local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.Q2Spell.Range)
 		table.sort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
@@ -338,7 +338,7 @@ end
 
 function zgLucian:JungleClear()
 	if --[[myHero.mana/myHero.maxMana >= Menu.Clear.JungleClear.Mana:Value()/100 and ]]Menu.Clear.SpellFarm:Value() then
-		local minions = ObjectManager:GetEnemyMinions(self.WSpell.Range)
+		local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.WSpell.Range)
 		table.sort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team == 300 and minion.pos2D.onScreen then
@@ -384,7 +384,7 @@ end
 
 function zgLucian:AntiGapcloser()
 	if Menu.Misc.Egap:Value() and IsReady(_E) then
-		local enemies = ObjectManager:GetEnemyHeroes(1500)
+		local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(1500)
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing and not HasInvalidDashBuff(target) then
 				if myHero.pos:DistanceTo(target.pathing.endPos) < 300 and IsFacingMe(target) then -- _G.SDK.Data:GetAutoAttackRange(myHero, target)

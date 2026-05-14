@@ -1,7 +1,7 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
-require("MapPositionGOS")
+-- require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgGalio"
@@ -82,7 +82,8 @@ function zgGalio:Combo()
 			local pred = GGPrediction:SpellPrediction(self.eSpell)
 			pred:GetPrediction(target, myHero)
 			if pred:CanHit(GGPrediction.HITCHANCE_HIGH) then
-				if not MapPosition:intersectsWall(myHero.pos, pred.CastPosition) then
+				local wallPos = FindFirstWallCollision(myHero.pos, pred.CastPosition)
+				if wallPos == nil then  --	if not MapPosition:intersectsWall(myHero.pos, pred.CastPosition) then
 					Control.CastSpell(HK_E, pred.CastPosition)
 				end
 			end

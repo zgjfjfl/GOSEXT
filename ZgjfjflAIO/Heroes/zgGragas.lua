@@ -1,7 +1,7 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
-require("MapPositionGOS")
+-- require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgGragas"

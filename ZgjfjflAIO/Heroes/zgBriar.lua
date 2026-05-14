@@ -1,7 +1,7 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
-require("MapPositionGOS")
+-- require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgBriar"
@@ -69,7 +69,7 @@ function zgBriar:Combo()
 		if Menu.Combo.EWall:Value() and IsReady(_E) and lastE + 1100 < GetTickCount() then
 			local Pos = myHero.pos:Extended(target.pos, self.E.Range)
 			local Pos2 = FindFirstWallCollision(myHero.pos, Pos)
-			if Pos2 and IsHardCC(target) and GetDistance(myHero.pos, target.pos) < self.E.Range then
+			if Pos2 ~= nil and IsHardCC(target) and GetDistance(myHero.pos, target.pos) < self.E.Range then
 				self:CastE(target)
 				lastE = GetTickCount()
 			end
