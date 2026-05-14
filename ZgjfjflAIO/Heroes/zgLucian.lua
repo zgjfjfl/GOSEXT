@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 -- require("MapPositionGOS")
@@ -217,7 +217,7 @@ function zgLucian:CastE(target, mode, range)
 		local enemyCheck = Menu.Combo.enemyCheck:Value()
 		local enemyCount = GetEnemyCount(600, castPos)
 
-		if Menu.Combo.Echeck:Value() and (underTurret or inWall ~= nil) then return false end
+		if Menu.Combo.Echeck:Value() and (underTurret or inWall) then return false end
 		if Menu.Combo.EsafeCheck:Value() and enemyCount >= enemyCheck then return false end
 
 		Control.CastSpell(HK_E, castPos)
