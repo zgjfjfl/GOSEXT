@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -17,6 +17,7 @@ function zgBelveth:__init()
 	self.qDirections = {45, 135, 225, 315}
 	self.qCooldowns = {[45] = 0, [135] = 0, [225] = 0, [315] = 0}
 	self.qCdDuration = 16
+	self.wasDead = false
 end
 
 function zgBelveth:LoadMenu()
@@ -49,6 +50,16 @@ function zgBelveth:Tick()
 	local bonusAttackSpeed = (myHero.attackSpeed - 1) * 100
 	local abilityHaste = bonusAttackSpeed * 0.25
 	self.qCdDuration = baseCD / (1 + abilityHaste/100)
+	
+	-- Reset Q cooldowns on respawn
+	local isDead = myHero.dead
+	if self.wasDead and not isDead then
+		for _, dir in ipairs(self.qDirections) do
+			self.qCooldowns[dir] = 0
+		end
+	end
+	self.wasDead = isDead
+	
 	if ShouldWait() then
 		return
 	end
