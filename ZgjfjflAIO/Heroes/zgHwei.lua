@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -739,16 +739,4 @@ function zgHwei:Draw()
 	end
 end
 
-if _G.SDK then
-	Orbwalker = _G.SDK.Orbwalker
-	TargetSelector = _G.SDK.TargetSelector
-	ObjectManager = _G.SDK.ObjectManager
-	HealthPrediction = _G.SDK.HealthPrediction
-	Attack = _G.SDK.Attack
-	Damage = _G.SDK.Damage
-	Spell = _G.SDK.Spell
-	Data = _G.SDK.Data
-else
-	return
-end
 zgHwei()
