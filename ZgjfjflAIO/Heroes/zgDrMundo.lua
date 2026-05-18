@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -204,7 +204,7 @@ end
 function zgDrMundo:LaneClear()
 	if Menu.Clear.SpellFarm:Value() and Menu.Clear.LaneClear.E:Value() and IsReady(_E) then
 		local minions = _G.SDK.ObjectManager:GetEnemyMinions(E2Spell.Range)
-		TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+		table.sort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for _, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				if myHero.pos:DistanceTo(minion.pos) <= 350 then
@@ -232,7 +232,7 @@ end
 function zgDrMundo:JungleClear()
 	if Menu.Clear.SpellFarm:Value() and Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 		local minions = _G.SDK.ObjectManager:GetMonsters(Menu.Combo.QRange:Value())
-		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		table.sort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for _, minion in ipairs(minions) do
 			if IsValid(minion) then
 				Control.CastSpell(HK_Q, minion)
@@ -241,6 +241,7 @@ function zgDrMundo:JungleClear()
 	end
 	if Menu.Clear.JungleClear.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "DrMundoW" then
 		local minions = _G.SDK.ObjectManager:GetMonsters(WSpell.Range)
+		table.sort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for _, minion in ipairs(minions) do
 			if IsValid(minion) then
 				Control.CastSpell(HK_W)
@@ -258,9 +259,9 @@ end
 function zgDrMundo:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	local QDmg = ({20, 22.5, 25, 27.5, 30})[level] / 100 * target.health
-	QDmg = MathMax(QDmg, ({80, 130, 180, 230, 280})[level])
+	QDmg = math.max(QDmg, ({80, 130, 180, 230, 280})[level])
 	if target.type == Obj_AI_Minion and target.team == 300 then
-		QDmg = MathMin(QDmg, ({300, 375, 450, 535, 600})[level])
+		QDmg = math.min(QDmg, ({300, 375, 450, 535, 600})[level])
 	end
 	return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, QDmg)
 end
@@ -268,7 +269,7 @@ end
 function zgDrMundo:GetEDmg(target)
 	local level = myHero:GetSpellData(_E).level
 	local missingHealthPercent = (myHero.maxHealth - myHero.health) / myHero.maxHealth
-	local EDmg = (myHero.totalDamage + ({5, 15, 25, 35, 45})[level] + 0.05 * self:GetBonusHealth()) * (1 + MathMin(missingHealthPercent * 0.57, 0.4))
+	local EDmg = (myHero.totalDamage + ({5, 15, 25, 35, 45})[level] + 0.05 * self:GetBonusHealth()) * (1 + math.min(missingHealthPercent * 0.57, 0.4))
 	if target.type == Obj_AI_Minion then
 		if target.team == 300 then
 			EDmg = EDmg * 2
