@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -8,6 +8,16 @@ local lastWE = 0
 local lastEQ = 0
 
 local ItemSlots = { ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6, ITEM_7 }
+
+local function FacingMe(unit)
+	local V = Vector((unit.pos - myHero.pos))
+	local D = Vector(unit.dir)
+	local Angle = 180 - math.deg(math.acos(V*D/(V:Len()*D:Len())))
+	if math.abs(Angle) < 60 then 
+		return true
+	end
+	return false
+end
 
 ---------------------------------
 
@@ -213,7 +223,7 @@ function zgHwei:AntiGapcloser()
 			if IsValid(target) then
 				if target.pathing.isDashing then
 					local endPos = Vector(target.pathing.endPos)
-					if myHero.pos:DistanceTo(endPos) < 400 and IsFacingMe(target) then
+					if myHero.pos:DistanceTo(endPos) < 400 and FacingMe(target) then
 						self:CastGGPred('EQ', target)
 						return
 					end
