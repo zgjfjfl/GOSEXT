@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -587,7 +587,7 @@ function zgHwei:Combo()
 		local target = GetTarget(self.EESpell.Range)
 		if IsValid(target) then
 			local enemyCount = GetEnemyCount(500, target.pos)
-			if enemyCount >= 2 or not IsFacingMe(target) or not self:CastGGPred('EQ', target) then
+			if enemyCount >= 2 or not FacingMe(target) or not self:CastGGPred('EQ', target) then
 				self:CastGGPred('EE', target)
 			end
 		end
