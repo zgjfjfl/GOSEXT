@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -54,6 +54,7 @@ function zgEzreal:__init()
 	self.WMarkTime = 0
 	self.lastClearSpecial = 0
 	self.lastAttackHitTime = 0
+	self.lastAttackTargetID = nil
 end
 
 function zgEzreal:LoadMenu()
@@ -130,7 +131,8 @@ end
 function zgEzreal:OnPostAttack()
 	local target = _G.SDK.Orbwalker:GetTarget()
     if target then
-		self.lastAttackHitTime = _G.SDK.Attack.CastEndTime + target.distance / 2000
+		self.lastAttackHitTime = _G.SDK.Attack.CastEndTime + target.distance / 2000 + 0.1
+		self.lastAttackTargetID = target.networkID
 	end
 end
 
@@ -248,7 +250,6 @@ function zgEzreal:FarmHarass()
 end
 
 function zgEzreal:LaneClear()
-	if Game.Timer() <= self.lastAttackHitTime then return end
 	if not Menu.Clear.SpellFarm:Value() or not Menu.Clear.LaneClear.Q:Value() then return end
 	local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.QSpell.Range)
 	if #minions == 0 then return end
@@ -262,6 +263,12 @@ function zgEzreal:LaneClear()
 			if hp > 0 and hp <= QDmg then
 				local _, _, coll = GGPrediction:GetCollision(myHero.pos, m.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius / 2, {GGPrediction.COLLISION_MINION}, m.networkID)
 				if coll == 0 then
+					if Game.Timer() <= self.lastAttackHitTime and self.lastAttackTargetID and m.networkID == self.lastAttackTargetID then
+						local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, m)
+						if aaDamage >= m.health then
+							goto continue
+						end
+					end
 					target = m
 					break
 				end
@@ -272,6 +279,7 @@ function zgEzreal:LaneClear()
 				break
 			end
 		end
+		::continue::
 	end
 	if IsValid(target) and IsReady(_Q) then
 		Control.CastSpell(HK_Q, target)
@@ -405,7 +413,12 @@ function zgEzreal:GetRDmg(unit)
 end
 
 function zgEzreal:CastQ(unit)
-	if Game.Timer() <= self.lastAttackHitTime then return false end
+	if Game.Timer() <= self.lastAttackHitTime and self.lastAttackTargetID and unit.networkID == self.lastAttackTargetID then
+		local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, unit)
+		if aaDamage >= unit.health then
+			return false
+		end
+	end
 	local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 	QPrediction:GetPrediction(unit, myHero)
 	if QPrediction:CanHit(3) then
