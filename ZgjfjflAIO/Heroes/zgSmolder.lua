@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -232,7 +232,7 @@ function zgSmolder:GetQDmg(target)
 	local level = myHero:GetSpellData(_Q).level
 	local hasIE = HasItem(myHero, 3031)
 	if level > 0 then
-		local QDmg = (({65, 80, 95, 110, 125})[level] + 1.3 * myHero.bonusDamage) * (1 + myHero.critChance * (hasIE and 0.65 or 0.5))
+		local QDmg = (({60, 70, 80, 90, 100})[level] + 1.3 * myHero.bonusDamage) * (1 + myHero.critChance * (hasIE and 0.975 or 0.75))
 		return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 	else
 		return 0
@@ -243,7 +243,7 @@ function zgSmolder:GetPQDmg(target)
 	local buff, buffData = GetBuffData(myHero, "SmolderQPassive")
 	local hasIE = HasItem(myHero, 3031)
 	if buff then
-		local Dmg = (0.4 * (1 + myHero.critChance * (hasIE and 0.65 or 0.5))) * buffData.stacks
+		local Dmg = (0.40 + myHero.critChance * (hasIE and 0.39 or 0.30)) * buffData.stacks
 		return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
 	else
 		return 0
