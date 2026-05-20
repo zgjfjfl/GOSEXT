@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -265,7 +265,7 @@ function zgEzreal:LaneClear()
 				if coll == 0 then
 					if Game.Timer() <= self.lastAttackHitTime and self.lastAttackTargetID and m.networkID == self.lastAttackTargetID then
 						local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, m)
-						if aaDamage >= m.health then
+						if aaDamage >= m.health + m.shieldAD + m.hpRegen then
 							goto continue
 						end
 					end
@@ -415,7 +415,7 @@ end
 function zgEzreal:CastQ(unit)
 	if Game.Timer() <= self.lastAttackHitTime and self.lastAttackTargetID and unit.networkID == self.lastAttackTargetID then
 		local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, unit)
-		if aaDamage >= unit.health then
+		if aaDamage >= unit.health + unit.shieldAD + unit.hpRegen then
 			return false
 		end
 	end
