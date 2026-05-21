@@ -1,4 +1,4 @@
-local Version = 1.04
+local Version = 1.05
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
