@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -568,14 +568,14 @@ function zgSamira:LaneClear()
 end
 
 function zgSamira:LastHit()
-	local minionInRange = _G.SDK.ObjectManager:GetEnemyMinions(QRange)
+	local minionInRange = _G.SDK.ObjectManager:GetEnemyMinions(self.QSpell.Range)
 	if next(minionInRange) == nil then return end
 
 	for i = 1, #minionInRange do
         	local minion = minionInRange[i]
 
 		local AARange = myHero.range + myHero.boundingRadius
-		if IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) <= QRange and myHero.pos:DistanceTo(minion.pos) > AARange then
+		if IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) > AARange then
 			local QDmg = self:GetQDmg(minion)
 			if QDmg >= _G.SDK.HealthPrediction:GetPrediction(minion, 0.25+myHero.pos:DistanceTo(minion.pos)/2600) then
 				Control.CastSpell(HK_Q, minion.pos)
@@ -585,7 +585,7 @@ function zgSamira:LastHit()
 end
 
 function zgSamira:CastQ(unit)
-	local QPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = QRange, Speed = 2600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}})
+	local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 		  QPrediction:GetPrediction(unit, myHero)
 	if QPrediction:CanHit(3) then
 		Control.CastSpell(HK_Q, QPrediction.CastPosition)
