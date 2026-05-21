@@ -131,7 +131,7 @@ end
 function zgEzreal:OnPostAttack()
 	local target = _G.SDK.Orbwalker:GetTarget()
     if target then
-		self.lastAttackHitTime = _G.SDK.Attack.CastEndTime + target.distance / 2000 + 0.1
+		self.lastAttackHitTime = _G.SDK.Attack.CastEndTime + target.distance / 2000 + 0.15
 		self.lastAttackTargetID = target.networkID
 	end
 end
