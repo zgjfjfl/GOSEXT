@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -10,8 +10,10 @@ function zgNasus:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
+	_G.SDK.Orbwalker:OnAttack(function() self:OnAttack() end)
 	self.wSpell = { Range = 700 }
 	self.eSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 400, Range = 650, Speed = math.huge, Collision = false}
+	self.qAttackReset = false
 end
 
 function zgNasus:LoadMenu()
@@ -39,6 +41,14 @@ function zgNasus:LoadMenu()
 		Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
 		Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 end
+
+function zgNasus:OnAttack()
+	if self.qAttackReset then
+		_G.SDK.Attack.Reset = false
+		self.qAttackReset = false
+	end
+end
+
 
 function zgNasus:Tick()
 	if ShouldWait() then
@@ -124,6 +134,7 @@ function zgNasus:LaneClear()
 				if myHero.pos:DistanceTo(minion.pos) < (myHero.range + myHero.boundingRadius * 2 + 50) and self:GetQDmg(minion) >= minion.health then
 					Control.CastSpell(HK_Q)
 					lastQ = GetTickCount()
+					self.qAttackReset = true
 					Control.Attack(minion)
 				end
 			end
@@ -138,6 +149,7 @@ function zgNasus:LastHit()
 			if IsValid(minion) and  self:GetQDmg(minion) >= minion.health then
 				Control.CastSpell(HK_Q)
 				lastQ = GetTickCount()
+				self.qAttackReset = true
 				Control.Attack(minion)
 			end
 		end
@@ -156,6 +168,7 @@ function zgNasus:KillSteal()
 		if IsValid(target) and self:GetQDmg(target) >= target.health then			
 			Control.CastSpell(HK_Q)
 			lastQ = GetTickCount()
+			self.qAttackReset = true
 			Control.Attack(target)
 		end
 	end

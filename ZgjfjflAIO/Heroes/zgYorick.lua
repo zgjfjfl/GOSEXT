@@ -1,18 +1,20 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
 
 class "zgYorick"
 	
-function zgYorick:__init()		 
-	print("Zgjfjfl AIO - Yorick Loaded") 
+function zgYorick:__init()
+	print("Zgjfjfl AIO - Yorick Loaded")
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
+	_G.SDK.Orbwalker:OnAttack(function() self:OnAttack() end)
 	self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 225, Range = 600, Speed = math.huge, Collision = false}
 	self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1000, Speed = 1800, Collision = false}
 	self.rSpell = {Range = 600}
+	self.qAttackReset = false
 end
 
 function zgYorick:LoadMenu()
@@ -43,6 +45,13 @@ function zgYorick:LoadMenu()
 		Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
 		Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
 		Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
+end
+
+function zgYorick:OnAttack()
+	if self.qAttackReset then
+		_G.SDK.Attack.Reset = false
+		self.qAttackReset = false
+	end
 end
 
 function zgYorick:Tick()
@@ -132,6 +141,7 @@ function zgYorick:LaneClear()
 				if self:GetQDmg(minion) >= minion.health then
 					Control.CastSpell(HK_Q)
 					lastQ = GetTickCount()
+					self.qAttackReset = true
 					Control.Attack(minion)
 				end
 			end
@@ -170,6 +180,7 @@ function zgYorick:LastHit()
 			if IsValid(minion) and self:GetQDmg(minion) >= minion.health then
 				Control.CastSpell(HK_Q)
 				lastQ = GetTickCount()
+				self.qAttackReset = true
 				Control.Attack(minion)
 			end
 		end
