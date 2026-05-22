@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -26,13 +26,16 @@ function zgVarus:LoadMenu()
 	local championIcon = "http://ddragon.leagueoflegends.com/cdn/16.1.1/img/champion/"..myHero.charName..".png"
 	Menu = MenuElement({type = MENU, id = "Zgjfjfl_AIO_"..myHero.charName, name = "Zgjfjfl AIO - "..myHero.charName.." V: "..Version, leftIcon = championIcon})
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
-	Menu.Combo:MenuElement({id = "HG", name = "Use Hextech Gunblade", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "HG", name = "Use Hextech Gunblade", toggle = true, value = false})
+	Menu.Combo:MenuElement({id = "Efirst", name = "Combo E First (Q First if Disabled)", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Qstacks", name = "Use Q|when W stacks more than", value = 3, min = 0, max = 3, step = 1})
+	Menu.Combo:MenuElement({id = "QstacksOut", name = "Use Q|Out of AA range|when W stacks more than", value = 2, min = 0, max = 3, step = 1})
 	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Whp", name = "Use W|when enemy %hp less than", value = 50, min = 0, max = 100, step = 5})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Estacks", name = "Use E|when W stacks more than", value = 3, min = 0, max = 3, step = 1})
+	Menu.Combo:MenuElement({id = "EstacksOut", name = "Use E|Out of AA range|when W stacks more than", value = 2, min = 0, max = 3, step = 1})
 	Menu.Combo:MenuElement({id = "Eearly", name = "Use E early|when Q ready (ignore W stacks)", toggle = true, value = false})
 	Menu.Combo:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "RCount", name = "Use R|when target nearly X enemies", value = 2, min = 1, max = 5, step = 1})
@@ -161,11 +164,13 @@ function zgVarus:Combo()
 					if target.distance > 925 then wDmg = wDmg * 1.5 end
 					local buff, buffData = GetBuffData(target, "varuswdebuff")
 					local canAAKill = _G.SDK.Data:IsInAutoAttackRange(myHero, target) and target.health <= _G.SDK.Damage:GetAutoAttackDamage(myHero, target)
+					local inAARange = _G.SDK.Data:IsInAutoAttackRange(myHero, target)
+					local qStacks = inAARange and Menu.Combo.Qstacks:Value() or Menu.Combo.QstacksOut:Value()
 					if not canAAKill and (
-						Menu.Combo.Qstacks:Value() == 0
+						qStacks == 0
 						or myHero:GetSpellData(_W).level == 0
-						or ((qDmg + wDmg) > (target.health + target.hpRegen * 2))
-						or (buff and buffData.count == Menu.Combo.Qstacks:Value())
+						or ((qDmg + wDmg) > (target.health + target.shieldAD + target.hpRegen * 2))
+						or (buff and buffData.count >= qStacks)
 					) then
 						if canusew and Menu.Combo.W:Value() and (target.health / target.maxHealth * 100) < Menu.Combo.Whp:Value() then
 							Control.KeyDown(HK_W)
@@ -191,13 +196,15 @@ function zgVarus:Combo()
 					local wDmg = self:GetWDmg(target)
 					local buff, buffData = GetBuffData(target, "varuswdebuff")
 					local canAAKill = _G.SDK.Data:IsInAutoAttackRange(myHero, target) and target.health <= _G.SDK.Damage:GetAutoAttackDamage(myHero, target)
+					local inAARange = _G.SDK.Data:IsInAutoAttackRange(myHero, target)
+					local eStacks = inAARange and Menu.Combo.Estacks:Value() or Menu.Combo.EstacksOut:Value()
 					local canUseEarly = qAlsoReady and IsReady(_Q) and Menu.Combo.Eearly:Value()
 					if not canAAKill and (
 						canUseEarly
-						or Menu.Combo.Estacks:Value() == 0
+						or eStacks == 0
 						or myHero:GetSpellData(_W).level == 0
-						or ((eDmg + wDmg) > target.health)
-						or (buff and buffData.count == Menu.Combo.Estacks:Value())
+						or ((eDmg + wDmg) > (target.health + target.shieldAD + target.shieldAP + target.hpRegen * 2))
+						or (buff and buffData.count >= eStacks)
 					) then
 						self:CastGGPred(HK_E, target)
 						return true -- Indicate that we cast E
@@ -214,12 +221,19 @@ function zgVarus:Combo()
 	--if inAARange then
 		-- In AA range, always prioritize Q, then E
 	if lastR + 750 < GetTickCount() then
-		if castQLogic() then return end
-		if not IsReady(_Q) or not Menu.Combo.Q:Value() then
-			if castELogic(false) then return end
+		if Menu.Combo.Efirst:Value() then
+			-- E priority mode
+			if castELogic(IsReady(_Q) and Menu.Combo.Q:Value()) then return end
+			if castQLogic() then return end
 		else
-			-- Q is ready, try E early if enabled
-			if castELogic(true) then return end
+			-- Q priority mode (default)
+			if castQLogic() then return end
+			if not IsReady(_Q) or not Menu.Combo.Q:Value() then
+				if castELogic(false) then return end
+			else
+				-- Q is ready, try E early if enabled
+				if castELogic(true) then return end
+			end
 		end
 	end
 	--else
