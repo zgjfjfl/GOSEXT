@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -24,7 +24,6 @@ function zgShyvana:LoadMenu()
 		Menu.Combo:MenuElement({id = "E", name = "[E] ", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "RAOE", name = "[R] AOE", toggle = true, value = true})
 		Menu.Combo:MenuElement({id = "RAOECount", name = "[R] AOE | X enemies", value = 3, min = 1, max = 5})
-		Menu.Combo:MenuElement({id = "RSM", name = "Semi-manual[R]", key = string.byte("T")})	
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 		Menu.Harass:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Lane Clear"})
@@ -32,7 +31,6 @@ function zgShyvana:LoadMenu()
 		Menu.Clear:MenuElement({id = "E", name = "[E]", toggle = true, value = true})
 	Menu:MenuElement({type = MENU, id = "Flee", name = "Flee"})
 		Menu.Flee:MenuElement({id = "W", name = "[W]", toggle = true, value = true})
-		Menu.Flee:MenuElement({id = "R", name = "[R] to mouse", toggle = true, value = true})
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 		Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 		Menu.Draw:MenuElement({id = "R", name = "[R] Range", toggle = true, value = false})
@@ -70,7 +68,7 @@ function zgShyvana:Combo()
 			end
 		end
 	end
-	if Menu.Combo.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount()then
+	if Menu.Combo.W:Value() and IsReady(_W) and lastW + 250 < GetTickCount() and myHero:GetSpellData(_W).name == "ShyvanaW" then
 		local target = GetTarget(600)
 		if IsValid(target) then
 			Control.CastSpell(HK_W)
@@ -84,7 +82,7 @@ function zgShyvana:Combo()
 			lastQ = GetTickCount()
 		end
 	end
-	if Menu.Combo.R:Value() and IsReady(_R)  then
+	if Menu.Combo.RAOE:Value() and IsReady(_R)  then
 		local target = GetTarget(self.rSpell.Range)
 		if IsValid(target) then
 			local hitCount = Menu.Combo.RAOECount:Value()
@@ -135,11 +133,8 @@ function zgShyvana:CastE(target, Spell)
 end
 
 function zgShyvana:Flee()
-	if Menu.Flee.W:Value() and IsReady(_W) then
+	if Menu.Flee.W:Value() and IsReady(_W) and myHero:GetSpellData(_W).name == "ShyvanaW" then
 		Control.CastSpell(HK_W)
-	end
-	if Menu.Flee.R:Value() and IsReady(_R) then
-		Control.CastSpell(HK_R, mousePos)
 	end
 end
 
