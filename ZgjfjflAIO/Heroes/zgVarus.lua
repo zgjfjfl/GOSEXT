@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -33,7 +33,7 @@ function zgVarus:LoadMenu()
 	Menu.Combo:MenuElement({id = "Whp", name = "Use W|when enemy %hp less than", value = 50, min = 0, max = 100, step = 5})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Estacks", name = "Use E|when W stacks more than", value = 3, min = 0, max = 3, step = 1})
-	Menu.Combo:MenuElement({id = "Eearly", name = "Use E early|when Q ready (ignore W stacks)", toggle = true, value = true})
+	Menu.Combo:MenuElement({id = "Eearly", name = "Use E early|when Q ready (ignore W stacks)", toggle = true, value = false})
 	Menu.Combo:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "RCount", name = "Use R|when target nearly X enemies", value = 2, min = 1, max = 5, step = 1})
 	Menu.Combo:MenuElement({id = "RSm", name = "Semi-manual R Key", key = string.byte("T")})
@@ -334,7 +334,7 @@ function zgVarus:CastGGPred(spell, target)
 		local EPrediction = GGPrediction:SpellPrediction(self.ESpell)
 		EPrediction:GetPrediction(target, myHero)
 		if EPrediction:CanHit(3) then
-			Control.CastSpell(HK_E, EPrediction.UnitPosition)
+			Control.CastSpell(HK_E, EPrediction.CastPosition)
 			lastE = GetTickCount()
 		end
 	elseif spell == HK_R then
