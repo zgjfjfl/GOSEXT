@@ -1,4 +1,4 @@
-local Version = 1.05
+local Version = 1.06
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -54,7 +54,11 @@ function zgEzreal:__init()
 	self.WMarkTime = 0
 	self.lastClearSpecial = 0
 	self.lastAttackHitTime = 0
+	self.lastAttackTarget = nil
 	self.lastAttackTargetID = nil
+	self.lastQTargetID = nil
+	self.lastQHitTime = 0
+	self.lastQDamage = 0
 end
 
 function zgEzreal:LoadMenu()
@@ -118,20 +122,34 @@ function zgEzreal:OnPreAttack(args)
 		end
 	elseif GetMode() == "LaneClear" then
 		local target = args.Target
+		if target and self.lastQTargetID and target.networkID == self.lastQTargetID and Game.Timer() <= self.lastQHitTime then
+			local shield = target.shieldAD or 0
+			local hpRegen = target.hpRegen or 0
+			local qDamage = self.lastQDamage or self:GetQDmg(target)
+			if qDamage >= target.health + shield + hpRegen then
+				args.Process = false
+				return
+			end
+		end
 		if Menu.Clear.WT:Value() and IsReady(_W) and self.lastW + 300 < GetTickCount() then
 			if target and (target.type == Obj_AI_Turret or target.type == Obj_AI_Barracks or target.type == Obj_AI_Nexus) then
 				if Control.CastSpell(HK_W, target) then
-				self.lastW = GetTickCount()
+					self.lastW = GetTickCount()
+				end
 			end
 		end
-		end
+	end
+	if args.Process then
+		self.lastAttackTarget = args.Target
+	else
+		self.lastAttackTarget = nil
 	end
 end
 
 function zgEzreal:OnPostAttack()
-	local target = _G.SDK.Orbwalker:GetTarget()
-    if target then
-		self.lastAttackHitTime = _G.SDK.Attack.CastEndTime + target.distance / 2000 + 0.15
+	local target = self.lastAttackTarget
+    if IsValid(target) then
+		self.lastAttackHitTime = _G.SDK.Attack.CastEndTime + target.distance / 2000 + 0.25
 		self.lastAttackTargetID = target.networkID
 	end
 end
@@ -257,18 +275,20 @@ function zgEzreal:LaneClear()
 	local target = nil
 	for i, m in ipairs(minions) do
     	if IsValid(m) and m.pos2D.onScreen and m.team ~= 300 then
+			if Game.Timer() <= self.lastAttackHitTime and self.lastAttackTargetID and m.networkID == self.lastAttackTargetID then
+				local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, m)
+				local shield = m.shieldAD or 0
+				local hpRegen = m.hpRegen or 0
+				if aaDamage >= m.health + shield + hpRegen then
+					goto continue
+				end
+			end
 			local t = m.distance / self.QSpell.Speed + self.QSpell.Delay
 			local hp = _G.SDK.HealthPrediction:GetPrediction(m, t)
 			local QDmg = self:GetQDmg(m)
 			if hp > 0 and hp <= QDmg then
 				local _, _, coll = GGPrediction:GetCollision(myHero.pos, m.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius / 2, {GGPrediction.COLLISION_MINION}, m.networkID)
 				if coll == 0 then
-					if Game.Timer() <= self.lastAttackHitTime and self.lastAttackTargetID and m.networkID == self.lastAttackTargetID then
-						local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, m)
-						if aaDamage >= m.health + m.shieldAD + m.hpRegen then
-							goto continue
-						end
-					end
 					target = m
 					break
 				end
@@ -282,7 +302,11 @@ function zgEzreal:LaneClear()
 		::continue::
 	end
 	if IsValid(target) and IsReady(_Q) then
-		Control.CastSpell(HK_Q, target)
+		if Control.CastSpell(HK_Q, target) then
+			self.lastQTargetID = target.networkID
+			self.lastQHitTime = Game.Timer() + self.QSpell.Delay + target.distance / self.QSpell.Speed + 0.25
+			self.lastQDamage = self:GetQDmg(target)
+		end
     end
 end
 
@@ -415,7 +439,9 @@ end
 function zgEzreal:CastQ(unit)
 	if Game.Timer() <= self.lastAttackHitTime and self.lastAttackTargetID and unit.networkID == self.lastAttackTargetID then
 		local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, unit)
-		if aaDamage >= unit.health + unit.shieldAD + unit.hpRegen then
+		local shield = unit.shieldAD or 0
+		local hpRegen = unit.hpRegen or 0
+		if aaDamage >= unit.health + shield + hpRegen then
 			return false
 		end
 	end
