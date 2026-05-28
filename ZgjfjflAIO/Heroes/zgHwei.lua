@@ -1,4 +1,4 @@
-local Version = 1.04
+local Version = 1.05
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -54,6 +54,7 @@ function zgHwei:LoadMenu()
 	Menu.Combo:MenuElement({id = "QWHp", name = "Alone QW| target isolated and Hp < X%", value = 50, min = 0, max = 100, step = 5})
 	Menu.Combo:MenuElement({id = "aoeQE", name = "Use QE| AOE", value = true})
 	Menu.Combo:MenuElement({id = "aoeCount", name = "Use QE| AOE CanHit Counts >= ", value = 2, min = 2, max = 5, step = 1})
+	Menu.Combo:MenuElement({ id = "smQW", name = "Semi-manual QW Key(Target near mouse)", key = string.byte("M")})
 	Menu.Combo:MenuElement({ id = "smR", name = "Semi-manual R Key", key = string.byte("T")})
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q| Harass", value = true})
@@ -122,6 +123,7 @@ function zgHwei:Tick()
 	self:AntiGapcloser()
 	self:Auto()
 	self:smR()
+	self:smQW()
 	local Mode = GetMode()
 	if Mode == "Combo" then
 		self:Combo()
@@ -181,6 +183,16 @@ function zgHwei:smR()
 					lastR = GetTickCount()
 				end
 			end
+		end
+	end
+end
+
+function zgHwei:smQW()
+	if Menu.Combo.smQW:Value() and IsReady(_Q) and self:CanCast() then
+		local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.QWSpell.Range)
+		table.sort(enemies, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
+		if IsValid(enemies[1]) and enemies[1].pos2D.onScreen and enemies[1].pos:DistanceTo(mousePos) < 600 then
+			self:CastGGPred('QW', enemies[1])
 		end
 	end
 end

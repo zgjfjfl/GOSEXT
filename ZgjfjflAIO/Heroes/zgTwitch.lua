@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -28,8 +28,11 @@ function zgTwitch:LoadMenu()
 	Menu.Combo:MenuElement({id = "Renemies", name = 'Use R|X Enemies', value = 3, min = 1, max = 5, step = 1})
 
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
+	Menu.Harass:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Harass.SpellHarass, newValue) then return end
+	end})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q", toggle = true, value = false})
-	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = false})
+	Menu.Harass:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = 'Estacks', name = 'Use E|X Stacks', value = 6, min = 1, max = 6, step = 1})
 	Menu.Harass:MenuElement({id = 'Eenemies', name = 'Use E|X Enemies', value = 1, min = 1, max = 5, step = 1})
@@ -41,6 +44,7 @@ function zgTwitch:LoadMenu()
 	Menu.Misc:MenuElement({id = "EKill", name = "Auto E KillSteal", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", value = true})
 	Menu.Draw:MenuElement({id = 'qtimer', name = 'Q Timer', value = true})
 	Menu.Draw:MenuElement({id = 'qinvisible', name = 'Q Invisible Range', value = true})
 	Menu.Draw:MenuElement({id = 'qnotification', name = 'Q Notification Range', value = true})
@@ -82,6 +86,8 @@ function zgTwitch:OnTick()
 		self:Combo()
 	elseif Mode == "Harass" then
 		self:Harass()
+	elseif Mode == "LaneClear" then
+		self:FarmHarass()
 	end
 end
 
@@ -170,6 +176,13 @@ function zgTwitch:Harass()
 	end
 end
 
+function zgTwitch:FarmHarass()
+	if IsUnderTurret(myHero) then return end
+	if Menu.Harass.SpellHarass:Value() then
+		self:Harass()
+	end
+end
+
 function zgTwitch:EKS()
 	if not (Menu.Misc.EKill:Value() and IsReady(_E)) then
 		return
@@ -213,7 +226,13 @@ end
 
 function zgTwitch:Draw()
 	if myHero.dead then return end
-
+	if Menu.Draw.DrawHarass:Value() then
+		if Menu.Harass.SpellHarass:Value() then
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
 	if Menu.Draw.qtimer:Value() then
 		local preInvisibleDuration = 1.35 - (Game.Timer() - _G.SDK.Spell.QkTimer)
 		if preInvisibleDuration > 0 then

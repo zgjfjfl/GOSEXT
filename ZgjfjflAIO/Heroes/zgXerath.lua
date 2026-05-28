@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -38,12 +38,31 @@ function zgXerath:LoadMenu()
 	Menu.Harass:MenuElement({id = "E", name = "Use E", toggle = true, value = false})
 	Menu.Harass:MenuElement({id = "Erange", name = "Use E|Max Range", value = 1000, min = 600, max = 1125, step = 25})
 
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "Q", name = "Use Q", value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "If Q CanHit Counts >= ", value = 3, min = 1, max = 10, step = 1})
+	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 10, step = 1})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "E", name = "Use E", value = false})
+
 	Menu:MenuElement({type = MENU, id = "AutoE", name = "AutoE"})
 	Menu.AutoE:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser or Melee", toggle = true, value = true})
 	Menu.AutoE:MenuElement({id = "EgapRange", name = "AntiGap E Range(dash endPos form self < X)", value = 400, min = 0, max = 600, step = 50})
 	Menu.AutoE:MenuElement({id = "EgapRange2", name = "AntiMelee E Range(melee form self < X)", value = 350, min = 0, max = 600, step = 50})
 	
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
 	Menu.Draw:MenuElement({id = "Q", name = "[Q] Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "W", name = "[W] Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
@@ -97,6 +116,10 @@ function zgXerath:OnTick()
 		self:Combo()
 	elseif Mode == "Harass" then
 		self:Harass()
+	elseif Mode == "LaneClear" then
+		self:FarmHarass()
+		self:LaneClear()
+		self:JungleClear()
 	end
 end
 
@@ -213,6 +236,103 @@ function zgXerath:Harass()
 	end
 end
 
+function zgXerath:FarmHarass()
+	if IsUnderTurret(myHero) then return end
+	if Menu.Clear.SpellHarass:Value() then
+		self:Harass()
+	end
+end
+
+function zgXerath:LaneClear()
+	if not Menu.Clear.SpellFarm:Value() then return end
+	if IsUnderTurret(myHero) then return end
+	if Menu.Clear.LaneClear.Q:Value() then
+		if self.QCharging and self.QSpell.Range > 1000 then
+			local minions = _G.SDK.ObjectManager:GetEnemyMinions(1000)
+			local bestTarget = nil
+			local maxHits = 0
+
+			for _, minion in ipairs(minions) do
+				if IsValid(minion) and minion.team ~= 300 then
+					if myHero.pos:DistanceTo(minion.pos) <= self.QSpell.Range then
+						local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius/2, {GGPrediction.COLLISION_MINION}, nil)
+						if collisionCount > maxHits then
+							maxHits = collisionCount
+							bestTarget = minion
+						end
+					end
+				end
+			end
+
+			if bestTarget and maxHits >= Menu.Clear.LaneClear.QCount:Value() then
+				Control.CastSpell(HK_Q, bestTarget)
+			end
+		elseif IsReady(_Q) and not IsCasting() then
+			local minions = _G.SDK.ObjectManager:GetEnemyMinions(1000)
+			local maxHits = 0
+
+			for _, minion in ipairs(minions) do
+				if IsValid(minion) and minion.team ~= 300 then
+					local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius/2, {GGPrediction.COLLISION_MINION}, nil)
+					if collisionCount > maxHits then
+						maxHits = collisionCount
+					end
+				end
+			end
+
+			if maxHits >= Menu.Clear.LaneClear.QCount:Value() then
+				Control.KeyDown(HK_Q)
+			end
+		end
+	end
+
+	if Menu.Clear.LaneClear.W:Value() and IsReady(_W) and not IsCasting() then
+		local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.WSpell.Range)
+		local bestTarget = nil
+		local maxHits = 0
+
+		for _, minion in ipairs(minions) do
+			if IsValid(minion) and minion.team ~= 300 then
+				local hitCount = GetMinionCount(self.WSpell.Radius, minion.pos)
+				if hitCount > maxHits then
+					maxHits = hitCount
+					bestTarget = minion
+				end
+			end
+		end
+
+		if bestTarget and maxHits >= Menu.Clear.LaneClear.WCount:Value() then
+			Control.CastSpell(HK_W, bestTarget)
+		end
+	end
+end
+
+function zgXerath:JungleClear()
+	if not Menu.Clear.SpellFarm:Value() then return end
+	local monsters = _G.SDK.ObjectManager:GetEnemyMinions(800)
+	table.sort(monsters, function(a, b) return a.maxHealth > b.maxHealth end)
+	for _, monster in ipairs(monsters) do
+		if IsValid(monster) and monster.team == 300 then
+			if Menu.Clear.JungleClear.Q:Value() then
+				if self.QCharging and self.QSpell.Range > 800 then
+					Control.CastSpell(HK_Q, monster)
+				elseif IsReady(_Q) and not IsCasting() then
+					Control.KeyDown(HK_Q)
+				end
+			end
+			if Menu.Clear.JungleClear.W:Value() and IsReady(_W) and not IsCasting() then
+				Control.CastSpell(HK_W, monster)
+			end
+			if Menu.Clear.JungleClear.E:Value() and IsReady(_E) and not IsCasting() then
+				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, monsters[1].pos, self.ESpell.Speed, self.ESpell.Delay, self.ESpell.Radius, {GGPrediction.COLLISION_MINION}, monster.networkID)
+				if collisionCount == 0 then
+					Control.CastSpell(HK_E, monster)
+				end
+			end
+		end
+	end
+end
+
 function zgXerath:CastGGPred(spell, target)
 	if spell == HK_Q then
 		local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
@@ -247,6 +367,20 @@ end
 
 function zgXerath:Draw()
 	if myHero.dead then return end
+	if Menu.Draw.DrawFarm:Value() then
+		if Menu.Clear.SpellFarm:Value() then
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+	if Menu.Draw.DrawHarass:Value() then
+		if Menu.Clear.SpellHarass:Value() then
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
 		Draw.Circle(myHero.pos, self.QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end

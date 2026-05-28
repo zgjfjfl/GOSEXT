@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -292,7 +292,10 @@ function zgVeigar:CastE(unit)
 		local predPos = Vector(pred.UnitPosition)
 		if predPos:DistanceTo(myHero.pos) > 700 then
 			local castPos = predPos:Extended(myHero.pos, self.ESpell.Radius / 2)
-			return Control.CastSpell(HK_E, castPos)
+			if castPos:DistanceTo(myHero.pos) <= 700 then
+				return Control.CastSpell(HK_E, castPos)
+			end
+			return false
 		else
 			return Control.CastSpell(HK_E, predPos)
 		end

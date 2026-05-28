@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -35,6 +35,22 @@ function zgBrand:LoadMenu()
 	Menu.Harass:MenuElement({id = "E", name = "Harass [E]", toggle = true, value = true})
 	Menu.Harass:MenuElement({id = "Eminion", name = "Harass [E] minion if have passive", toggle = true, value = true})
 
+	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
+	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellFarm, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({id = "SpellHarass", name = "Use Spell Harass(In LaneClear Mode)", toggle = true, value = false, key = string.byte("H"), callback = function(newValue)
+		if CheckChatBlock(Menu.Clear.SpellHarass, newValue) then return end
+	end})
+	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "LaneClear"})
+	Menu.Clear.LaneClear:MenuElement({id = "W", name = "Use W", value = true})
+	Menu.Clear.LaneClear:MenuElement({id = "WCount", name = "If W CanHit Counts >= ", value = 3, min = 1, max = 10, step = 1})
+	Menu.Clear.LaneClear:MenuElement({id = "E", name = "Use E", value = true})
+	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "JungleClear"})
+	Menu.Clear.JungleClear:MenuElement({id = "Q", name = "Use Q", value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "W", name = "Use W", value = true})
+	Menu.Clear.JungleClear:MenuElement({id = "E", name = "Use E", value = true})
+
 	Menu:MenuElement({type = MENU, id = "Auto", name = "Auto"})
 	Menu.Auto:MenuElement({id = "Q", name = "Auto [Q] on 'CC'", toggle = true, value = true})
 	Menu.Auto:MenuElement({id = "W", name = "Auto [W] on 'CC'", toggle = true, value = true})
@@ -44,6 +60,8 @@ function zgBrand:LoadMenu()
 	Menu.Kill:MenuElement({id = "W", name = "Auto [W] Kills", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
+	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
+	Menu.Draw:MenuElement({id = "DrawHarass", name = "Draw Spell Harass Status", toggle = true, value = true})
 	Menu.Draw:MenuElement({id = "Q", name = "Draw [Q] Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "W", name = "Draw [W] Range", toggle = true, value = false})
 	Menu.Draw:MenuElement({id = "E", name = "Draw [E] Range", toggle = true, value = false})
@@ -60,6 +78,10 @@ function zgBrand:Tick()
 		self:Combo()
 	elseif mode == "Harass" then
 		self:Harass()
+	elseif mode == "LaneClear" then
+		self:FarmHarass()
+		self:LaneClear()
+		self:JungleClear()
 	end
 	self:AutoQ()
 	self:AutoW()
@@ -132,6 +154,60 @@ function zgBrand:Harass()
 			if Menu.Harass.E:Value() and Menu.Harass.Eminion:Value() and HaveBuff(minion, "BrandAblaze") and GetEnemyCount(self.ESpell.Range, myHero.pos) == 0 and GetEnemyCount(600, minion.pos) > 0 then
 				Control.CastSpell(HK_E, minion)
 				break
+			end
+		end
+	end
+end
+
+function zgBrand:FarmHarass()
+	if IsUnderTurret(myHero) then return end
+	if Menu.Clear.SpellHarass:Value() then
+		self:Harass()
+	end
+end
+
+function zgBrand:LaneClear()
+	if not Menu.Clear.SpellFarm:Value() then return end
+	if IsUnderTurret(myHero) then return end
+	local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.WSpell.Range)
+	for _, minion in ipairs(minions) do
+		if IsValid(minion) and minion.team ~= 300 then
+			if Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
+				local bestTarget = nil
+				local maxHits = 0
+				local hitCount = GetMinionCount(self.WSpell.Radius, minion.pos)
+				if hitCount > maxHits then
+					maxHits = hitCount
+					bestTarget = minion
+				end
+				if bestTarget and maxHits >= Menu.Clear.LaneClear.WCount:Value() then
+					Control.CastSpell(HK_W, bestTarget)
+				end
+			end
+			if Menu.Clear.LaneClear.E:Value() and IsReady(_E) and minion.distance < self.ESpell.Range and HaveBuff(minion, "BrandAblaze") then
+				Control.CastSpell(HK_E, minion)
+			end
+		end
+	end
+end
+
+function zgBrand:JungleClear()
+	if not Menu.Clear.SpellFarm:Value() then return end
+	local monsters = _G.SDK.ObjectManager:GetEnemyMinions(800)
+	table.sort(monsters, function(a, b) return a.maxHealth > b.maxHealth end)
+	for _, monster in ipairs(monsters) do
+		if IsValid(monster) and monster.team == 300 then
+			if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
+				Control.CastSpell(HK_W, monster)
+			end
+			if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
+				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, monsters[1].pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius, {GGPrediction.COLLISION_MINION}, monster.networkID)
+				if collisionCount == 0 then
+					Control.CastSpell(HK_Q, monster)
+				end
+			end
+			if Menu.Clear.JungleClear.E:Value() and IsReady(_E) and monster.distance < self.ESpell.Range and HaveBuff(monster, "BrandAblaze") then
+				Control.CastSpell(HK_E, monster)
 			end
 		end
 	end
@@ -210,6 +286,21 @@ function zgBrand:GetWDmg(target)
 end
 
 function zgBrand:Draw()
+	if myHero.dead then return end
+	if Menu.Draw.DrawFarm:Value() then
+		if Menu.Clear.SpellFarm:Value() then
+			Draw.Text("Spell Farm: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Farm: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+58, Draw.Color(200, 242, 120, 34))
+		end
+	end
+	if Menu.Draw.DrawHarass:Value() then
+		if Menu.Clear.SpellHarass:Value() then
+			Draw.Text("Spell Harass: On", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		else
+			Draw.Text("Spell Harass: Off", 16, myHero.pos2D.x-57, myHero.pos2D.y+78, Draw.Color(200, 242, 120, 34))
+		end
+	end
 	if Menu.Draw.Q:Value() and IsReady(_Q) then
 		Draw.Circle(myHero.pos, self.QSpell.Range, 1, Draw.Color(255, 66, 244, 113))
 	end
