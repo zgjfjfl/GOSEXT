@@ -1,4 +1,4 @@
-local Version = 1.06
+local Version = 1.07
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -29,6 +29,18 @@ local function IsSpecialMinion(unit)
 	return specialMinions[unit.charName:lower()]
 end
 
+local function IsUnderAllyTurret(unit)
+	for _, turret in ipairs(_G.SDK.ObjectManager:GetAllyTurrets()) do
+		local range = (turret.boundingRadius + 750 + unit.boundingRadius / 2)
+		if not turret.dead then 
+			if turret.pos:DistanceTo(unit.pos) < range then
+				return true
+			end
+		end
+	end
+	return false
+end
+
 local LastChatOpenTimer = 0
 
 --------------------------------------
@@ -42,7 +54,6 @@ function zgEzreal:__init()
 	Callback.Add("Tick", function() self:Tick() end)
 	Callback.Add("WndMsg", function(msg, wParam) self:OnWndMsg(msg, wParam) end)
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	_G.SDK.Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1150, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL, GGPrediction.COLLISION_MINION}}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1150, Speed = 1700, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 1.00, Radius = 160, Range = 24000, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
@@ -53,12 +64,8 @@ function zgEzreal:__init()
 	self.WTarget = nil
 	self.WMarkTime = 0
 	self.lastClearSpecial = 0
-	self.lastAttackHitTime = 0
-	self.lastAttackTarget = nil
-	self.lastAttackTargetID = nil
-	self.lastQTargetID = nil
-	self.lastQHitTime = 0
-	self.lastQDamage = 0
+	self.lastQTarget = nil
+	self.lastQExpire = 0
 end
 
 function zgEzreal:LoadMenu()
@@ -115,42 +122,28 @@ function zgEzreal:LoadMenu()
 end
 
 function zgEzreal:OnPreAttack(args)
-	if GetMode() == "Combo" then
+	local mode = GetMode()
+	if mode == "Combo" then
 		local wTarget = self:GetWTarget()
 		if IsValid(wTarget) and _G.SDK.Data:IsInAutoAttackRange(myHero, wTarget) then
 			args.Target = wTarget
 		end
-	elseif GetMode() == "LaneClear" then
-		local target = args.Target
-		if target and self.lastQTargetID and target.networkID == self.lastQTargetID and Game.Timer() <= self.lastQHitTime then
-			local shield = target.shieldAD or 0
-			local hpRegen = target.hpRegen or 0
-			local qDamage = self.lastQDamage or self:GetQDmg(target)
-			if qDamage >= target.health + shield + hpRegen then
+	elseif mode == "LaneClear" then
+		if self.lastQTarget and GetTickCount() < self.lastQExpire then
+			if args.Target and args.Target.handle == self.lastQTarget then
 				args.Process = false
 				return
 			end
+		else
+			self.lastQTarget = nil
 		end
 		if Menu.Clear.WT:Value() and IsReady(_W) and self.lastW + 300 < GetTickCount() then
-			if target and (target.type == Obj_AI_Turret or target.type == Obj_AI_Barracks or target.type == Obj_AI_Nexus) then
-				if Control.CastSpell(HK_W, target) then
+			if args.Target and (args.Target.type == Obj_AI_Turret or args.Target.type == Obj_AI_Barracks or args.Target.type == Obj_AI_Nexus) then
+				if Control.CastSpell(HK_W, args.Target) then
 					self.lastW = GetTickCount()
 				end
 			end
 		end
-	end
-	if args.Process then
-		self.lastAttackTarget = args.Target
-	else
-		self.lastAttackTarget = nil
-	end
-end
-
-function zgEzreal:OnPostAttack()
-	local target = self.lastAttackTarget
-    if IsValid(target) then
-		self.lastAttackHitTime = _G.SDK.Attack.CastEndTime + target.distance / 2000 + 0.25
-		self.lastAttackTargetID = target.networkID
 	end
 end
 
@@ -244,7 +237,13 @@ function zgEzreal:Combo()
 			target = GetTarget(Menu.Combo.QRange:Value())
 		end
 		if IsValid(target) and target.pos:ToScreen().onScreen then
-			self:CastQ(target)
+			local inAARange = _G.SDK.Data:IsInAutoAttackRange(myHero, target)
+        	local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, target)
+        	local wDamage = self:GetWDmg(target)
+        	local canKillWithAA = inAARange and (aaDamage + wDamage) >= target.health + target.shieldAD + target.hpRegen
+        	if not canKillWithAA then
+				self:CastQ(target)
+			end
 		end
 	end
 end
@@ -268,21 +267,15 @@ function zgEzreal:FarmHarass()
 end
 
 function zgEzreal:LaneClear()
-	if not Menu.Clear.SpellFarm:Value() or not Menu.Clear.LaneClear.Q:Value() then return end
+	if not IsReady(_Q) or not Menu.Clear.SpellFarm:Value() or not Menu.Clear.LaneClear.Q:Value() then return end
 	local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.QSpell.Range)
 	if #minions == 0 then return end
 	table.sort(minions, function(a, b) return a.distance < b.distance end)
+	local aaLastHitHandle = _G.SDK.HealthPrediction.LastHitHandle
 	local target = nil
+	local isKillShot = false  -- 标记这次Q是否能击杀
 	for i, m in ipairs(minions) do
-    	if IsValid(m) and m.pos2D.onScreen and m.team ~= 300 then
-			if Game.Timer() <= self.lastAttackHitTime and self.lastAttackTargetID and m.networkID == self.lastAttackTargetID then
-				local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, m)
-				local shield = m.shieldAD or 0
-				local hpRegen = m.hpRegen or 0
-				if aaDamage >= m.health + shield + hpRegen then
-					goto continue
-				end
-			end
+		if IsValid(m) and m.pos2D.onScreen and m.team ~= 300 and m.handle ~= aaLastHitHandle then
 			local t = m.distance / self.QSpell.Speed + self.QSpell.Delay
 			local hp = _G.SDK.HealthPrediction:GetPrediction(m, t)
 			local QDmg = self:GetQDmg(m)
@@ -290,24 +283,28 @@ function zgEzreal:LaneClear()
 				local _, _, coll = GGPrediction:GetCollision(myHero.pos, m.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius / 2, {GGPrediction.COLLISION_MINION}, m.networkID)
 				if coll == 0 then
 					target = m
+					isKillShot = true  -- Q能击杀，需要限制AA
 					break
 				end
 			end
 			local isCannon = m.charName and m.charName:find("Siege")
-			if not target and i == 1 and not isCannon then
+			if not target and i == 1 and not isCannon and hp > QDmg and not IsUnderAllyTurret(m) then
 				target = m
+				isKillShot = false  -- 只是推线Q，不限制AA
 				break
 			end
 		end
-		::continue::
 	end
 	if IsValid(target) and IsReady(_Q) then
 		if Control.CastSpell(HK_Q, target) then
-			self.lastQTargetID = target.networkID
-			self.lastQHitTime = Game.Timer() + self.QSpell.Delay + target.distance / self.QSpell.Speed + 0.25
-			self.lastQDamage = self:GetQDmg(target)
+			if isKillShot then
+				-- 只有击杀shot才记录，限制AA
+				local flyTime = (target.distance / self.QSpell.Speed + self.QSpell.Delay) * 1000
+				self.lastQTarget = target.handle
+				self.lastQExpire = GetTickCount() + flyTime + 100
+			end
 		end
-    end
+	end
 end
 
 local lastClearSpecialTime = 0
@@ -329,7 +326,7 @@ function zgEzreal:ClearSpecialMinions()
 				end
 			end
 		end
-    end
+	end
 end
 
 function zgEzreal:JungleClear()
@@ -352,27 +349,27 @@ function zgEzreal:JungleClear()
 end
 
 function zgEzreal:LastHit()
-    if Menu.LastHit.Q:Value() and IsReady(_Q) then
-        local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.QSpell.Range)
-        for _, minion in ipairs(minions) do
-            if IsValid(minion) and minion.pos2D.onScreen and not _G.SDK.Data:IsInAutoAttackRange(myHero, minion) then
-                local timeToHit = minion.distance / self.QSpell.Speed + self.QSpell.Delay
-                local Hp = _G.SDK.HealthPrediction:GetPrediction(minion, timeToHit)
-                local QDmg = self:GetQDmg(minion)
-                local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius/2, {GGPrediction.COLLISION_MINION}, minion.networkID)
-                if QDmg >= Hp and collisionCount == 0 then
-                    Control.CastSpell(HK_Q, minion)
-                end
-            end
-        end
-    end
+	if Menu.LastHit.Q:Value() and IsReady(_Q) then
+		local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.QSpell.Range)
+		for _, minion in ipairs(minions) do
+			if IsValid(minion) and minion.pos2D.onScreen and not _G.SDK.Data:IsInAutoAttackRange(myHero, minion) then
+				local timeToHit = minion.distance / self.QSpell.Speed + self.QSpell.Delay
+				local Hp = _G.SDK.HealthPrediction:GetPrediction(minion, timeToHit)
+				local QDmg = self:GetQDmg(minion)
+				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius/2, {GGPrediction.COLLISION_MINION}, minion.networkID)
+				if Hp > 0 and QDmg >= Hp and collisionCount == 0 then
+					Control.CastSpell(HK_Q, minion)
+				end
+			end
+		end
+	end
 end
 
 function zgEzreal:AutoR()
 	if not IsReady(_R) or GetEnemyCount(800, myHero.pos) ~= 0 then return end
-    for _, enemy in ipairs(_G.SDK.ObjectManager:GetEnemyHeroes(3000)) do
-        if IsValid(enemy) and enemy.pos2D.onScreen then
-            if Menu.Auto.RCC:Value() and IsHardCC(enemy) then
+	for _, enemy in ipairs(_G.SDK.ObjectManager:GetEnemyHeroes(3000)) do
+		if IsValid(enemy) and enemy.pos2D.onScreen then
+			if Menu.Auto.RCC:Value() and IsHardCC(enemy) then
 				self:CastR(enemy)
 				return
 			end
@@ -437,14 +434,6 @@ function zgEzreal:GetRDmg(unit)
 end
 
 function zgEzreal:CastQ(unit)
-	if Game.Timer() <= self.lastAttackHitTime and self.lastAttackTargetID and unit.networkID == self.lastAttackTargetID then
-		local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, unit)
-		local shield = unit.shieldAD or 0
-		local hpRegen = unit.hpRegen or 0
-		if aaDamage >= unit.health + shield + hpRegen then
-			return false
-		end
-	end
 	local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 	QPrediction:GetPrediction(unit, myHero)
 	if QPrediction:CanHit(3) then
