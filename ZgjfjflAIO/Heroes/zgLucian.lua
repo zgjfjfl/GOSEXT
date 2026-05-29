@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 -- require("MapPositionGOS")
@@ -63,6 +63,7 @@ function zgLucian:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "Egap", name = "Auto E Anti Gapcloser", toggle = true, value = true})
+	Menu.Misc:MenuElement({ id = "smR", name = "Semi-manual R Key", key = string.byte("T")})
 
 	Menu:MenuElement({type = MENU, id = "Draw", name = "Draw"})
 	Menu.Draw:MenuElement({id = "DrawFarm", name = "Draw Spell Farm Status", toggle = true, value = true})
@@ -85,6 +86,7 @@ function zgLucian:Tick()
 		return
 	end
 	self:AntiGapcloser()
+	self:smR()
 	if lastQ + self.QSpell.Delay * 2 > Game.Timer() then return end
 	if IsCasting() or self:HavePassive() or self:Dashing() or self:CastingR() then return end
 	local Mode = GetMode()
@@ -111,6 +113,15 @@ end
 function zgLucian:EToSideHoldDis()
 	local Edis = Menu.Combo.Edis:Value()
 	return myHero.range == 650 and Edis + 150 or Edis
+end
+
+function zgLucian:smR()
+	if Menu.Misc.smR:Value() and IsReady(_R) then
+		local target = GetTarget(self.RSpell.Range)
+		if IsValid(target) and target.pos2D.onScreen then
+			Control.CastSpell(HK_R, target)
+		end
+	end
 end
 
 function zgLucian:Combo()

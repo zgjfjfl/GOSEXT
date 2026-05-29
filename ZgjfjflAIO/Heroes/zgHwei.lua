@@ -1,4 +1,4 @@
-local Version = 1.05
+local Version = 1.06
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -171,7 +171,7 @@ function zgHwei:CastSpellPos()
 end
 
 function zgHwei:smR()
-	if Menu.Combo.smR:Value() and IsReady(_R) and self:CanCast() then
+	if Menu.Combo.smR:Value() and IsReady(_R) then
 		if self:CanCast() then
 			local target = GetTarget(self.RSpell.Range)
 			if IsValid(target) and target.pos2D.onScreen then
