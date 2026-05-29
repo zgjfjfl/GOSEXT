@@ -116,7 +116,7 @@ function zgLucian:EToSideHoldDis()
 end
 
 function zgLucian:smR()
-	if Menu.Misc.smR:Value() and IsReady(_R) then
+	if Menu.Misc.smR:Value() and IsReady(_R) and myHero:GetSpellData(_R).name == "LucianR" then
 		local target = GetTarget(self.RSpell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
 			Control.CastSpell(HK_R, target)
