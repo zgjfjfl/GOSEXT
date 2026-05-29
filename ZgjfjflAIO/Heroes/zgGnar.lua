@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -75,8 +75,8 @@ function zgGnar:__init()
 	QMini = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1100, Speed = 1200, Collision = false}
 	EMini = {Radius = 150, Range = 475}
 	QMega = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 90, Range = 1100, Speed = 2100, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
-	WMega = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 100, Range = 550, Speed = MathHuge, Collision = false}
-	EMega = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 375, Range = 675, Speed = MathHuge, Collision = false}
+	WMega = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 100, Range = 550, Speed = math.huge, Collision = false}
+	EMega = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 375, Range = 675, Speed = math.huge, Collision = false}
 	R = {Delay = 0.25, Range = 420}
 end
 
@@ -170,7 +170,7 @@ function zgGnar:Combo()
 		local enemiesInRange = {}
 		for i, enemy in ipairs(_G.SDK.ObjectManager:GetEnemyHeroes()) do
 			if IsValid(enemy) then
-				local enemyPred = enemy:GetPrediction(MathHuge, R.Delay)
+				local enemyPred = enemy:GetPrediction(math.huge, R.Delay)
 				if myHero.pos:DistanceTo(enemyPred) < R.Range then
 					Count = Count + 1
 					table.insert(enemiesInRange, enemy)
@@ -179,7 +179,7 @@ function zgGnar:Combo()
 		end
 		if  Menu.Combo.R:Value() and IsReady(_R) and Count >= Menu.Combo.RCount:Value() then
 			local target = GetTarget(enemiesInRange)
-			local wallPos = FindClosestWall(myHero, 1000)
+			local wallPos = FindClosestWall(myHero, 1000, 25)
 			if wallPos ~= nil then
 				local castDir = target.pos + (wallPos - myHero.pos):Normalized()
 				if FindFirstWallCollision(target.pos, castDir * 500, 25) ~= nil and FindFirstWallCollision(myHero.pos, target.pos, 25) == nil then
@@ -312,7 +312,7 @@ function zgGnar:LaneClear()
 	local Q = isMini and QMini or QMega
 	if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
 		local minions = _G.SDK.ObjectManager:GetEnemyMinions(Q.Range)
-		TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+		table.sort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for _, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				local condition = false
@@ -330,7 +330,7 @@ function zgGnar:LaneClear()
 	end
 	if not isMini and Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
 		local minions = _G.SDK.ObjectManager:GetEnemyMinions(WMega.Range)
-		TableSort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
+		table.sort(minions, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for _, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				local _, _, collisionCount = GGPrediction:GetCollision(myHero.pos, minion.pos, WMega.Speed, WMega.Delay, WMega.Radius, {GGPrediction.COLLISION_MINION}, nil)
@@ -348,7 +348,7 @@ function zgGnar:JungleClear()
 	local Q = isMini and QMini or QMega
 	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
 		local minions = _G.SDK.ObjectManager:GetMonsters(Q.Range)
-		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		table.sort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for _, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
 				Control.CastSpell(HK_Q, minion)
@@ -357,7 +357,7 @@ function zgGnar:JungleClear()
 	end
 	if not isMini and Menu.Clear.JungleClear.W:Value() and IsReady(_W) then
 		local minions = _G.SDK.ObjectManager:GetMonsters(WMega.Range)
-		TableSort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
+		table.sort(minions, function(a, b) return a.maxHealth > b.maxHealth end)
 		for _, minion in ipairs(minions) do
 			if IsValid(minion) and minion.pos2D.onScreen then
 				Control.CastSpell(HK_W, minion)
