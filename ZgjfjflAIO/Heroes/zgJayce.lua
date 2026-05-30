@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -242,7 +242,7 @@ function zgJayce:Flee()
 		end
 	else
 		if IsReady(_Q) then
-			local minions = ObjectManager:GetEnemyMinions(self.Q2Spell.Range)
+			local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.Q2Spell.Range)
 			table.sort(minions, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
 			if #minions > 0 then
 				local best = minions[1]
