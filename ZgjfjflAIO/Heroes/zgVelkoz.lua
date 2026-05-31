@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -14,7 +14,7 @@ function zgVelkoz:__init()
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 50, Range = 1000, Speed = 1300, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
 	self.QSplit = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 45, Range = 1000, Speed = 2100, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 85, Range = 1000, Speed = 1700, Collision = false}
-	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1.0, Radius = 225, Range = 800, Speed = math.huge, Collision = false}
+	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 225, Range = 800, Speed = math.huge, Collision = false}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 80, Range = 1500, Speed = math.huge, Collision = false}
 	self.CanCastQ2 = false
 end
