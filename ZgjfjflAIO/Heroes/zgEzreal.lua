@@ -1,4 +1,4 @@
-local Version = 1.07
+local Version = 1.08
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -23,6 +23,12 @@ local specialMinions = {
 	["heimertblue"] = true,
 	["zyragraspingplant"] = true,
 	["zyrathornplant"] = true,
+}
+
+local specialMinionChampions = {
+	["Aphelios"] = true,
+	["Heimerdinger"] = true,
+	["Zyra"] = true,
 }
 
 local function IsSpecialMinion(unit)
@@ -66,6 +72,13 @@ function zgEzreal:__init()
 	self.lastClearSpecial = 0
 	self.lastQTarget = nil
 	self.lastQExpire = 0
+	self.lastAATarget = nil
+	self.lastAAExpire = 0
+	self.lastAAWillKill = false
+	self.hasSpecialMinionEnemy = false
+	_G.SDK.ObjectManager:OnEnemyHeroLoad(function(enemy)
+		self:OnEnemyHeroLoad(enemy)
+	end)
 end
 
 function zgEzreal:LoadMenu()
@@ -145,6 +158,9 @@ function zgEzreal:OnPreAttack(args)
 			end
 		end
 	end
+	if args.Process and args.Target then
+		self:TrackAATarget(args.Target)
+	end
 end
 
 local LastEFake = 0
@@ -152,6 +168,27 @@ function zgEzreal:OnWndMsg(msg, wParam)
 	if msg == KEY_DOWN and wParam == Menu.EHelper.efake:Key() then
 		LastEFake = os.clock()
 	end
+end
+
+function zgEzreal:OnEnemyHeroLoad(enemy)
+	if enemy and specialMinionChampions[enemy.charName] then
+		self.hasSpecialMinionEnemy = true
+	end
+end
+
+function zgEzreal:TrackAATarget(unit)
+	if not IsValid(unit) then return end
+	if unit.type ~= Obj_AI_Hero and unit.type ~= Obj_AI_Minion then
+		self.lastAAWillKill = false
+		return
+	end
+	local attackSpeed = _G.SDK.Attack:GetProjectileSpeed()
+	local flyTime = attackSpeed > 0 and unit.distance / attackSpeed or 0
+	local timeToHit = _G.SDK.Attack:GetWindup() + flyTime
+	local expireTime = (timeToHit + 0.15) * 1000
+	self.lastAATarget = unit.handle
+	self.lastAAExpire = GetTickCount() + expireTime
+	self.lastAAWillKill = self:CanMyAAKill(unit, unit.type == Obj_AI_Hero)
 end
 
 function zgEzreal:Tick()
@@ -240,8 +277,9 @@ function zgEzreal:Combo()
 			local inAARange = _G.SDK.Data:IsInAutoAttackRange(myHero, target)
         	local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, target)
         	local wDamage = self:GetWDmg(target)
-        	local canKillWithAA = inAARange and (aaDamage + wDamage) >= target.health + target.shieldAD + target.hpRegen
-        	if not canKillWithAA then
+        	local canKillWithAA = inAARange and _G.SDK.Orbwalker:CanAttack() and (aaDamage + wDamage) >= target.health + target.shieldAD + target.hpRegen
+			local aaWillKillTarget = self:WasMyRecentKillAATarget(target)
+        	if not canKillWithAA and not aaWillKillTarget then
 				self:CastQ(target)
 			end
 		end
@@ -271,11 +309,12 @@ function zgEzreal:LaneClear()
 	local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.QSpell.Range)
 	if #minions == 0 then return end
 	table.sort(minions, function(a, b) return a.distance < b.distance end)
-	local aaLastHitHandle = _G.SDK.HealthPrediction.LastHitHandle
 	local target = nil
-	local isKillShot = false  -- 标记这次Q是否能击杀
+	local isKillShot = false
 	for i, m in ipairs(minions) do
-		if IsValid(m) and m.pos2D.onScreen and m.team ~= 300 and m.handle ~= aaLastHitHandle then
+		local isCannon = m.charName and m.charName:find("Siege")
+		local shouldSkipAATarget = isCannon and self:WasMyRecentKillAATarget(m) or self:WasMyRecentAATarget(m)
+		if IsValid(m) and m.pos2D.onScreen and m.team ~= 300 and not shouldSkipAATarget then
 			local t = m.distance / self.QSpell.Speed + self.QSpell.Delay
 			local hp = _G.SDK.HealthPrediction:GetPrediction(m, t)
 			local QDmg = self:GetQDmg(m)
@@ -283,14 +322,13 @@ function zgEzreal:LaneClear()
 				local _, _, coll = GGPrediction:GetCollision(myHero.pos, m.pos, self.QSpell.Speed, self.QSpell.Delay, self.QSpell.Radius / 2, {GGPrediction.COLLISION_MINION}, m.networkID)
 				if coll == 0 then
 					target = m
-					isKillShot = true  -- Q能击杀，需要限制AA
+					isKillShot = true
 					break
 				end
 			end
-			local isCannon = m.charName and m.charName:find("Siege")
 			if not target and i == 1 and not isCannon and hp > QDmg and not IsUnderAllyTurret(m) then
 				target = m
-				isKillShot = false  -- 只是推线Q，不限制AA
+				isKillShot = false
 				break
 			end
 		end
@@ -298,7 +336,6 @@ function zgEzreal:LaneClear()
 	if IsValid(target) and IsReady(_Q) then
 		if Control.CastSpell(HK_Q, target) then
 			if isKillShot then
-				-- 只有击杀shot才记录，限制AA
 				local flyTime = (target.distance / self.QSpell.Speed + self.QSpell.Delay) * 1000
 				self.lastQTarget = target.handle
 				self.lastQExpire = GetTickCount() + flyTime + 100
@@ -310,7 +347,8 @@ end
 local lastClearSpecialTime = 0
 local clearSpecialInterval = 0.5
 function zgEzreal:ClearSpecialMinions()
-	if not Menu.Clear.LaneClear.QSpecial:Value() then return end
+	if not IsReady(_Q) or not Menu.Clear.LaneClear.QSpecial:Value() then return end
+	if not self.hasSpecialMinionEnemy then return end
 	local now = GetTickCount() / 1000
 	if now > lastClearSpecialTime + clearSpecialInterval then
 		lastClearSpecialTime = now
@@ -401,6 +439,24 @@ function zgEzreal:AutoR()
 			return
 		end
 	end
+end
+
+function zgEzreal:WasMyRecentAATarget(unit)
+	return IsValid(unit) and self.lastAATarget == unit.handle and GetTickCount() <= self.lastAAExpire
+end
+
+function zgEzreal:WasMyRecentKillAATarget(unit)
+	return self:WasMyRecentAATarget(unit) and self.lastAAWillKill
+end
+
+function zgEzreal:CanMyAAKill(unit, includeW)
+	if not IsValid(unit) then return false end
+	local aaDamage = _G.SDK.Damage:GetAutoAttackDamage(myHero, unit)
+	local totalDamage = aaDamage
+	if includeW then
+		totalDamage = totalDamage + self:GetWDmg(unit)
+	end
+	return totalDamage >= unit.health + unit.shieldAD + unit.hpRegen
 end
 
 function zgEzreal:GetQDmg(unit)
