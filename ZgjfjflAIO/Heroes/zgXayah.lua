@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -75,7 +75,9 @@ function zgXayah:UpdateFeather()
 			table.remove(self.Feathers, i)
 		end
 	end
-	
+	if #self.Feathers == 0 then
+		return
+	end
 	for i = Game.MissileCount(), 1, -1 do
 		local missile = Game.Missile(i)
 		local mis = missile.missileData
