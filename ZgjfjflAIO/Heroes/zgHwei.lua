@@ -1,4 +1,4 @@
-local Version = 1.06
+local Version = 1.07
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -361,7 +361,7 @@ function zgHwei:GetQQDmg(target)
 	local spellData = myHero:GetSpellData(_Q)
 	local level = spellData.name == "HweiQ" and spellData.level or 0
 	if level == 0 then return 0 end
-	local QQDmg = ({50, 80, 110, 140, 170})[level] + 0.7 * myHero.ap + ({3, 4, 5, 6, 7})[level] / 100 * target.maxHealth
+	local QQDmg = ({50, 80, 110, 140, 170})[level] + 0.8 * myHero.ap + ({3, 4, 5, 6, 7})[level] / 100 * target.maxHealth
 	if HasItem(myHero, 4645) and target.health / target.maxHealth < 0.4 then
 		QQDmg = QQDmg * 1.2
 	end
@@ -373,7 +373,7 @@ function zgHwei:GetQWDmg(target)
 	local level = spellData.name == "HweiQ" and spellData.level or 0
 	if level == 0 then return 0 end
 	local missingHp = 1 - (target.health / target.maxHealth)
-	local QWDmg = ({60, 85, 110, 135, 160})[level] + 0.25 * myHero.ap
+	local QWDmg = ({60, 85, 110, 135, 160})[level] + 0.30 * myHero.ap
 	local multiplier = (({2.0, 2.375, 2.75, 3.125, 3.5})[level] - 1) * missingHp
 	if IsHardCC(target) or self:Isolated(target) then
 		QWDmg = QWDmg * (1 + multiplier)

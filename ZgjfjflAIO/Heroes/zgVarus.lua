@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -305,7 +305,7 @@ function zgVarus:GetQDmg(target, wActive)
 	if qlvl == 0 then return 0 end
 	local wlvl = myHero:GetSpellData(_W).level
 	local missingHp = target.maxHealth - target.health
-	local Dmg = ({80, 150, 220, 290, 360})[qlvl] + 1.5 * myHero.bonusDamage
+	local Dmg = ({80, 150, 220, 290, 360})[qlvl] + 1.2 * myHero.bonusDamage
 	local t = wlvl > 0 and ({9, 12, 15, 18, 21})[wlvl] or 0
 	local canUseW = Game.CanUseSpell(_W) == 0 and (100 * target.health / target.maxHealth) < Menu.Combo.Whp:Value()
 	local useW = wActive ~= nil and wActive or canUseW
