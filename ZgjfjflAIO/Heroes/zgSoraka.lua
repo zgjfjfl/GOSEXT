@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -81,7 +81,7 @@ function zgSoraka:Tick()
 end
 
 function zgSoraka:OnPreAttack(args)
-	if Orbwalker.Modes[_G.SDK.ORBWALKER_MODE_COMBO] then
+	if GetMode() == "Combo" then
 		if Menu.Combo.DisableAA:Value() and (IsReady(_Q) or IsReady(_E)) then
 			args.Process = false
 		end
