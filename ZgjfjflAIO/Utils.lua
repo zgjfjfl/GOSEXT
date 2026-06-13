@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 lastQ, lastW, lastE, lastR = 0, 0, 0, 0
 
@@ -236,8 +236,9 @@ function GetMode()
 		or nil
 end
 
-function GetTarget(range) 
-	return _G.SDK.TargetSelector:GetTarget(range)
+function GetTarget(range)
+	local dmgType = myHero.ap > myHero.totalDamage and _G.SDK.DAMAGE_TYPE_MAGICAL or _G.SDK.DAMAGE_TYPE_PHYSICAL
+	return _G.SDK.TargetSelector:GetTarget(range, dmgType)
 end
 
 function IsFacingMe(unit)
