@@ -1,7 +1,10 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
+
+local ItemSlots = {ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6, ITEM_7}
+local ItemKeys = {HK_ITEM_1, HK_ITEM_2, HK_ITEM_3, HK_ITEM_4, HK_ITEM_5, HK_ITEM_6, HK_ITEM_7}
 
 class "zgSenna"
 
@@ -14,6 +17,7 @@ function zgSenna:__init()
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 50, Range = 1300, Speed = math.huge, Collision = false}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1250, Speed = 1200, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 1, Radius = 160, Range = 25000, Speed = 20000, Collision = false}
+	self.WardQTimer = 0
 end
 
 function zgSenna:LoadMenu()
@@ -34,6 +38,7 @@ function zgSenna:LoadMenu()
 
 	Menu:MenuElement({type = MENU, id = "ks", name = "KS"})
 	Menu.ks:MenuElement({id = "Qexternal", name = "Q External KS", value = true})
+	Menu.ks:MenuElement({id = "WardQ", name = "Auto Ward Q KS", value = true})
 	Menu.ks:MenuElement({id = "R", name = "R KS", value = true})
 	Menu.ks:MenuElement({id = "MinRange",name = "Min R Range",value = 1300, min = 1,max = 2000,step = 50})
 	Menu.ks:MenuElement({id = "MaxRange",name = "Max R Range",value = 5000, min = 1,max = 20000,step = 50})
@@ -68,7 +73,7 @@ function zgSenna:OnPreAttack(args)
 end
 
 function zgSenna:OnTick()
-	Q1Range = myHero.range + myHero.boundingRadius * 2
+	Q1Range = math.min(myHero.range, 1100)  + myHero.boundingRadius * 2
 	self:SetQDelay()
 	if ShouldWait() then
 		return
@@ -88,8 +93,8 @@ function zgSenna:OnTick()
 end
 
 function zgSenna:SetQDelay()
-	if myHero.activeSpell.valid and myHero.activeSpell.name == "SennaQCast" then
-		self.QSpell.Delay = myHero.activeSpell.windup
+	if myHero.attackData and myHero.attackData.windUpTime > 0 then
+		self.QSpell.Delay = myHero.attackData.windUpTime * 0.8
 	end
 end
 
@@ -142,7 +147,9 @@ function zgSenna:KS()
 		for _, enemy in ipairs(_G.SDK.ObjectManager:GetEnemyHeroes(1300)) do
 			if IsValid(enemy) then
 				if enemy.distance > Q1Range and (enemy.health + enemy.shieldAD) < self:GetQDamage(enemy) then
-					self:CastQExternal(enemy)
+					if not self:CastQExternal(enemy) and Menu.ks.WardQ:Value() then
+						self:CastWardQ(enemy)
+					end
 				end
 			end
 		end
@@ -182,8 +189,8 @@ function zgSenna:AutoHeal()
 end
 
 function zgSenna:GetQDamage(target)
-	local baseDmg = ({30, 60, 90, 120, 150})[myHero:GetSpellData(_Q).level]
-	local bonusDmg = myHero.bonusDamage * 0.4
+	local baseDmg = ({30, 55, 80, 105, 130})[myHero:GetSpellData(_Q).level]
+	local bonusDmg = myHero.bonusDamage * 0.6
 	local passiveDmg = myHero.totalDamage * 0.2
 
 	local value = baseDmg + bonusDmg + passiveDmg
@@ -202,6 +209,72 @@ function zgSenna:GetRDamage(target)
 	return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, value)
 end
 
+function zgSenna:GetWardSlot()
+	local wardItems = {
+		[2055] = true,
+		[3340] = true,
+		[3853] = true,
+		[3857] = true,
+		[3860] = true,
+		[3865] = true,
+		[3866] = true,
+		[3867] = true,
+		[3869] = true,
+		[3870] = true,
+		[3871] = true,
+		[3876] = true,
+		[3877] = true,
+	}
+	for i = 1, #ItemSlots do
+		local item = myHero:GetItemData(ItemSlots[i])
+		if item and item.itemID and wardItems[item.itemID] then
+			local spellData = myHero:GetSpellData(ItemSlots[i])
+			if spellData and spellData.currentCd == 0 then
+				return ItemKeys[i]
+			end
+		end
+	end
+	return nil
+end
+
+function zgSenna:GetWards(range)
+	local wards = {}
+	if not Game or not Game.WardCount or not Game.Ward then
+		return wards
+	end
+	for i = 1, Game.WardCount() do
+		local ward = Game.Ward(i)
+		if ward and ward.valid and not ward.dead and ward.distance <= range then
+			table.insert(wards, ward)
+		end
+	end
+	return wards
+end
+
+function zgSenna:CastWardQ(target)
+	if Game.Timer() < self.WardQTimer + 0.75 then
+		return false
+	end
+	local wardKey = self:GetWardSlot()
+	if not wardKey then
+		return false
+	end
+	local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
+	QPrediction:GetPrediction(target, myHero)
+	if QPrediction:CanHit(3) then
+		local range = myHero.pos:DistanceTo(QPrediction.UnitPosition)
+		if range > Q1Range and range <= self.QSpell.Range then
+			local wardRange = math.min(600, Q1Range - 50, range - 80)
+			local wardPos = myHero.pos:Extended(QPrediction.UnitPosition, wardRange)
+			if Control.CastSpell(wardKey, wardPos) then
+				self.WardQTimer = Game.Timer()
+				return true
+			end
+		end
+	end
+	return false
+end
+
 function zgSenna:CastQExternal(target)
 	if IsReady(_Q) then
 		local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
@@ -214,21 +287,24 @@ function zgSenna:CastQExternal(target)
 			local minions = _G.SDK.ObjectManager:GetMinions(Q1Range)
 			local turrets = _G.SDK.ObjectManager:GetTurrets(Q1Range)
 			local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(Q1Range)
+			local wards = self:GetWards(Q1Range)
 
-			local objectTable = self:tableMerge(allies, minions, turrets, enemies)
+			local objectTable = self:tableMerge(allies, minions, turrets, enemies, wards)
 
 			for i = 1, #objectTable do
 				local object = objectTable[i]
 				local objectPos = myHero.pos:Extended(object.pos, range)
-				if GetDistanceSqr(targetPos, objectPos) < (65/2 + target.boundingRadius) ^ 2 then
+				if GetDistanceSqr(targetPos, objectPos) < (self.QSpell.Radius + target.boundingRadius) ^ 2 then
 					Control.CastSpell(HK_Q, object)
+					return true
 				end
 			end
 		end
 	end
+	return false
 end
 
-function zgSenna:tableMerge(t1, t2, t3 ,t4)
+function zgSenna:tableMerge(t1, t2, t3 ,t4, t5)
 	local newTable = {}
 
 	for i = 1, #t1 do
@@ -250,6 +326,13 @@ function zgSenna:tableMerge(t1, t2, t3 ,t4)
 	if t4 then
 		for i = 1, #t4 do
 			local v = t4[i]
+			table.insert(newTable,v)
+		end
+	end
+
+	if t5 then
+		for i = 1, #t5 do
+			local v = t5[i]
 			table.insert(newTable,v)
 		end
 	end
