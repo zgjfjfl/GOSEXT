@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -16,12 +16,12 @@ function zgViktor:__init()
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 300, Range = 850, Speed = 1200, Collision = false}
 	self.lastE = 0
 	self.lastR = 0
-    self.isCastingE = false
-    self.stage = 0
-    self.stageTick = 0
-    self.startPos = nil
-    self.endPos = nil
-    self.mPos = nil
+	self.isCastingE = false
+	self.stage = 0
+	self.stageTick = 0
+	self.startPos = nil
+	self.endPos = nil
+	self.mPos = nil
 end
 
 function zgViktor:LoadMenu()
@@ -70,7 +70,7 @@ function zgViktor:OnPreAttack(args)
 	local target = args.Target
 	local mode = GetMode()
 	if (mode == "Combo" or mode == "Harass") and target.type == Obj_AI_Hero then
-		if IsReady(_Q) or IsReady(_E) then
+		if (IsReady(_Q) or IsReady(_E)) and not HaveBuff(myHero, "viktorq") then
 			args.Process = false
 		end
 	end
@@ -86,7 +86,7 @@ end
 
 function zgViktor:Tick()
 	self:UpdateCastE()
-	if ShouldWait() or IsCasting() or self.isCastingE then
+	if ShouldWait() or IsCasting() then
 		return
 	end
 	self:SemiR()
@@ -184,17 +184,18 @@ function zgViktor:Combo()
 				local EEndPos = EStartPos + (pred.CastPosition - EStartPos):Normalized() * 300
 				if self:CastE(EStartPos, EEndPos) then
 					self.lastE = GetTickCount()
+					return true
 				end
 			end
 		end
 	end
-	if Menu.Combo.W:Value() and IsReady(_W) then
+	if Menu.Combo.W:Value() and IsReady(_W) and not self.isCastingE then
 		local target = GetTarget(self.WSpell.Range)
 		if IsValid(target) and (HaveBuff(target, "viktorrguide") or IsSlow(target) or IsHardCC(target)) then
 			return self:CastW(target)
 		end
 	end
-	if Menu.Combo.Q:Value() and IsReady(_Q) then
+	if Menu.Combo.Q:Value() and IsReady(_Q) and not self.isCastingE then
 		local target = GetTarget(800)
 		if IsValid(target) and GetDistance(myHero.pos, target.pos) <= (600 + myHero.boundingRadius + target.boundingRadius) then
 			return Control.CastSpell(HK_Q, target)
@@ -203,7 +204,7 @@ function zgViktor:Combo()
 end
 
 function zgViktor:Harass()
-	if Menu.Harass.E:Value() and IsReady(_E) and self.lastE + 1000 < GetTickCount() then
+	if Menu.Harass.E:Value() and IsReady(_E) and self.lastE + 1100 < GetTickCount() then
 		local target = GetTarget(Menu.Harass.ERange:Value())
 		if IsValid(target) then
 			local EStartPos = myHero.pos + (target.pos - myHero.pos):Normalized() * 525
@@ -216,11 +217,12 @@ function zgViktor:Harass()
 				local EEndPos = EStartPos + (pred.CastPosition - EStartPos):Normalized() * 300
 				if self:CastE(EStartPos, EEndPos) then
 					self.lastE = GetTickCount()
+					return true
 				end
 			end
 		end
 	end
-	if Menu.Harass.Q:Value() and IsReady(_Q) then
+	if Menu.Harass.Q:Value() and IsReady(_Q) and not self.isCastingE then
 		local target = GetTarget(800)
 		if IsValid(target) and GetDistance(myHero.pos, target.pos) <= (600 + myHero.boundingRadius + target.boundingRadius) then
 			return Control.CastSpell(HK_Q, target)
@@ -320,7 +322,7 @@ function zgViktor:JungleClear()
 			end
 		end
 	end
-	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
+	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) and not self.isCastingE then
 		local monsters = _G.SDK.ObjectManager:GetMonsters(800)
 		for i, monster in ipairs(monsters) do
 			if IsValid(monster) and GetDistance(myHero.pos, monster.pos) <= (600 + myHero.boundingRadius + monster.boundingRadius) then
@@ -359,8 +361,7 @@ function zgViktor:AutoW()
 					local endPos = Vector(target.pathing.endPos)
 					if myHero.pos:DistanceTo(endPos) < Menu.Auto.WgapRange:Value() and IsFacingMe(target) then
 						local midPos = (myHero.pos + endPos) / 2
-						return Control.CastSpell(HK_W, midPos)
-						
+						return Control.CastSpell(HK_W, midPos)	
 					end
 				end
 				if myHero.pos:DistanceTo(target.pos) < Menu.Auto.WmeleeRange:Value() then
@@ -377,54 +378,55 @@ function zgViktor:AutoW()
 end
 
 function zgViktor:CastE(startPos, endPos)
-    if self.isCastingE then return false end
+	if self.isCastingE then return false end
+	if _G.SDK.Cursor.Step > 0 then return false end
 
-    self.isCastingE = true
-    self.stage = 1
-    self.stageTick = GetTickCount()
-    self.startPos = startPos
-    self.endPos = endPos
-    self.mPos = mousePos
+	self.isCastingE = true
+	self.stage = 1
+	self.stageTick = GetTickCount()
+	self.startPos = startPos
+	self.endPos = endPos
+	self.mPos = mousePos
 
-    _G.SDK.Orbwalker:SetMovement(false)
-    _G.SDK.Orbwalker:SetAttack(false)
+	_G.SDK.Orbwalker:SetMovement(false)
+	_G.SDK.Orbwalker:SetAttack(false)
 
-    return true
+	return true
 end
 
 function zgViktor:UpdateCastE()
-    if not self.isCastingE then return end
+	if not self.isCastingE then return end
 
-    local now = GetTickCount()
+	local now = GetTickCount()
 
-    if now > self.stageTick then
-        if self.stage == 1 then
-            Control.SetCursorPos(self.startPos)
-            Control.KeyDown(HK_E)
+	if now > self.stageTick then
+		if self.stage == 1 then
+			Control.SetCursorPos(self.startPos)
+			Control.KeyDown(HK_E)
 
-            self.stage = 2
-            self.stageTick = now
+			self.stage = 2
+			self.stageTick = now
 
-        elseif self.stage == 2 then
-            Control.SetCursorPos(self.endPos)
-            Control.KeyUp(HK_E)
+		elseif self.stage == 2 then
+			Control.SetCursorPos(self.endPos)
+			Control.KeyUp(HK_E)
 
-            self.stage = 3
-            self.stageTick = now
+			self.stage = 3
+			self.stageTick = now
 
-        elseif self.stage == 3 then
-            Control.SetCursorPos(self.mPos)
+		elseif self.stage == 3 then
+			Control.SetCursorPos(self.mPos)
 
-            self.stage = 4
-            self.stageTick = now + 150
+			self.stage = 4
+			self.stageTick = now + 150
 
-        elseif self.stage == 4 then
-            _G.SDK.Orbwalker:SetMovement(true)
-            _G.SDK.Orbwalker:SetAttack(true)
+		elseif self.stage == 4 then
+			_G.SDK.Orbwalker:SetMovement(true)
+			_G.SDK.Orbwalker:SetAttack(true)
 
-            self.isCastingE = false
-        end
-    end
+			self.isCastingE = false
+		end
+	end
 end
 
 function zgViktor:CastW(unit)

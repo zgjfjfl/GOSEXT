@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -53,7 +53,7 @@ function zgTaliyah:Tick()
 	if ShouldWait() then
 		return
 	end
-	if IsCasting() or self.isCastingW then return end
+	if IsCasting() then return end
 	self:AutoE()
 	local Mode = GetMode()
 	if Mode == "Combo" then
@@ -67,7 +67,7 @@ end
 
 function zgTaliyah:CastW(startPos, endPos)
     if self.isCastingW then return false end
-
+	if _G.SDK.Cursor.Step > 0 then return false end
     self.isCastingW = true
     self.stage = 1
     self.stageTick = GetTickCount()
@@ -140,10 +140,10 @@ end
 function zgTaliyah:Combo()
 	local target = GetTarget(1000)
 	if IsValid(target) then
-		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Qmaxrange:Value() then
+		if Menu.Combo.Q:Value() and IsReady(_Q) and myHero.pos:DistanceTo(target.pos) < Menu.Combo.Qmaxrange:Value() and not self.isCastingW then
 			self:CastQ(target)
 		end
-		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range then
+		if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) < self.eSpell.Range and not self.isCastingW then
 			if (IsReady(_W) or myHero:GetSpellData(_W).currentCd < 0.5 or myHero:GetSpellData(_W).currentCd > 2) then
 				if Control.CastSpell(HK_E, target) then
 					lastE = GetTickCount()
@@ -151,7 +151,7 @@ function zgTaliyah:Combo()
 			end
 		end
 		if Menu.Combo.W:Value() and IsReady(_W) and lastW + 1100 < GetTickCount() then
-			if not IsReady(_E) and lastE + 500 < GetTickCount() and (lastE + 2500 > GetTickCount() or myHero:GetSpellData(_E).currentCd > 2) then
+			if myHero:GetSpellData(_E).level == 0 or (not IsReady(_E) and lastE + 500 < GetTickCount() and (lastE + 2500 > GetTickCount() or myHero:GetSpellData(_E).currentCd > 2)) then
 				local wPred = GGPrediction:SpellPrediction(self.wSpell)
 				wPred:GetPrediction(target, myHero)
 				if wPred:CanHit(GGPrediction.HITCHANCE_HIGH) then
@@ -174,7 +174,7 @@ function zgTaliyah:Combo()
 end
 
 function zgTaliyah:Harass()
-	if Menu.Harass.Q:Value() and IsReady(_Q) then
+	if Menu.Harass.Q:Value() and IsReady(_Q) and not self.isCastingW then
 		local target = GetTarget(Menu.Harass.Qmaxrange:Value())
 		if IsValid(target) then
 			self:CastQ(target)
@@ -185,7 +185,7 @@ end
 function zgTaliyah:Clear()
 	if IsUnderTurret(myHero) then return end
 	if not Menu.Clear.SpellFarm:Value() then return end
-	if Menu.Clear.Q:Value() and IsReady(_Q) then
+	if Menu.Clear.Q:Value() and IsReady(_Q) and not self.isCastingW then
 		local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.qSpell.Range)
 		for _, minion in ipairs(minions) do
 			if IsValid(minion) then
