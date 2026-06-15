@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 -- require("MapPositionGOS")
@@ -98,7 +98,7 @@ function zgBard:Combo()
 					local _, _, collisionCount2 = GGPrediction:GetCollision(unit.pos, pred.CastPosition, self.qSpell.Speed, 0, self.qSpell.Radius, {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_ENEMYHERO}, target.networkID)
 					canCast = collisionCount2 == 0
 				end
-				local hitWall = FindFirstWallCollision(pred.CastPosition, extendPos) -- MapPosition:intersectsWall(pred.CastPosition, extendPos)
+				local hitWall = FindFirstWallCollision(Vector(pred.CastPosition), Vector(extendPos)) -- MapPosition:intersectsWall(pred.CastPosition, extendPos)
 				if Menu.Combo.Qstun:Value() then
 					if canCast or hitWall ~= nil then
 						Control.CastSpell(HK_Q, pred.CastPosition)
