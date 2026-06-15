@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -91,7 +91,7 @@ function zgCassiopeia:OnPreAttack(args)
 	local target = args.Target
 	if not target then return end
 	if target.type == Obj_AI_Hero then
-		local eReady = self:EIsReady() or (myHero:GetSpellData(_E).currentCd > 0 and (myHero:GetSpellData(_E).currentCd - 0.35) < myHero.attackData.windUpTime)
+		local eReady = IsReady(_E) or (myHero:GetSpellData(_E).currentCd > 0 and myHero:GetSpellData(_E).currentCd < myHero.attackData.windUpTime)
 		local qReady = Game.CanUseSpell(_Q) == 0
 		local wReady = Game.CanUseSpell(_W) == 0
 		if eReady or qReady or wReady then
@@ -145,11 +145,6 @@ function zgCassiopeia:SemiR()
 	end
 end
 
-function zgCassiopeia:EIsReady()
-	local spell = myHero:GetSpellData(_E)
-	return spell.currentCd < 0.35 and spell.level > 0 and spell.mana <= myHero.mana
-end
-
 function zgCassiopeia:Combo()
 	if Menu.Combo.W:Value() and IsReady(_W) then
 		local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.WSpell.Range)
@@ -163,7 +158,7 @@ function zgCassiopeia:Combo()
 			self:CastQ(target)
 		end
 	end
-	if Menu.Combo.E:Value() and self:EIsReady() then
+	if Menu.Combo.E:Value() and IsReady(_E) then
 		local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.ESpell.Range)
 		if IsValid(target) and (not Menu.Misc.poisonForE:Value() or self:IsPoisoned(target) or (myHero:GetSpellData(_Q).level == 0 and myHero:GetSpellData(_W).level == 0)) then
 			Control.CastSpell(HK_E, target)
@@ -207,7 +202,7 @@ function zgCassiopeia:Harass()
 			end
 		end
 	end
-	if Menu.Harass.E:Value() and self:EIsReady() then
+	if Menu.Harass.E:Value() and IsReady(_E) then
 		local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.ESpell.Range)
 		if IsValid(target) and target.type == Obj_AI_Hero and (self:IsPoisoned(target) or (myHero:GetSpellData(_Q).level == 0 and myHero:GetSpellData(_W).level == 0)) then
 			Control.CastSpell(HK_E, target)
@@ -351,7 +346,7 @@ function zgCassiopeia:Draw()
 	if Menu.Draw.W:Value() and IsReady(_W) then
 		Draw.Circle(myHero.pos, self.WSpell.Range, 1, Draw.Color(255, 66, 229, 244))
 	end
-	if Menu.Draw.E:Value() and self:EIsReady() then
+	if Menu.Draw.E:Value() and IsReady(_E) then
 		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 66, 229, 244))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
