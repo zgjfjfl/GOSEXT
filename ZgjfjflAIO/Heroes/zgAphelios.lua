@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -100,6 +100,10 @@ function zgAphelios:PriorityAttack()
 end
 
 function zgAphelios:OnTick()
+	local force = _G.SDK.Orbwalker.ForceTarget
+	if force and (not IsValid(force) or not HaveBuff(force, "aphelioscalibrumbonusrangedebuff")) then
+		_G.SDK.Orbwalker.ForceTarget = nil
+	end
 	if ShouldWait() then
 		return
 	end
