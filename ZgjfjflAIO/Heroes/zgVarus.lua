@@ -1,4 +1,4 @@
-local Version = 1.04
+local Version = 1.05
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -31,11 +31,13 @@ function zgVarus:LoadMenu()
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Qstacks", name = "Use Q|when W stacks more than", value = 3, min = 0, max = 3, step = 1})
 	Menu.Combo:MenuElement({id = "QstacksOut", name = "Use Q|Out of AA range|when W stacks more than", value = 2, min = 0, max = 3, step = 1})
+	Menu.Combo:MenuElement({id = "Qkill", name = "Use Q|to kill (when damage is lethal)", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "W", name = "Use W", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Whp", name = "Use W|when enemy %hp less than", value = 50, min = 0, max = 100, step = 5})
 	Menu.Combo:MenuElement({id = "E", name = "Use E", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Estacks", name = "Use E|when W stacks more than", value = 3, min = 0, max = 3, step = 1})
 	Menu.Combo:MenuElement({id = "EstacksOut", name = "Use E|Out of AA range|when W stacks more than", value = 2, min = 0, max = 3, step = 1})
+	Menu.Combo:MenuElement({id = "Ekill", name = "Use E|to kill (when damage is lethal)", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "Eearly", name = "Use E early|when Q ready (ignore W stacks)", toggle = true, value = false})
 	Menu.Combo:MenuElement({id = "R", name = "Use R", toggle = true, value = true})
 	Menu.Combo:MenuElement({id = "RCount", name = "Use R|when target nearly X enemies", value = 2, min = 1, max = 5, step = 1})
@@ -169,7 +171,7 @@ function zgVarus:Combo()
 					if not canAAKill and (
 						qStacks == 0
 						or myHero:GetSpellData(_W).level == 0
-						or ((qDmg + wDmg) > (target.health + target.shieldAD + target.hpRegen * 2))
+						or (Menu.Combo.Qkill:Value() and (qDmg + wDmg) > (target.health + target.shieldAD + target.hpRegen * 2))
 						or (buff and buffData.count >= qStacks)
 					) then
 						if canusew and Menu.Combo.W:Value() and (target.health / target.maxHealth * 100) < Menu.Combo.Whp:Value() then
@@ -203,7 +205,7 @@ function zgVarus:Combo()
 						canUseEarly
 						or eStacks == 0
 						or myHero:GetSpellData(_W).level == 0
-						or ((eDmg + wDmg) > (target.health + target.shieldAD + target.shieldAP + target.hpRegen * 2))
+						or (Menu.Combo.Ekill:Value() and (eDmg + wDmg) > (target.health + target.shieldAD + target.shieldAP + target.hpRegen * 2))
 						or (buff and buffData.count >= eStacks)
 					) then
 						self:CastGGPred(HK_E, target)
