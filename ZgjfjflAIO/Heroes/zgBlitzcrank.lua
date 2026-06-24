@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -48,13 +48,15 @@ end
 
 function zgBlitzcrank:OnPreAttack(args)
 	local target = args.Target and args.Target.type == Obj_AI_Hero
-	if target and IsReady(_E) then
+	if target and IsReady(_E) and lastE + 300 < GetTickCount() then
 		if GetMode() == "Combo" and Menu.Combo.E:Value() then
-			Control.CastSpell(HK_E)
-			args.Process = false
+			if Control.CastSpell(HK_E) then
+				lastE = GetTickCount()
+			end
 		elseif GetMode() == "Harass" and Menu.Harass.E:Value() then
-			Control.CastSpell(HK_E)
-			args.Process = false
+			if Control.CastSpell(HK_E) then
+				lastE = GetTickCount()
+			end
 		end
 	end
 end
@@ -63,7 +65,9 @@ function zgBlitzcrank:OnTick()
 	if ShouldWait() then
 		return
 	end
-
+	if myHero.activeSpell.name == "PowerFistAttack" then
+		_G.SDK.Attack.Reset = false
+	end
 	if IsCasting() then return end
 
 	local Mode = GetMode()

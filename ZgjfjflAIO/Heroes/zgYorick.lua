@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -10,11 +10,9 @@ function zgYorick:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
-	_G.SDK.Orbwalker:OnAttack(function() self:OnAttack() end)
 	self.wSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0, Radius = 225, Range = 600, Speed = math.huge, Collision = false}
 	self.eSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1000, Speed = 1800, Collision = false}
 	self.rSpell = {Range = 600}
-	self.qAttackReset = false
 end
 
 function zgYorick:LoadMenu()
@@ -47,16 +45,12 @@ function zgYorick:LoadMenu()
 		Menu.Draw:MenuElement({id = "E", name = "[E] Range", toggle = true, value = false})
 end
 
-function zgYorick:OnAttack()
-	if self.qAttackReset then
-		_G.SDK.Attack.Reset = false
-		self.qAttackReset = false
-	end
-end
-
 function zgYorick:Tick()
 	if ShouldWait() then
 		return
+	end
+	if myHero.activeSpell.name == "YorickQAttack" then
+		_G.SDK.Attack.Reset = false
 	end
 	if IsCasting() then return end
 	local Mode = GetMode()
@@ -141,7 +135,6 @@ function zgYorick:LaneClear()
 				if self:GetQDmg(minion) >= minion.health then
 					Control.CastSpell(HK_Q)
 					lastQ = GetTickCount()
-					self.qAttackReset = true
 					Control.Attack(minion)
 				end
 			end
@@ -180,7 +173,6 @@ function zgYorick:LastHit()
 			if IsValid(minion) and self:GetQDmg(minion) >= minion.health then
 				Control.CastSpell(HK_Q)
 				lastQ = GetTickCount()
-				self.qAttackReset = true
 				Control.Attack(minion)
 			end
 		end
