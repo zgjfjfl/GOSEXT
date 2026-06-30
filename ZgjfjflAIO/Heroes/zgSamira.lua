@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -343,7 +343,7 @@ function zgSamira:ProcessSpell(unit, spell)
 	if not Menu.WSet.UseW:Value() or not IsReady(_W) then return end
 	if not unit or not unit.isEnemy or not spell or not spell.name then return end
 
-		local Detected = CCSpells[spell.name]
+	local Detected = CCSpells[spell.name]
 	if not Detected then return end
 	if myHero.pos:DistanceTo(unit.pos) > 3000 then return end
 
@@ -352,7 +352,7 @@ function zgSamira:ProcessSpell(unit, spell)
 
 	if Detected.type == "targeted" then
 		local target = spell.target
-		if target == myHero.handle or target == myHero.networkID or target == myHero or (target and (target.handle == myHero.handle or target.networkID == myHero.networkID)) then
+		if target == myHero.handle then
 			Control.CastSpell(HK_W)
 		end
 		return
