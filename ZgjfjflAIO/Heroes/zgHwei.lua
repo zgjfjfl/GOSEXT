@@ -1,4 +1,4 @@
-local Version = 1.07
+local Version = 1.08
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -9,6 +9,28 @@ local lastEQ = 0
 
 local ItemSlots = { ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6, ITEM_7 }
 
+local StationaryCastSpells = {
+	AurelionSolQ = true, -- Aurelion Sol Q | Breath of Light
+	BelvethE = true, -- Bel'Veth E | Royal Maelstrom
+	BriarE = true, -- Briar E | Chilling Scream
+	CaitlynR = true, -- Caitlyn R | Ace in the Hole
+	FiddleSticksW = true, -- Fiddlesticks W | Bountiful Harvest
+	IreliaW = true, -- Irelia W | Defiant Dance
+	ReapTheWhirlwind = true, -- Janna R | Monsoon
+	KarthusFallenOne = true, -- Karthus R | Requiem
+	KatarinaR = true, -- Katarina R | Death Lotus
+	MalzaharR = true, -- Malzahar R | Nether Grasp
+	Meditate = true, -- Master Yi W | Meditate
+	MissFortuneBulletTime = true, -- Miss Fortune R | Bullet Time
+	NunuR = true, -- Nunu R | Absolute Zero
+	recall = true, -- Recall
+	SionQ = true, -- Sion Q | Decimating Smash
+	SuperRecall = true, -- Super Recall
+	VelkozR = true, -- Vel'Koz R | Life Form Disintegration Ray
+	XerathLocusOfPower2 = true, -- Xerath R | Rite of the Arcane
+	JhinR = true, -- Jhin R | Curtain Call
+}
+
 local function FacingMe(unit)
 	local V = Vector((unit.pos - myHero.pos))
 	local D = Vector(unit.dir)
@@ -17,6 +39,11 @@ local function FacingMe(unit)
 		return true
 	end
 	return false
+end
+
+local function IsStationaryCasting(unit)
+	local spell = unit.activeSpell
+	return spell and spell.valid and spell.name and StationaryCastSpells[spell.name]
 end
 
 ---------------------------------
@@ -54,7 +81,7 @@ function zgHwei:LoadMenu()
 	Menu.Combo:MenuElement({id = "QWHp", name = "Alone QW| target isolated and Hp < X%", value = 50, min = 0, max = 100, step = 5})
 	Menu.Combo:MenuElement({id = "aoeQE", name = "Use QE| AOE", value = true})
 	Menu.Combo:MenuElement({id = "aoeCount", name = "Use QE| AOE CanHit Counts >= ", value = 2, min = 2, max = 5, step = 1})
-	Menu.Combo:MenuElement({ id = "smQW", name = "Semi-manual QW Key(Target near mouse)", key = string.byte("M")})
+	Menu.Combo:MenuElement({ id = "smQW", name = "Semi-manual QW Key", key = string.byte("M")})
 	Menu.Combo:MenuElement({ id = "smR", name = "Semi-manual R Key", key = string.byte("T")})
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q| Harass", value = true})
@@ -63,7 +90,13 @@ function zgHwei:LoadMenu()
 	Menu.Misc:MenuElement({id = "WE", name = "Auto WE Before Q or AA", value = true})
 	Menu.Misc:MenuElement({id = "EQ", name = "Auto EQ Anti Gapcloser or Melee or On CC", value = true})
 	Menu.Misc:MenuElement({id = "QQ", name = "Auto QQ kills", value = true})
-	Menu.Misc:MenuElement({id = "QW", name = "Auto QW On Rtaget or kills or CC", value = true})
+	Menu.Misc:MenuElement({type = MENU, id = "AutoQW", name = "Auto QW"})
+	Menu.Misc.AutoQW:MenuElement({id = "Enabled", name = "Enable Auto QW", value = true})
+	Menu.Misc.AutoQW:MenuElement({id = "Kill", name = "On Killable Target", value = true})
+	Menu.Misc.AutoQW:MenuElement({id = "RTarget", name = "On Hwei R Target", value = true})
+	Menu.Misc.AutoQW:MenuElement({id = "HardCC", name = "On Hard CC Target", value = true})
+	Menu.Misc.AutoQW:MenuElement({id = "Stationary", name = "On Stationary Cast Target", value = true})
+	Menu.Misc.AutoQW:MenuElement({id = "Slow", name = "On Slow Target", value = false})
 	Menu.Misc:MenuElement({id = "WW", name = "Auto WW On Poison or Enemy Is Around", value = true})
 	Menu.Misc:MenuElement({id = "EW", name = "Auto EW On Rtarget or Invulnerable", value = true})
 	Menu.Misc:MenuElement({id = "R", name = "Auto R On Hard CC or AOE", value = true})
@@ -189,10 +222,9 @@ end
 
 function zgHwei:smQW()
 	if Menu.Combo.smQW:Value() and IsReady(_Q) and self:CanCast() then
-		local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.QWSpell.Range)
-		table.sort(enemies, function(a, b) return mousePos:DistanceTo(a.pos) < mousePos:DistanceTo(b.pos) end)
-		if IsValid(enemies[1]) and enemies[1].pos2D.onScreen and enemies[1].pos:DistanceTo(mousePos) < 600 then
-			self:CastGGPred('QW', enemies[1])
+		local target = GetTarget(self.QWSpell.Range)
+		if IsValid(target) and target.pos2D.onScreen then
+			self:CastGGPred('QW', target)
 		end
 	end
 end
@@ -254,21 +286,27 @@ function zgHwei:AntiGapcloser()
 end
 
 function zgHwei:GetAutoQWTarget()
+	if not Menu.Misc.AutoQW.Enabled:Value() then return nil end
 	local rTarget = self:GetRBuffTarget()
 	local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.QWSpell.Range)
-	local killTarget, ccTarget = nil, nil
+	local killTarget, hardCCTarget, stationaryTarget, slowTarget = nil, nil, nil, nil
 
 	for _, target in ipairs(enemies) do
 		if IsValid(target) and target.pos2D.onScreen and (target.distance > self.QQSpell.Range or self:IsQQBlocked(target)) then
-			local isKill = (target.health + target.shieldAD + target.shieldAP + target.hpRegen * 2) < self:GetQWDmg(target)
+			local isRTarget = rTarget and target.networkID == rTarget.networkID
+			local isKill = Menu.Misc.AutoQW.Kill:Value() and (target.health + target.shieldAD + target.shieldAP + target.hpRegen * 2) < self:GetQWDmg(target)
 			if isKill and GetEnemyCount(500, myHero.pos) < 2 then
 				killTarget = target
-				break
-			elseif rTarget == nil and ccTarget == nil then
-				if IsHardCC(target) or Recalling(target) or target.activeSpell.isCharging then
-					if GetEnemyCount(500, myHero.pos) == 0 then
-						ccTarget = target
-					end
+				if not isRTarget then
+					break
+				end
+			elseif not isRTarget and GetEnemyCount(500, myHero.pos) == 0 then
+				if Menu.Misc.AutoQW.HardCC:Value() and hardCCTarget == nil and IsHardCC(target) then
+					hardCCTarget = target
+				elseif Menu.Misc.AutoQW.Stationary:Value() and stationaryTarget == nil and IsStationaryCasting(target) then
+					stationaryTarget = target
+				elseif Menu.Misc.AutoQW.Slow:Value() and slowTarget == nil and IsSlow(target) then
+					slowTarget = target
 				end
 			end
 		end
@@ -276,13 +314,15 @@ function zgHwei:GetAutoQWTarget()
 	if killTarget and (not rTarget or killTarget.networkID ~= rTarget.networkID) then
 		return killTarget
 	end
-	if rTarget and IsValid(rTarget) and rTarget.pos2D.onScreen and (rTarget.distance > 800 or self:IsQQBlocked(rTarget)) then
+	if Menu.Misc.AutoQW.RTarget:Value() and rTarget and IsValid(rTarget) and rTarget.pos2D.onScreen and (rTarget.distance > 800 or self:IsQQBlocked(rTarget)) then
 		local buff, buffData = GetBuffData(rTarget, "HweiR")
 		if buff and buffData.duration < 0.9 and self:GetRDmg(rTarget) < rTarget.health + rTarget.shieldAD + rTarget.shieldAP + rTarget.hpRegen * 2 then
 			return rTarget
 		end
 	end
-	if ccTarget then return ccTarget end
+	if hardCCTarget then return hardCCTarget end
+	if stationaryTarget then return stationaryTarget end
+	if slowTarget then return slowTarget end
 	return nil
 end
 
@@ -308,7 +348,7 @@ function zgHwei:Auto()
 			end
 		end
 	end
-	if Menu.Misc.QW:Value() and IsReady(_Q) and self:CanCast() and lastR2 < GetTickCount() then
+	if Menu.Misc.AutoQW.Enabled:Value() and IsReady(_Q) and self:CanCast() and lastR2 < GetTickCount() then
 		local qwTarget = self:GetAutoQWTarget()
 		if qwTarget ~= nil then
 			self:CastGGPred('QW', qwTarget)
