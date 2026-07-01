@@ -87,9 +87,16 @@ function zgHwei:LoadMenu()
 	Menu.Harass:MenuElement({id = "Q", name = "Use Q| Harass", value = true})
 	Menu.Harass:MenuElement({id = "E", name = "Use E| Harass(EE Priority)", value = true})
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
-	Menu.Misc:MenuElement({id = "WE", name = "Auto WE Before Q or AA", value = true})
-	Menu.Misc:MenuElement({id = "EQ", name = "Auto EQ Anti Gapcloser or Melee or On CC", value = true})
 	Menu.Misc:MenuElement({id = "QQ", name = "Auto QQ kills", value = true})
+	Menu.Misc:MenuElement({type = MENU, id = "AutoWE", name = "Auto WE"})
+	Menu.Misc.AutoWE:MenuElement({id = "Enabled", name = "Enable Auto WE", value = true})
+	Menu.Misc.AutoWE:MenuElement({id = "Q", name = "Before Q", value = true})
+	Menu.Misc.AutoWE:MenuElement({id = "Attack", name = "Before AA", value = true})
+	Menu.Misc:MenuElement({type = MENU, id = "AutoEQ", name = "Auto EQ"})
+	Menu.Misc.AutoEQ:MenuElement({id = "Enabled", name = "Enable Auto EQ", value = true})
+	Menu.Misc.AutoEQ:MenuElement({id = "Gapcloser", name = "On Gapcloser Target", value = true})
+	Menu.Misc.AutoEQ:MenuElement({id = "Melee", name = "On Melee Target", value = true})
+	Menu.Misc.AutoEQ:MenuElement({id = "HardCC", name = "On Hard CC Target", value = true})
 	Menu.Misc:MenuElement({type = MENU, id = "AutoQW", name = "Auto QW"})
 	Menu.Misc.AutoQW:MenuElement({id = "Enabled", name = "Enable Auto QW", value = true})
 	Menu.Misc.AutoQW:MenuElement({id = "Kill", name = "On Killable Target", value = true})
@@ -97,11 +104,20 @@ function zgHwei:LoadMenu()
 	Menu.Misc.AutoQW:MenuElement({id = "HardCC", name = "On Hard CC Target", value = true})
 	Menu.Misc.AutoQW:MenuElement({id = "Stationary", name = "On Stationary Cast Target", value = true})
 	Menu.Misc.AutoQW:MenuElement({id = "Slow", name = "On Slow Target", value = false})
-	Menu.Misc:MenuElement({id = "WW", name = "Auto WW On Poison or Enemy Is Around", value = true})
-	Menu.Misc:MenuElement({id = "EW", name = "Auto EW On Rtarget or Invulnerable", value = true})
-	Menu.Misc:MenuElement({id = "R", name = "Auto R On Hard CC or AOE", value = true})
-	Menu.Misc:MenuElement({id = "RHP", name = "Auto R| Hard CC HP > X%", value = 50, min = 0, max = 100, step = 5})
-	Menu.Misc:MenuElement({id = "RCount", name = "Auto R| AOE Count >= X", value = 3, min = 1, max = 5, step = 1})
+	Menu.Misc:MenuElement({type = MENU, id = "AutoWW", name = "Auto WW"})
+	Menu.Misc.AutoWW:MenuElement({id = "Enabled", name = "Enable Auto WW", value = true})
+	Menu.Misc.AutoWW:MenuElement({id = "Poison", name = "On Poison Ally", value = true})
+	Menu.Misc.AutoWW:MenuElement({id = "EnemyAround", name = "On Low HP Ally Near Enemy", value = true})
+	Menu.Misc:MenuElement({type = MENU, id = "AutoEW", name = "Auto EW"})
+	Menu.Misc.AutoEW:MenuElement({id = "Enabled", name = "Enable Auto EW", value = true})
+	Menu.Misc.AutoEW:MenuElement({id = "RTarget", name = "On Hwei R Target", value = true})
+	Menu.Misc.AutoEW:MenuElement({id = "Invulnerable", name = "On Invulnerable Target", value = true})
+	Menu.Misc:MenuElement({type = MENU, id = "AutoR", name = "Auto R"})
+	Menu.Misc.AutoR:MenuElement({id = "Enabled", name = "Enable Auto R", value = true})
+	Menu.Misc.AutoR:MenuElement({id = "HardCC", name = "On Hard CC or EE Target", value = true})
+	Menu.Misc.AutoR:MenuElement({id = "RHP", name = "Hard CC HP > X%", value = 50, min = 0, max = 100, step = 5})
+	Menu.Misc.AutoR:MenuElement({id = "AOE", name = "On AOE Target", value = true})
+	Menu.Misc.AutoR:MenuElement({id = "RCount", name = "AOE Count >= X", value = 3, min = 1, max = 5, step = 1})
 	Menu.Misc:MenuElement({id = "Flee", name = "Flee WQ(flee mode)", value = true})
 	Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	Menu.Clear:MenuElement({id = "SpellFarm", name = "Use Spell Farm(Mouse Scroll)", toggle = true, value = false, key = 4, callback = function(newValue)
@@ -261,18 +277,20 @@ function zgHwei:GetRBuffTarget()
 end
 
 function zgHwei:AntiGapcloser()
-	if Menu.Misc.EQ:Value() and IsReady(_E) and self:CanCast() then
+	if Menu.Misc.AutoEQ.Enabled:Value() and IsReady(_E) and self:CanCast() then
 		local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.EQSpell.Range)
 		for _, target in ipairs(enemies) do
 			if IsValid(target) then
-				if target.pathing.isDashing then
+				if Menu.Misc.AutoEQ.Gapcloser:Value() and target.pathing.isDashing then
 					local endPos = Vector(target.pathing.endPos)
 					if myHero.pos:DistanceTo(endPos) < 400 and FacingMe(target) then
 						self:CastGGPred('EQ', target)
 						return
 					end
 				end
-				if IsHardCC(target) and GetEnemyCount(500, myHero.pos) == 0 or myHero.pos:DistanceTo(target.pos) < 350 then
+				local shouldCastHardCC = Menu.Misc.AutoEQ.HardCC:Value() and IsHardCC(target) and GetEnemyCount(500, myHero.pos) == 0
+				local shouldCastMelee = Menu.Misc.AutoEQ.Melee:Value() and myHero.pos:DistanceTo(target.pos) < 350
+				if shouldCastHardCC or shouldCastMelee then
 					if GetEnemyCount(500, target.pos) > 1 then
 						self:CastGGPred('EE', target)
 					else
@@ -336,13 +354,14 @@ function zgHwei:Auto()
 			end
 		end
 	end
-	if Menu.Misc.R:Value() and IsReady(_R) and self:CanCast() then
+	if Menu.Misc.AutoR.Enabled:Value() and IsReady(_R) and self:CanCast() then
 		local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.RSpell.Range)
 		table.sort(enemies, function(a, b) return a.distance < b.distance end)
 		for _, target in ipairs(enemies) do
 			if IsValid(target) then
-				if (GetEnemyCount(250, target.pos) >= Menu.Misc.RCount:Value() and target.distance < 800) or
-					((IsHardCC(target) or self:IsUnitInEE(target)) and target.health > target.maxHealth * (Menu.Misc.RHP:Value() / 100)) then
+				local aoeTarget = Menu.Misc.AutoR.AOE:Value() and GetEnemyCount(250, target.pos) >= Menu.Misc.AutoR.RCount:Value() and target.distance < 800
+				local hardCCTarget = Menu.Misc.AutoR.HardCC:Value() and (IsHardCC(target) or self:IsUnitInEE(target)) and target.health > target.maxHealth * (Menu.Misc.AutoR.RHP:Value() / 100)
+				if aoeTarget or hardCCTarget then
 					self:CastGGPred(HK_R, target)
 				end
 			end
@@ -354,33 +373,39 @@ function zgHwei:Auto()
 			self:CastGGPred('QW', qwTarget)
 		end
 	end
-	if Menu.Misc.WW:Value() and IsReady(_W) and self:CanCast() then
+	if Menu.Misc.AutoWW.Enabled:Value() and IsReady(_W) and self:CanCast() then
 		local allies = _G.SDK.ObjectManager:GetAllyHeroes(850)
 		for _, ally in ipairs(allies) do
-			if IsValid(ally) and (IsPoison(ally) or (GetEnemyCount(300, ally.pos) >= 1 and ally.health/ally.maxHealth < 0.5)) then
-				self:CastWW(ally)
-				break
-			end	
+			if IsValid(ally) then
+				local poisonTarget = Menu.Misc.AutoWW.Poison:Value() and IsPoison(ally)
+				local enemyAroundTarget = Menu.Misc.AutoWW.EnemyAround:Value() and GetEnemyCount(300, ally.pos) >= 1 and ally.health/ally.maxHealth < 0.5
+				if poisonTarget or enemyAroundTarget then
+					self:CastWW(ally)
+					break
+				end
+			end
 		end
 	end
-	if Menu.Misc.EW:Value() and IsReady(_E) and self:CanCast() then
+	if Menu.Misc.AutoEW.Enabled:Value() and IsReady(_E) and self:CanCast() then
 		for _, target in ipairs(GetEnemyHeroes()) do
 			if target and myHero.pos:DistanceTo(target.pos) <= self.EWSpell.Range then
-				if HaveBuff(target, "HweiR") then
+				if Menu.Misc.AutoEW.RTarget:Value() and HaveBuff(target, "HweiR") then
 					if self:CastGGPred('EW', target) then
 						return
 					end
 				end
-				if IsInvulnerable(target) or HaveBuff(target, "Meditate") or HaveBuff(target, "ChronoRevive") or HaveBuff(target, "LissandraRSelf") then
-					if Control.CastSpell({HK_E, HK_W}, target) then
-						return
-					end
-				end
-				for _, slot in ipairs(ItemSlots) do
-					local spellData = target:GetSpellData(slot)
-					if spellData.name == "GuardianAngel" and spellData.currentCd == 0 and not target.alive then
+				if Menu.Misc.AutoEW.Invulnerable:Value() then
+					if IsInvulnerable(target) or HaveBuff(target, "ChronoRevive") or HaveBuff(target, "LissandraRSelf") then
 						if Control.CastSpell({HK_E, HK_W}, target) then
 							return
+						end
+					end
+					for _, slot in ipairs(ItemSlots) do
+						local spellData = target:GetSpellData(slot)
+						if spellData.name == "GuardianAngel" and spellData.currentCd == 0 and not target.alive then
+							if Control.CastSpell({HK_E, HK_W}, target) then
+								return
+							end
 						end
 					end
 				end
@@ -607,7 +632,7 @@ function zgHwei:CastQEAOE()
 end
 
 function zgHwei:CastWE()
-    if Menu.Misc.WE:Value() and self:CanCast() and IsReady(_W) and lastWE + 300 < GetTickCount() then
+    if Menu.Misc.AutoWE.Enabled:Value() and Menu.Misc.AutoWE.Attack:Value() and self:CanCast() and IsReady(_W) and lastWE + 300 < GetTickCount() then
         Control.KeyDown(HK_W)
         Control.KeyUp(HK_W)
         Control.KeyDown(HK_E)
@@ -618,7 +643,7 @@ end
 
 function zgHwei:CastSpellWithWE(spellKeys, castPos)
     local spell = (spellKeys[1] == HK_Q and _Q) or (spellKeys[1] == HK_E and _E) or (spellKeys == HK_R and _R) or nil
-    if spell and Menu.Misc.WE:Value() and self:CanCast() and IsReady(_W) and lastWE + 300 < GetTickCount() then
+    if spell and Menu.Misc.AutoWE.Enabled:Value() and Menu.Misc.AutoWE.Q:Value() and self:CanCast() and IsReady(_W) and lastWE + 300 < GetTickCount() then
         if myHero.mana > (myHero:GetSpellData(spell).mana + myHero:GetSpellData(_W).mana) then
             Control.KeyDown(HK_W)
             Control.KeyUp(HK_W)
