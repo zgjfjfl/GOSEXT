@@ -1,4 +1,4 @@
-local Version = 1.05
+local Version = 1.06
 
 lastQ, lastW, lastE, lastR = 0, 0, 0, 0
 
@@ -72,9 +72,8 @@ end
 
 function HaveBuff(unit, buffName)
 	buffName = buffName:lower()
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and buff.name:lower() == buffName and buff.count > 0 then
 			return true
 		end
@@ -84,9 +83,8 @@ end
 
 function HasBuffContainsName(unit, name)
 	name = name:lower()
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and buff.name:lower():find(name) and buff.count > 0 then
 			return true
 		end
@@ -97,9 +95,8 @@ end
 function HaveBuffContainsNameNums(unit, name)
 	name = name:lower()
 	local count = 0
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and buff.name:lower():find(name) and buff.count > 0 then
 			count = count + buff.count
 		end
@@ -109,9 +106,8 @@ end
 
 function GetBuffData(unit, buffName)
 	buffName = buffName:lower()
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and buff.name:lower() == buffName and buff.count > 0 then 
 			return true, buff
 		end
@@ -153,9 +149,8 @@ function GetAllyCount(range, unit)
 end
 
 function IsHardCC(unit)
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 9 or buff.type == 12 or buff.type == 23 or buff.type == 25 or buff.type == 29 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
 			return true
 		end
@@ -165,9 +160,8 @@ end
 
 function GetHardCCDuration(unit)
 	local MaxDuration = 0
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 9 or buff.type == 12 or buff.type == 23 or buff.type == 25 or buff.type == 29 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
 			local BuffDuration = buff.duration
 			if BuffDuration > MaxDuration then
@@ -179,9 +173,8 @@ function GetHardCCDuration(unit)
 end
 
 function IsInvulnerable(unit)
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and buff.type == 18 and buff.count > 0 then
 			return true
 		end
@@ -190,9 +183,8 @@ function IsInvulnerable(unit)
 end
 
 function IsSlow(unit)
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and buff.type == 11 and buff.count > 0 then
 			return true
 		end
@@ -201,9 +193,8 @@ function IsSlow(unit)
 end
 
 function IsPoison(unit)
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and (buff.type == 13 or buff.type == 24) and buff.count > 0 then
 			return true
 		end
@@ -216,9 +207,8 @@ function Recalling(unit)
 	if as and as.valid and (as.name == "SuperRecall" or as.name == "recall") then
 		return true
 	end
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and (buff.name == "recall" or buff.name == "SuperRecall") and buff.count > 0 then
 			return true
 		end
@@ -227,9 +217,8 @@ function Recalling(unit)
 end
 
 function HasInvalidDashBuff(unit)
-	local buffs = _G.SDK.BuffManager:GetBuffs(unit)
-	for i = 1, #buffs do
-		local buff = buffs[i]
+	for i = 0, unit.buffCount do
+		local buff = unit:GetBuff(i)
 		if buff and (buff.type == 30 or buff.type == 31 or buff.name == "ThreshQ") and buff.count > 0 then
 			return true
 		end
