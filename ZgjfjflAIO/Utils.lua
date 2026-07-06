@@ -1,4 +1,4 @@
-local Version = 1.06
+local Version = 1.07
 
 lastQ, lastW, lastE, lastR = 0, 0, 0, 0
 
@@ -70,11 +70,18 @@ function IsUnderTurret2(pos)
 	return false
 end
 
+local HardCCTypes = {[5] = true, [8] = true, [9] = true, [12] = true, [23] = true, [25] = true, [29] = true, [30] = true, [35] = true}
+
+local function GetBuffs(unit)
+	return _G.SDK.BuffManager:GetBuffs(unit)
+end
+
 function HaveBuff(unit, buffName)
 	buffName = buffName:lower()
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and buff.name:lower() == buffName and buff.count > 0 then
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if buff.name and buff.name:lower() == buffName then
 			return true
 		end
 	end
@@ -83,9 +90,10 @@ end
 
 function HasBuffContainsName(unit, name)
 	name = name:lower()
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and buff.name:lower():find(name) and buff.count > 0 then
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if buff.name and buff.name:lower():find(name, 1, true) then
 			return true
 		end
 	end
@@ -95,9 +103,10 @@ end
 function HaveBuffContainsNameNums(unit, name)
 	name = name:lower()
 	local count = 0
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and buff.name:lower():find(name) and buff.count > 0 then
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if buff.name and buff.name:lower():find(name, 1, true) then
 			count = count + buff.count
 		end
 	end
@@ -106,9 +115,10 @@ end
 
 function GetBuffData(unit, buffName)
 	buffName = buffName:lower()
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and buff.name:lower() == buffName and buff.count > 0 then 
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if buff.name and buff.name:lower() == buffName then
 			return true, buff
 		end
 	end
@@ -149,9 +159,10 @@ function GetAllyCount(range, unit)
 end
 
 function IsHardCC(unit)
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 9 or buff.type == 12 or buff.type == 23 or buff.type == 25 or buff.type == 29 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if HardCCTypes[buff.type] then
 			return true
 		end
 	end
@@ -160,9 +171,10 @@ end
 
 function GetHardCCDuration(unit)
 	local MaxDuration = 0
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and (buff.type == 5 or buff.type == 8 or buff.type == 9 or buff.type == 12 or buff.type == 23 or buff.type == 25 or buff.type == 29 or buff.type == 30 or buff.type == 35) and buff.count > 0 then
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if HardCCTypes[buff.type] then
 			local BuffDuration = buff.duration
 			if BuffDuration > MaxDuration then
 				MaxDuration = BuffDuration
@@ -173,9 +185,10 @@ function GetHardCCDuration(unit)
 end
 
 function IsInvulnerable(unit)
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and buff.type == 18 and buff.count > 0 then
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if buff.type == 18 then
 			return true
 		end
 	end
@@ -183,9 +196,10 @@ function IsInvulnerable(unit)
 end
 
 function IsSlow(unit)
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and buff.type == 11 and buff.count > 0 then
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if buff.type == 11 then
 			return true
 		end
 	end
@@ -193,9 +207,10 @@ function IsSlow(unit)
 end
 
 function IsPoison(unit)
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and (buff.type == 13 or buff.type == 24) and buff.count > 0 then
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if buff.type == 13 or buff.type == 24 then
 			return true
 		end
 	end
@@ -207,9 +222,10 @@ function Recalling(unit)
 	if as and as.valid and (as.name == "SuperRecall" or as.name == "recall") then
 		return true
 	end
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and (buff.name == "recall" or buff.name == "SuperRecall") and buff.count > 0 then
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if buff.name == "recall" or buff.name == "SuperRecall" then
 			return true
 		end
 	end
@@ -217,9 +233,10 @@ function Recalling(unit)
 end
 
 function HasInvalidDashBuff(unit)
-	for i = 0, unit.buffCount do
-		local buff = unit:GetBuff(i)
-		if buff and (buff.type == 30 or buff.type == 31 or buff.name == "ThreshQ") and buff.count > 0 then
+	local buffs = GetBuffs(unit)
+	for i = 1, #buffs do
+		local buff = buffs[i]
+		if buff.type == 30 or buff.type == 31 or buff.name == "ThreshQ" then
 			return true
 		end
 	end
