@@ -1,4 +1,4 @@
-local Version = 1.08
+local Version = 1.09
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -27,6 +27,7 @@ local StationaryCastSpells = {
 	SionQ = true, -- Sion Q | Decimating Smash
 	SuperRecall = true, -- Super Recall
 	VelkozR = true, -- Vel'Koz R | Life Form Disintegration Ray
+	XerathArcanopulseChargeUp = true, -- Xerath Q | Arcanopulse
 	XerathLocusOfPower2 = true, -- Xerath R | Rite of the Arcane
 	JhinR = true, -- Jhin R | Curtain Call
 }
