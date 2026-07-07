@@ -1,7 +1,7 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
--- require("MapPositionGOS")
+require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgBard"

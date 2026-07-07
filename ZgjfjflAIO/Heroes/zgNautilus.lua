@@ -1,6 +1,7 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
+require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgNautilus"
@@ -116,7 +117,7 @@ function zgNautilus:CheckWall(from, to)
 	local distance = GetDistance(from, to)
 	for i = 0, distance, 25 do
 		local checkPos = startPos + direction * i
-		if Game.isWall(checkPos) then
+		if MapPosition:inWall(checkPos) then
 			return false
 		end
 	end

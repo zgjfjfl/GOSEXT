@@ -1,7 +1,7 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
--- require("MapPositionGOS")
+require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgZiggs"
@@ -201,7 +201,7 @@ function zgZiggs:CastQ(unit)
 			local isWall, collisionObjects, collisionCount = GGPrediction:GetCollision(startPos, QPrediction.CastPosition, self.Q2Spell.Speed, self.Q2Spell.Delay, self.Q2Spell.Radius/2, {GGPrediction.COLLISION_MINION}, unit.networkID)
 			if collisionCount == 0 then
 				local endPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 850)
-				if Vector(QPrediction.CastPosition):To2D().onScreen and not Game.isWall(endPos) then
+				if Vector(QPrediction.CastPosition):To2D().onScreen and not MapPosition:inWall(endPos) then
 					Control.CastSpell(HK_Q, QPrediction.CastPosition)
 				end
 			end

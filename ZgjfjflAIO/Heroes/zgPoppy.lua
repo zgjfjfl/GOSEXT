@@ -1,7 +1,7 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
--- require("MapPositionGOS")
+require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgPoppy"
@@ -85,7 +85,7 @@ function zgPoppy:Combo()
 		for dis = 20, Menu.Combo.ED:Value(), 20 do
 			local endPos = target.pos:Extended(myHero.pos, -dis)
 			if Menu.Combo.E:Value() and IsReady(_E) and myHero.pos:DistanceTo(target.pos) <= self.eSpell.Range then
-				if Game.isWall(endPos) then -- MapPosition:inWall(endPos)
+				if MapPosition:inWall(endPos) then
 					Control.CastSpell(HK_E, target)
 				end
 			end

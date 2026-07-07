@@ -1,7 +1,7 @@
-local Version = 1.04
+local Version = 1.05
 
 require("GGPrediction")
--- require("MapPositionGOS")
+require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgLucian"
@@ -224,7 +224,7 @@ function zgLucian:CastE(target, mode, range)
 	
 	if castPos ~= nil then
 		local underTurret = IsUnderTurret2(castPos)
-		local inWall = Game.isWall(castPos) -- MapPosition:inWall(castPos)
+		local inWall = MapPosition:inWall(castPos)
 		local enemyCheck = Menu.Combo.enemyCheck:Value()
 		local enemyCount = GetEnemyCount(600, castPos)
 
