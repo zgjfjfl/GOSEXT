@@ -1,4 +1,4 @@
-local Version = 1.04
+local Version = 1.05
 
 require("GGPrediction")
 require("MapPositionGOS")
@@ -12,9 +12,9 @@ function zgBard:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1150, Speed = 1500, Collision = false}
+	self.qSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 30, Range = 1150, Speed = 1500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.wSpell = { Range = 800 }
-	self.rSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 350, Range = 3400, Speed = 2100, Collision = false}
+	self.rSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 350, Range = 3400, Speed = 2100, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 end
 
 function zgBard:LoadMenu()

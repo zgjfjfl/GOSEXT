@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("MapPositionGOS")
@@ -72,9 +72,9 @@ function zgGnar:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	QMini = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1100, Speed = 1200, Collision = false}
+	QMini = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1100, Speed = 1200, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	EMini = {Radius = 150, Range = 475}
-	QMega = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 90, Range = 1100, Speed = 2100, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	QMega = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 90, Range = 1100, Speed = 2100, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
 	WMega = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 100, Range = 550, Speed = math.huge, Collision = false}
 	EMega = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.1, Radius = 375, Range = 675, Speed = math.huge, Collision = false}
 	R = {Delay = 0.25, Range = 420}

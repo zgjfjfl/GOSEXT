@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 
 require("GGPrediction")
@@ -12,7 +12,7 @@ function zgKaisa:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	self.QSpell = { Range = 665 }
-	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 100, Range = 3000, Speed = 1750, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 100, Range = 3000, Speed = 1750, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
 end
 
 function zgKaisa:LoadMenu()

@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -10,7 +10,7 @@ function zgMilio:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1500, Speed = 1200, Collision = false}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1500, Speed = 1200, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.WSpell = { Range = 650 }
 	self.ESpell = { Range = 650 }
 	self.RSpell = { Range = 700 }

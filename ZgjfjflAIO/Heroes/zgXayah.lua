@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -11,7 +11,7 @@ function zgXayah:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 50, Range = 1075, Speed = 700, Collision = false}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 50, Range = 1075, Speed = 700, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.WSpell = { Delay = 0.25 }
 	self.ESpell = { Delay = 0.25 }
 	self.RSpell = { Delay = 1, Range = 1000 }

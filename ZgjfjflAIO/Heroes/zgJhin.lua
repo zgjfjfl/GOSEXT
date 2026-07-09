@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -11,9 +11,9 @@ function zgJhin:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	self.QSpell = { Range = 550 }
-	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 40, Range = 2500, Speed = 5000, Collision = false}
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.75, Radius = 40, Range = 2500, Speed = 5000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.ESpell = { Range = 750 }
-	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 3500, Speed = 5000, Collision = false}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 3500, Speed = 5000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 end
 
 function zgJhin:LoadMenu()

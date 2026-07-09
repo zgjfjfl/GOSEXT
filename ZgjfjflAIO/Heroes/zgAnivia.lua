@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -12,7 +12,7 @@ function zgAnivia:__init()
 	Callback.Add("Draw", function() self:OnDraw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 110, Range = 1075, Speed = 950, Collision = false}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 110, Range = 1075, Speed = 950, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.6, Radius = 1, Range = 1000, Speed = math.huge, Collision = false}
 	self.ESpell = { Range = 730 }
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 400, Range = 750, Speed = math.huge, Collision = false}

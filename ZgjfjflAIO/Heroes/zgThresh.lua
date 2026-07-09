@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -131,7 +131,7 @@ if target == nil then return end
 		end		
 		
 		if Menu.Combo.UseQ:Value() and myHero:GetSpellData(_Q).name ~= "ThreshQLeap" and myHero.pos:DistanceTo(target.pos) < Menu.extra.Qmax:Value() and myHero.pos:DistanceTo(target.pos) >= Menu.extra.Qmin:Value() and IsReady(_Q) then
-			local QPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 70, Range = 1000, Speed = 1900, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}})
+			local QPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 70, Range = 1000, Speed = 1900, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}})
 			QPrediction:GetPrediction(target, myHero)
 			if QPrediction:CanHit(Menu.Pred.PredQ:Value() + 1) then
 				Control.CastSpell(HK_Q, QPrediction.CastPosition)
@@ -160,7 +160,7 @@ if target == nil then return end
 	if IsValid(target) then				
 		
 		if Menu.Harass.UseQ:Value() and myHero:GetSpellData(_Q).name ~= "ThreshQLeap" and myHero.pos:DistanceTo(target.pos) < Menu.extra.Qmax:Value() and myHero.pos:DistanceTo(target.pos) >= Menu.extra.Qmin:Value() and IsReady(_Q) then
-			local QPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 70, Range = 1100, Speed = 1900, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}})
+			local QPrediction = GGPrediction:SpellPrediction({Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.5, Radius = 70, Range = 1100, Speed = 1900, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}})
 			QPrediction:GetPrediction(target, myHero)
 			if QPrediction:CanHit(Menu.Pred.PredQ:Value() + 1) then
 				Control.CastSpell(HK_Q, QPrediction.CastPosition)

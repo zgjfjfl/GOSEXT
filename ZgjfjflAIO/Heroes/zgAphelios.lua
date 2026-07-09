@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -13,9 +13,9 @@ function zgAphelios:__init()
 	Callback.Add("Tick", function() self:OnTick() end)
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	_G.SDK.Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
-	self.GreenQSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 60, Range = 1450, Speed = 1850, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.GreenQSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.35, Radius = 60, Range = 1450, Speed = 1850, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
 	self.BlueQSpell = {Type = GGPrediction.SPELLTYPE_CONE, Delay = 0.4, Angle = 40, Range = 800, Speed = 1850, Collision = false}
-	self.RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 300, Range = 1300, Speed = 1000, Collision = false}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 300, Range = 1300, Speed = 1000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.GunCDs = {Green = 0, Purple = 0, Red = 0, White = 0, Blue = 0}
 	self.IgnoreCalibrumTarget = nil
 	self.IgnoreCalibrumUntil = 0

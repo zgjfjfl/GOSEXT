@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -13,7 +13,7 @@ function zgXerath:__init()
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.528, Radius = 100, Range = 750, Speed = math.huge, Collision = false}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.778, Radius = 250, Range = 1000, Speed = math.huge, Collision = false}
-	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1125, Speed = 1400, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1125, Speed = 1400, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.627, Radius = 200, Range = 5000, Speed = math.huge, Collision = false}
 	self.QTick = 0
 	self.QCharging = false

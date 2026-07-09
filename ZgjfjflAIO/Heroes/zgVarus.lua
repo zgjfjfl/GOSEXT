@@ -1,4 +1,4 @@
-local Version = 1.05
+local Version = 1.06
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -14,9 +14,9 @@ function zgVarus:__init()
 
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 70, Range = 925, Speed = 1900, Collision = false}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 70, Range = 925, Speed = 1900, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 270, Range = 1060, Speed = 1750, Collision = false}
-	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 120, Range = 1250, Speed = 1500, Collision = false}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 120, Range = 1250, Speed = 1500, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.QTick = 0
 	self.QCharging = false
 	self.WActive = false

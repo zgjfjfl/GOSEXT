@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -10,7 +10,7 @@ function zgTwistedFate:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 40, Range = 1400, Speed = 1450, Collision = false}
+	QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 40, Range = 1400, Speed = 1450, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	RSpell = { Range = 5500 }
 end
 

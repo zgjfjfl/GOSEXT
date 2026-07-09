@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -10,7 +10,7 @@ function zgPyke:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 70, Range = 1100, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0, Radius = 70, Range = 1100, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 100, Range = 750, Speed = math.huge, Collision = false}
 	self.QTick = 0
 	self.QCharging = false

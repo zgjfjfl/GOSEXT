@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -41,6 +41,9 @@ end
 function zgTrundle:Tick()
 	if ShouldWait() then
 		return
+	end
+	if myHero.activeSpell.name == "TrundleQ" then
+		_G.SDK.Attack.Reset = false
 	end
 	if IsCasting() then return end
 	local Mode = GetMode()

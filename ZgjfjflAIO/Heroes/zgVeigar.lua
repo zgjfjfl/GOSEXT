@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -10,7 +10,7 @@ function zgVeigar:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1000, Speed = 2200, Collision = false}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1000, Speed = 2200, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1.2, Radius = 240, Range = 950, Speed = math.huge, Collision = false}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.75, Radius = 340, Range = 1040, Speed = math.huge, Collision = false}
 	self.RSpell = {Range = 650}

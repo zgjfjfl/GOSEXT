@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -15,7 +15,7 @@ function zgSenna:__init()
 	Callback.Add("Tick", function() self:OnTick() end)
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.4, Radius = 50, Range = 1300, Speed = math.huge, Collision = false}
-	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1250, Speed = 1200, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION}}
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 70, Range = 1250, Speed = 1200, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 1, Radius = 160, Range = 25000, Speed = 20000, Collision = false}
 	self.WardQTimer = 0
 end
