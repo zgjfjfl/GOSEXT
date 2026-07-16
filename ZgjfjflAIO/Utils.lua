@@ -1,4 +1,4 @@
-local Version = 1.07
+local Version = 1.08
 
 lastQ, lastW, lastE, lastR = 0, 0, 0, 0
 
@@ -286,7 +286,7 @@ function FindFirstWallCollision(startPos, endPos)
 	local step = 10
 	for i = 0, distance, step do
 		local checkPos = startPos + direction * i
-		if MapPosition:inWall(checkPos) then
+		if Game.isWall(checkPos) then
 			return checkPos
 		end
 	end
@@ -301,7 +301,7 @@ function FindFirstWallCollisionInRectangle(startPos, endPos, width)
 		local centerPos = startPos + direction * i
 		for j = -width/2, width/2, 10 do
 			local checkPos = centerPos + perpDirection * j
-			if MapPosition:inWall(checkPos) then
+			if Game.isWall(checkPos) then
 				return checkPos
 			end
 		end

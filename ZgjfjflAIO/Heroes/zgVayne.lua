@@ -1,7 +1,7 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
-require("MapPositionGOS")
+-- require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 class "zgVayne"
@@ -60,7 +60,7 @@ function zgVayne:CheckWall(from, to, distance)
 	local direction = (to - from):Normalized()
 	for i = 0, distance, 25 do
 		local checkPos = startPos + direction * i
-		if MapPosition:inWall(checkPos) then
+		if Game.isWall(checkPos) then
 			return true
 		end
 	end

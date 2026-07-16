@@ -1,7 +1,7 @@
-local Version = 1.04
+local Version = 1.05
 
 require("GGPrediction")
-require("MapPositionGOS")
+-- require("MapPositionGOS")
 require("ZgjfjflAIO\\Utils")
 
 local function FindClosestWall(Pos, range, stepSize)
@@ -13,7 +13,7 @@ local function FindClosestWall(Pos, range, stepSize)
 		local currentPos = startPos
 		for steps = 1, range/stepSize do
 			currentPos = currentPos + rotatedVector
-			if MapPosition:inWall(currentPos) then
+			if Game.isWall(currentPos) then
 				local distance = startPos:DistanceTo(currentPos)
 				if distance < closestDistance then
 					closestDistance = distance
@@ -55,7 +55,7 @@ local function FindFirstWallCollision(startPos, endPos, step)
 	local distance = startPos:DistanceTo(endPos)
 	for i = 0, distance, step do
 		local checkPos = startPos + direction * i
-		if MapPosition:inWall(checkPos) then
+		if Game.isWall(checkPos) then
 			return checkPos
 		end
 	end
