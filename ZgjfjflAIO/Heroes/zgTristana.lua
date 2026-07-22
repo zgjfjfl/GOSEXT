@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -157,12 +157,12 @@ function zgTristana:ForceE()
 	for i, enemy in ipairs(enemies) do
 		if IsValid(enemy) and enemy.pos2D.onScreen then
 			if Menu.Misc.ForceE:Value() and HaveBuff(enemy, "tristanaechargesound") and _G.SDK.Data:IsInAutoAttackRange(myHero, enemy) then
-				Orbwalker.ForceTarget = enemy
+				_G.SDK.Orbwalker.ForceTarget = enemy
 				return
 			end
 		end
 	end
-	Orbwalker.ForceTarget = nil
+	_G.SDK.Orbwalker.ForceTarget = nil
 end
 
 function zgTristana:AntiGapcloser()
