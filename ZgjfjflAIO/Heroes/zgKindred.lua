@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 local LargeMonsters = {
 	sru_baron = true, sru_atakhan = true, sru_riftherald = true, sru_horde = true,
@@ -158,7 +158,9 @@ function zgKindred:Combo()
 					end
 				end
 			else
-				Control.CastSpell(HK_Q)
+				if _G.SDK.Cursor.Step == 0 then
+					Control.CastSpell(HK_Q)
+				end
 				return
 			end
 		end
@@ -240,7 +242,9 @@ function zgKindred:JungleClear()
 	for _, monster in ipairs(monsters) do
 		if IsValid(monster) and monster.pos2D.onScreen then
 			if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) then
-				Control.CastSpell(HK_Q)
+				if _G.SDK.Cursor.Step == 0 then
+					Control.CastSpell(HK_Q)
+				end
 				return
 			end
 			if Menu.Clear.JungleClear.W:Value() and IsReady(_W) then

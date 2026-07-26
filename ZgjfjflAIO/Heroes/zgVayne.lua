@@ -1,4 +1,4 @@
-local Version = 1.04
+local Version = 1.05
 
 require("GGPrediction")
 -- require("MapPositionGOS")
@@ -144,7 +144,9 @@ function zgVayne:Combo()
 					Control.CastSpell(HK_Q, closest)
 				end
 			else
-				Control.CastSpell(HK_Q)
+				if _G.SDK.Cursor.Step == 0 then
+					Control.CastSpell(HK_Q)
+				end
 			end
 		end
 		if target == nil then target = GetTarget(aaRange + 300) end
@@ -168,7 +170,9 @@ function zgVayne:Harass()
 					Control.CastSpell(HK_Q, closest)
 				end
 			else
-				Control.CastSpell(HK_Q)
+				if _G.SDK.Cursor.Step == 0 then
+					Control.CastSpell(HK_Q)
+				end
 			end
 		end
 		if target == nil then target = GetTarget(aaRange + 300) end
