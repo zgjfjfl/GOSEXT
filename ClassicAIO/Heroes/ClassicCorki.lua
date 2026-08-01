@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ClassicAIO\\Utils")
@@ -11,10 +11,10 @@ function ClassicCorki:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 250, Range = 950, Speed = math.huge, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
-	self.ESpell = {Range = 690}
-	self.R1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1200, Speed = 1950, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
-	self.R2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1200, Speed = 1950, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 250, Range = 600, Speed = math.huge, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
+	self.ESpell = {Range = 685}
+	self.R1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1225, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
+	self.R2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1225, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 end
 
 function ClassicCorki:LoadMenu()
@@ -106,7 +106,7 @@ function ClassicCorki:Combo()
 	end
 
 	if Menu.Combo.R:Value() and IsReady(_R) then
-		local target = GetTarget(1500)
+		local target = GetTarget(self.R1Spell.Range)
 		if IsValid(target) and target.pos2D.onScreen then
 			self:CastR(target)
 		end
@@ -128,12 +128,7 @@ function ClassicCorki:CastQ(target)
 	local QPrediction = GGPrediction:SpellPrediction(self.QSpell)
 	QPrediction:GetPrediction(target, myHero)
 	if QPrediction:CanHit(3) then
-		local castPos = Vector(myHero.pos):Extended(Vector(QPrediction.CastPosition), 825)
-		if myHero.pos:DistanceTo(QPrediction.CastPosition) <= 825 then
-			Control.CastSpell(HK_Q, QPrediction.CastPosition)
-		elseif myHero.pos:DistanceTo(QPrediction.CastPosition) > 825 and myHero.pos:DistanceTo(QPrediction.CastPosition) <= 950 then
-			Control.CastSpell(HK_Q, castPos)
-		end
+		Control.CastSpell(HK_Q, QPrediction.CastPosition)
 	end
 end
 
@@ -179,7 +174,7 @@ function ClassicCorki:Harass()
 		end
 
 		if Menu.Harass.R:Value() and IsReady(_R) then
-			local target = GetTarget(1500)
+			local target = GetTarget(self.R1Spell.Range)
 			if IsValid(target) and target.pos2D.onScreen and myHero:GetSpellData(_R).ammo > Menu.Harass.Rammo:Value() then
 				self:CastR(target)
 			end
@@ -238,7 +233,7 @@ end
 
 function ClassicCorki:SemiR()
 	if Menu.Misc.SemiR:Value() and IsReady(_R) then
-		local Rtarget = GetTarget(1500)
+		local Rtarget = GetTarget(self.R1Spell.Range)
 		if IsValid(Rtarget) and Rtarget.pos2D.onScreen then
 			self:CastR(Rtarget)
 		end
@@ -271,7 +266,7 @@ function ClassicCorki:Draw()
 		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
-		if HaveBuff(myHero, "mbcheck2") then
+		if HaveBuff(myHero, "Jade_CorkiR_Check") then
 			Draw.Circle(myHero.pos, self.R2Spell.Range+50, 1, Draw.Color(255, 244, 66, 104))
 		else
 			Draw.Circle(myHero.pos, self.R1Spell.Range+50, 1, Draw.Color(255, 244, 66, 104))
