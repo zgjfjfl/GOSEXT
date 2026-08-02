@@ -48,7 +48,7 @@ do
     local UtilsFile = BasePath .. "Utils.lua"
     local HeroFile = HeroPath .. heroKey .. ".lua"
     local VersionUrl = BaseUrl .. "ClassicAIO.version"
-    local UtilsUrl = "https://raw.githubusercontent.com/zgjfjfl/GOSEXT/master/ZgjfjflAIO/Utils.lua"
+    local UtilsUrl = BaseUrl .. "Utils.lua"
     local HeroUrl = BaseUrl .. "Heroes/" .. heroKey .. ".lua"
     GetWebResultAsync(VersionUrl, function(content)
         if not content or content == "" then
