@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -223,7 +223,7 @@ end
 
 function zgLocke:GetQDmg(target)
 	local qlvl = myHero:GetSpellData(_Q).level
-	local baseDmg = 10 * qlvl + 40
+	local baseDmg = 8 * qlvl + 32
 	local apDmg = myHero.ap * 0.2
 	local qDmg = baseDmg + apDmg
 	return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, qDmg)
