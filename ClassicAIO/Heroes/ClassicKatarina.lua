@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ClassicAIO\\Utils")
@@ -16,6 +16,8 @@ function ClassicKatarina:__init()
 	self.RSpell = {Range = 500}
 	self.comboTarget = nil
 	self.comboTargetExpire = 0
+	self.rCastLockUntil = 0
+	self.rNextCastAttempt = 0
 end
 
 function ClassicKatarina:LoadMenu()
@@ -72,7 +74,8 @@ end
 
 function ClassicKatarina:IsChannelingR()
 	local activeSpell = myHero.activeSpell
-	return HaveBuff(myHero, "Jade_KatarinaRSound")
+	return GetTickCount() < self.rCastLockUntil
+		or HaveBuff(myHero, "Jade_KatarinaRSound")
 		or (activeSpell and activeSpell.valid and activeSpell.name == "Jade_KatarinaR")
 end
 
@@ -150,12 +153,21 @@ function ClassicKatarina:Combo()
 		end
 	end
 
-	if Menu.Combo.R:Value() and IsReady(_R) then
+	if Menu.Combo.R:Value() and IsReady(_R) and GetTickCount() >= self.rNextCastAttempt then
 		local target = self:GetComboTarget(self.RSpell.Range)
 		if IsValid(target) and target.maxHealth > 0 then
 			local hpPercent = target.health / target.maxHealth * 100
 			if hpPercent >= Menu.Combo.RMinHP:Value() and GetEnemyCount(self.RSpell.Range, myHero.pos) >= Menu.Combo.RCount:Value() then
-				Control.CastSpell(HK_R)
+				local now = GetTickCount()
+				self.rCastLockUntil = now + 500
+				self.rNextCastAttempt = self.rCastLockUntil + 750
+				_G.SDK.Orbwalker:SetAttack(false)
+				_G.SDK.Orbwalker:SetMovement(false)
+				if not Control.CastSpell(HK_R) then
+					self.rCastLockUntil = 0
+					_G.SDK.Orbwalker:SetAttack(true)
+					_G.SDK.Orbwalker:SetMovement(true)
+				end
 			end
 		end
 	end
