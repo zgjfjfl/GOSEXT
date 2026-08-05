@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ClassicAIO\\Utils")
@@ -57,7 +57,7 @@ function ClassicTristana:LoadMenu()
 end
 
 function ClassicTristana:Tick()
-	self.ERRange = myHero.range + myHero.boundingRadius * 2
+	self.ERange = myHero.range + myHero.boundingRadius * 2
 
 	if ShouldWait() then
 		return
@@ -78,7 +78,7 @@ function ClassicTristana:Tick()
 end
 
 function ClassicTristana:Combo()
-	local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.ERRange)
+	local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.ERange)
 	if not target then return end
 	if Menu.Combo.E:Value() and IsReady(_E) then
 		Control.CastSpell(HK_E, target)
@@ -89,7 +89,7 @@ function ClassicTristana:Combo()
 end
 
 function ClassicTristana:Harass()
-	local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.ERRange)
+	local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.ERange)
 	if not target or target.type ~= "AIHeroClient" then return end
 	if Menu.Harass.E:Value() and IsReady(_E) then
 		Control.CastSpell(HK_E, target)
