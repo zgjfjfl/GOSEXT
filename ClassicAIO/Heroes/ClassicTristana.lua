@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ClassicAIO\\Utils")
@@ -102,7 +102,7 @@ function ClassicTristana:LaneClear()
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.team ~= 300 and minion.pos2D.onScreen then
 				if Menu.Clear.LaneClear.Q:Value() and IsReady(_Q) then
-					if GetMinionsCount(self.ERange, myHero.pos) >= Menu.Clear.LaneClear.QCount:Value() then
+					if GetMinionCount(self.ERange, myHero.pos) >= Menu.Clear.LaneClear.QCount:Value() then
 						Control.CastSpell(HK_Q)
 					end
 				end
