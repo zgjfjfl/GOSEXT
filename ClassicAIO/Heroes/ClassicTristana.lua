@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ClassicAIO\\Utils")
@@ -43,7 +43,7 @@ function ClassicTristana:LoadMenu()
 	-- Menu.Clear.JungleClear:MenuElement({id = "Mana", name = "When ManaPercent >= x%", value = 30, min = 0, max = 100, step = 5})
 	
 	Menu:MenuElement({type = MENU, id = "KillSteal", name = "KillSteal"})
-	Menu.KillSteal:MenuElement({id = "R", name = "Auto R KillSteal(E+R calculation)", toggle = true, value = true})
+	Menu.KillSteal:MenuElement({id = "R", name = "Auto R KillSteal", toggle = true, value = true})
 
 	Menu:MenuElement({type = MENU, id = "Misc", name = "Misc"})
 	Menu.Misc:MenuElement({id = "Rgap", name = "Auto R Anti Gapcloser", toggle = true, value = true})
@@ -134,7 +134,7 @@ function ClassicTristana:AntiGapcloser()
 		for i, target in ipairs(enemies) do
 			if IsValid(target) and target.pathing.isDashing and not HasInvalidDashBuff(target) then
 				if myHero.pos:DistanceTo(target.pathing.endPos) < Menu.Misc.RgapRange:Value() and IsFacingMe(target) then
-					Control.CastSpell(HK_R, target)
+					if Control.CastSpell(HK_R, target) then return end
 				end
 			end	
 		end
@@ -144,15 +144,14 @@ end
 function ClassicTristana:SemiR()
 	if Menu.Misc.SemiR:Value() and IsReady(_R) then
 		local target = _G.SDK.TargetSelector.Selected
-		if target and target.pos2D.onScreen and target.distance <= self.RRange then
-			Control.CastSpell(HK_R, target)
-			return
+		if IsValid(target) and target.pos2D.onScreen and target.distance <= self.RRange then
+			if Control.CastSpell(HK_R, target) then return end
 		end
 		local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.RRange)
 		table.sort(enemies, function(a, b) return myHero.pos:DistanceTo(a.pos) < myHero.pos:DistanceTo(b.pos) end)
 		for i, enemy in ipairs(enemies) do
 			if IsValid(enemy) and enemy.pos2D.onScreen then
-				Control.CastSpell(HK_R, enemy)
+				if Control.CastSpell(HK_R, enemy) then return end
 			end
 		end
 	end
@@ -163,9 +162,9 @@ function ClassicTristana:KillSteal()
 		local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.RRange)
 		for i, enemy in ipairs(enemies) do
 			if IsValid(enemy) and enemy.pos2D.onScreen then
-				local Rdmg = self:GetRDmg(enemy) - enemy.shieldAP - enemy.shieldAD
-				if Rdmg > (enemy.health + enemy.hpRegen) and enemy.health > _G.SDK.Damage:GetAutoAttackDamage(myHero, enemy) * 2 then
-					Control.CastSpell(HK_R, enemy)
+				local Rdmg = self:GetRDmg(enemy) - (enemy.shieldAP or 0) - (enemy.shieldAD or 0)
+				if Rdmg >= (enemy.health + (enemy.hpRegen or 0)) then
+					if Control.CastSpell(HK_R, enemy) then return end
 				end
 			end
 		end
