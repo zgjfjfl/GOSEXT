@@ -1,4 +1,4 @@
-﻿local Version = 2.01
+﻿local Version = 2.02
 
 lastQ, lastW, lastE, lastR = 0, 0, 0, 0
 
@@ -399,6 +399,7 @@ local ITEM_OHMWRECKER   = 773056
 local ITEM_LOCKET       = 773190
 local ITEM_ZHONYAS      = 773157
 local ITEM_SERAPH       = 773040
+local ITEM_MURAMANA     = 773042
 local ITEM_MIKAELS      = 773222
 local ITEM_HP_POTION    = 772003
 local ITEM_MANA_POTION  = 772004
@@ -412,6 +413,7 @@ local TrackedItems = {
 	[ITEM_DFG] = "Offensive", [ITEM_GUNBLADE] = "Offensive", [ITEM_CUTLASS] = "Offensive",
 	[ITEM_BOTRK] = "Offensive", [ITEM_HYDRA] = "Offensive",
 	[ITEM_TIAMAT] = "Offensive", [ITEM_TRUE_ICE] = "Offensive", [ITEM_SOTD] = "Offensive",
+	[ITEM_MURAMANA] = "Offensive",
 	[ITEM_YOUMUUS] = "Offensive", [ITEM_SHURELYAS] = "Offensive", [ITEM_TWIN_SHADOWS] = "Offensive",
 	[ITEM_OHMWRECKER] = "Offensive",
 	[ITEM_HP_POTION] = "Consumable", [ITEM_MANA_POTION] = "Consumable",
@@ -445,6 +447,10 @@ local OwnedCategories = {Defensive = false, Utility = false, Offensive = false, 
 local HasAnyTrackedItem = false
 local LastInventoryScan = 0
 local InventoryScanInterval = 500
+local MuramanaLastToggle = 0
+local MuramanaToggleDelay = 1100
+local MURAMANA_STATE_OFF = 1
+local MURAMANA_STATE_ON = 2
 
 local SummonerSlot = {}
 local SummonerHotkey = {}
@@ -607,6 +613,27 @@ local function CastItem(itemId, target)
 	return true
 end
 
+local function IsMuramanaActive()
+	local cached = OwnedItems[ITEM_MURAMANA]
+	if not cached then return nil end
+	local spellData = myHero:GetSpellData(cached.slot)
+	if not spellData then return nil end
+	if spellData.toggleState == MURAMANA_STATE_ON then return true end
+	if spellData.toggleState == MURAMANA_STATE_OFF then return false end
+	return nil
+end
+
+local function SetMuramanaActive(shouldBeActive)
+	if not HasClassicItem(ITEM_MURAMANA) then return false end
+	local isActive = IsMuramanaActive()
+	if isActive == nil or isActive == shouldBeActive then return false end
+	local now = GetTickCount()
+	if now < MuramanaLastToggle + MuramanaToggleDelay then return false end
+	if not CastItem(ITEM_MURAMANA) then return false end
+	MuramanaLastToggle = now
+	return true
+end
+
 -- ---------------------------------------------------------------------------------
 -- Summoner spells
 -- ---------------------------------------------------------------------------------
@@ -739,6 +766,12 @@ local function LoadActivatorMenu()
 	ActivatorMenu:MenuElement({type = MENU, id = "Offensive", name = "Offensives"})
 	ActivatorMenu.Offensive:MenuElement({id = "Enabled", name = "Enable Offensive Items", value = true})
 
+	ActivatorMenu.Offensive:MenuElement({type = MENU, id = "Muramana", name = "Muramana", leftIcon = ItemIcon(ITEM_MURAMANA)})
+	ActivatorMenu.Offensive.Muramana:MenuElement({id = "Enabled", name = "Use Muramana", value = true})
+	ActivatorMenu.Offensive.Muramana:MenuElement({id = "Combo", name = "Use in combo", value = true})
+	ActivatorMenu.Offensive.Muramana:MenuElement({id = "Mana", name = "Self Mana >= x%", value = 30, min = 0, max = 100, step = 5})
+	ActivatorMenu.Offensive.Muramana:MenuElement({id = "Range", name = "Target Distance <=", value = 1200, min = 100, max = 2500, step = 50})
+
 	ActivatorMenu.Offensive:MenuElement({type = MENU, id = "Botrk", name = "Blade of the Ruined King", leftIcon = ItemIcon(ITEM_BOTRK)})
 	ActivatorMenu.Offensive.Botrk:MenuElement({id = "Enabled", name = "Use Blade of the Ruined King", value = true})
 	ActivatorMenu.Offensive.Botrk:MenuElement({id = "KS", name = "Use as KillSteal", value = true})
@@ -768,7 +801,6 @@ local function LoadActivatorMenu()
 	ActivatorMenu.Offensive.Youmuus:MenuElement({id = "Enabled", name = "Use Youmuu''s Ghostblade", value = true})
 	ActivatorMenu.Offensive.Youmuus:MenuElement({id = "KS", name = "Use as KillSteal", value = true})
 	ActivatorMenu.Offensive.Youmuus:MenuElement({id = "Combo", name = "Always in combo", value = true})
-	ActivatorMenu.Offensive.Youmuus:MenuElement({id = "OnUlt", name = "Use on ultimate", value = false})
 
 	ActivatorMenu.Offensive:MenuElement({type = MENU, id = "Sotd", name = "Sword of the Divine", leftIcon = ItemIcon(ITEM_SOTD)})
 	ActivatorMenu.Offensive.Sotd:MenuElement({id = "Enabled", name = "Use Sword of the Divine", value = true})
@@ -996,9 +1028,24 @@ end
 -- ---------------------------------------------------------------------------------
 
 local function Offensive()
-	if not OwnedCategories.Offensive or not ActivatorMenu.Offensive.Enabled:Value() then return end
 	local menu = ActivatorMenu.Offensive
+	if not OwnedCategories.Offensive or not menu.Enabled:Value() then return end
+
 	local combo = GetMode() == "Combo"
+
+	-- Muramana: toggle on during combo with enough mana and a valid target in range, off otherwise.
+	if HasClassicItem(ITEM_MURAMANA) then
+		local range = menu.Muramana.Range:Value()
+		local hasEnoughMana = ManaPercent(myHero) >= menu.Muramana.Mana:Value()
+		local canActivate = menu.Muramana.Enabled:Value()
+			and menu.Muramana.Combo:Value()
+			and combo
+			and hasEnoughMana
+		local target = canActivate
+			and _G.SDK.TargetSelector:GetTarget(range, _G.SDK.DAMAGE_TYPE_PHYSICAL) or nil
+		local shouldActivate = target ~= nil and ValidTarget(target) and target.distance <= range or false
+		if SetMuramanaActive(shouldActivate) then return end
+	end
 
 	-- Blade of the Ruined King
 	if HasClassicItem(ITEM_BOTRK) and menu.Botrk.Enabled:Value() and ItemReady(ITEM_BOTRK) then
@@ -1072,9 +1119,6 @@ local function Offensive()
 
 	-- Youmuu''s Ghostblade
 	if HasClassicItem(ITEM_YOUMUUS) and menu.Youmuus.Enabled:Value() and ItemReady(ITEM_YOUMUUS) then
-		if menu.Youmuus.OnUlt:Value() and IsCasting() then
-			if CastItem(ITEM_YOUMUUS) then return end
-		end
 		local target = _G.SDK.Orbwalker:GetTarget()
 		if target and target.type == Obj_AI_Hero and IsValid(target) then
 			if menu.Youmuus.KS:Value() and target.health < myHero.maxHealth then
@@ -1224,8 +1268,3 @@ local function ActivatorTick()
 end
 
 Callback.Add("Tick", ActivatorTick)
-
-
-
-
-
