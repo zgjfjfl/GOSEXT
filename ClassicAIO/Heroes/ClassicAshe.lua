@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ClassicAIO\\Utils")
@@ -196,7 +196,7 @@ end
 function ClassicAshe:GetWDmg(target)
 	local level = myHero:GetSpellData(_W).level
 	if level > 0 then
-		local WDmg = ({40, 50, 60, 70, 80})[level] + myHero.totalDamage
+		local WDmg = ({40, 55, 70, 85, 100})[level] + myHero.totalDamage
 		return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, WDmg)
 	else
 		return 0
