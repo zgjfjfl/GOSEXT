@@ -1,4 +1,4 @@
-local Version = 1.09
+local Version = 1.11
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -8,6 +8,9 @@ local lastWE = 0
 local lastEQ = 0
 
 local ItemSlots = { ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6, ITEM_7 }
+local RocketbeltItemSlots = { ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6 }
+local RocketbeltItemKeys = { HK_ITEM_1, HK_ITEM_2, HK_ITEM_3, HK_ITEM_4, HK_ITEM_5, HK_ITEM_6 }
+local RocketbeltItemId, RocketbeltRange = 3152, 275
 
 local StationaryCastSpells = {
 	AurelionSolQ = true, -- Aurelion Sol Q | Breath of Light
@@ -82,6 +85,7 @@ function zgHwei:LoadMenu()
 	Menu.Combo:MenuElement({id = "QWHp", name = "Alone QW| target isolated and Hp < X%", value = 50, min = 0, max = 100, step = 5})
 	Menu.Combo:MenuElement({id = "aoeQE", name = "Use QE| AOE", value = true})
 	Menu.Combo:MenuElement({id = "aoeCount", name = "Use QE| AOE CanHit Counts >= ", value = 2, min = 2, max = 5, step = 1})
+	Menu.Combo:MenuElement({id = "Rocketbelt", name = "Use Rocketbelt| Combo", value = true})
 	Menu.Combo:MenuElement({ id = "smQW", name = "Semi-manual QW Key", key = string.byte("M")})
 	Menu.Combo:MenuElement({ id = "smR", name = "Semi-manual R Key", key = string.byte("T")})
 	Menu:MenuElement({type = MENU, id = "Harass", name = "Harass"})
@@ -171,10 +175,13 @@ function zgHwei:Tick()
 	end
 	if IsCasting() then return end
 	self:AntiGapcloser()
+	local Mode = GetMode()
+	if Mode == "Combo" and Menu.Combo.aoeQE:Value() and IsReady(_Q) and self:CanCast() then
+		if self:CastQEAOE() then return end
+	end
 	self:Auto()
 	self:smR()
 	self:smQW()
-	local Mode = GetMode()
 	if Mode == "Combo" then
 		self:Combo()
 	elseif Mode == "Harass" then
@@ -196,23 +203,28 @@ function zgHwei:CanCast()
 end
 
 function zgHwei:CastSpellPos()
-	if myHero.activeSpell.name == "HweiQE" then
-		if self.castQETime == 0 then
-			self.castQETime = Game.Timer()
+	local activeSpell = myHero.activeSpell
+	if activeSpell and activeSpell.valid and activeSpell.name == "HweiQE" and self.castQETime == 0 then
+		local startPos = Vector(activeSpell.startPos or myHero.pos)
+		local placementPos = activeSpell.placementPos and Vector(activeSpell.placementPos)
+		if placementPos and GetDistanceSqr(startPos, placementPos) > 1 then
+			local startTime = activeSpell.startTime
+			self.castQETime = startTime and startTime > 0 and startTime or Game.Timer()
+			self.QEStartPos = startPos
+			self.QEEndPos = startPos:Extended(placementPos, self.QESpell.Range)
 		end
-		self.QEStartPos = myHero.activeSpell.startPos
-		self.QEEndPos = myHero.pos:Extended(myHero.activeSpell.placementPos, self.QESpell.Range)
 	end
 	if Game.Timer() - self.castQETime > 2.25 then
 		self.castQETime = 0
 		self.QEStartPos = nil
 		self.QEEndPos = nil
 	end
-	if myHero.activeSpell.name == "HweiEE" then
+	if activeSpell and activeSpell.valid and activeSpell.name == "HweiEE" then
 		if self.castEETime == 0 then
-			self.castEETime = Game.Timer()
+			local startTime = activeSpell.startTime
+			self.castEETime = startTime and startTime > 0 and startTime or Game.Timer()
+			self.EEPos = {Vector(activeSpell.placementPos), Vector(activeSpell.startPos)}
 		end
-		self.EEPos = {Vector(myHero.activeSpell.placementPos), myHero.pos}
 	end
 	if Game.Timer() - self.castEETime > 0.75 then
 		self.castEETime = 0
@@ -277,6 +289,40 @@ function zgHwei:GetRBuffTarget()
 	return nil
 end
 
+function zgHwei:IsRKillTarget(target)
+	if not HaveBuff(target, "HweiR") then return false end
+	local effectiveHealth = target.health + target.shieldAD + target.shieldAP + target.hpRegen * 2
+	return self:GetRDmg(target) >= effectiveHealth
+end
+
+function zgHwei:GetComboTarget(range)
+	local dmgType = _G.SDK.DAMAGE_TYPE_MAGICAL
+	local enemies, targets = _G.SDK.ObjectManager:GetEnemyHeroes(range), {}
+	for _, target in ipairs(enemies) do
+		if IsValid(target) and not self:IsRKillTarget(target) then
+			table.insert(targets, target)
+		end
+	end
+	return _G.SDK.TargetSelector:GetTarget(targets, dmgType)
+end
+
+function zgHwei:UseRocketbelt(target)
+	if not Menu.Combo.Rocketbelt:Value() or not IsValid(target) then return false end
+	local distance = myHero.pos:DistanceTo(target.pos)
+	if distance <= 800 or distance > 800 + RocketbeltRange then return false end
+	for i, slot in ipairs(RocketbeltItemSlots) do
+		local item = myHero:GetItemData(slot)
+		if item and item.itemID == RocketbeltItemId then
+			local spellData = myHero:GetSpellData(slot)
+			if spellData and spellData.currentCd == 0 then
+				return Control.CastSpell(RocketbeltItemKeys[i], myHero.pos:Extended(target.pos, RocketbeltRange))
+			end
+			return false
+		end
+	end
+	return false
+end
+
 function zgHwei:AntiGapcloser()
 	if Menu.Misc.AutoEQ.Enabled:Value() and IsReady(_E) and self:CanCast() then
 		local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.EQSpell.Range)
@@ -308,50 +354,50 @@ function zgHwei:GetAutoQWTarget()
 	if not Menu.Misc.AutoQW.Enabled:Value() then return nil end
 	local rTarget = self:GetRBuffTarget()
 	local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.QWSpell.Range)
-	local killTarget, hardCCTarget, stationaryTarget, slowTarget = nil, nil, nil, nil
+	local nearbyEnemyCount = GetEnemyCount(500, myHero.pos)
+	local hardCCTarget, stationaryTarget, slowTarget
 
 	for _, target in ipairs(enemies) do
 		if IsValid(target) and target.pos2D.onScreen and (target.distance > self.QQSpell.Range or self:IsQQBlocked(target)) then
 			local isRTarget = rTarget and target.networkID == rTarget.networkID
-			local isKill = Menu.Misc.AutoQW.Kill:Value() and (target.health + target.shieldAD + target.shieldAP + target.hpRegen * 2) < self:GetQWDmg(target)
-			if isKill and GetEnemyCount(500, myHero.pos) < 2 then
-				killTarget = target
-				if not isRTarget then
-					break
+			if not isRTarget then
+				if Menu.Misc.AutoQW.Kill:Value() and nearbyEnemyCount < 2 then
+					local effectiveHealth = target.health + target.shieldAD + target.shieldAP + target.hpRegen * 2
+					if effectiveHealth < self:GetQWDmg(target) then
+						return target
+					end
 				end
-			elseif not isRTarget and GetEnemyCount(500, myHero.pos) == 0 then
-				if Menu.Misc.AutoQW.HardCC:Value() and hardCCTarget == nil and IsHardCC(target) then
-					hardCCTarget = target
-				elseif Menu.Misc.AutoQW.Stationary:Value() and stationaryTarget == nil and IsStationaryCasting(target) then
-					stationaryTarget = target
-				elseif Menu.Misc.AutoQW.Slow:Value() and slowTarget == nil and IsSlow(target) then
-					slowTarget = target
+				if nearbyEnemyCount == 0 then
+					if Menu.Misc.AutoQW.HardCC:Value() and hardCCTarget == nil and IsHardCC(target) then
+						hardCCTarget = target
+					elseif Menu.Misc.AutoQW.Stationary:Value() and stationaryTarget == nil and IsStationaryCasting(target) then
+						stationaryTarget = target
+					elseif Menu.Misc.AutoQW.Slow:Value() and slowTarget == nil and IsSlow(target) then
+						slowTarget = target
+					end
 				end
 			end
 		end
 	end
-	if killTarget and (not rTarget or killTarget.networkID ~= rTarget.networkID) then
-		return killTarget
-	end
 	if Menu.Misc.AutoQW.RTarget:Value() and rTarget and IsValid(rTarget) and rTarget.pos2D.onScreen and (rTarget.distance > 800 or self:IsQQBlocked(rTarget)) then
 		local buff, buffData = GetBuffData(rTarget, "HweiR")
-		if buff and buffData.duration < 0.9 and self:GetRDmg(rTarget) < rTarget.health + rTarget.shieldAD + rTarget.shieldAP + rTarget.hpRegen * 2 then
+		if buff and buffData.duration < 0.9 and not self:IsRKillTarget(rTarget) then
 			return rTarget
 		end
 	end
-	if hardCCTarget then return hardCCTarget end
-	if stationaryTarget then return stationaryTarget end
-	if slowTarget then return slowTarget end
-	return nil
+	return hardCCTarget or stationaryTarget or slowTarget
 end
 
 function zgHwei:Auto()
 	if Menu.Misc.QQ:Value() and IsReady(_Q) and self:CanCast() then
 		local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.QQSpell.Range)
 		for _, target in ipairs(enemies) do
-			if IsValid(target) and target.pos2D.onScreen and (target.health + target.shieldAD + target.shieldAP + target.hpRegen * 1) < self:GetQQDmg(target) then
-				self:CastGGPred('QQ', target)
-				break
+			if IsValid(target) and target.pos2D.onScreen then
+				local qqEffectiveHealth = target.health + target.shieldAD + target.shieldAP + target.hpRegen * 1
+				if qqEffectiveHealth < self:GetQQDmg(target) and not self:IsRKillTarget(target) then
+					self:CastGGPred('QQ', target)
+					break
+				end
 			end
 		end
 	end
@@ -361,7 +407,7 @@ function zgHwei:Auto()
 		for _, target in ipairs(enemies) do
 			if IsValid(target) then
 				local aoeTarget = Menu.Misc.AutoR.AOE:Value() and GetEnemyCount(250, target.pos) >= Menu.Misc.AutoR.RCount:Value() and target.distance < 800
-				local hardCCTarget = Menu.Misc.AutoR.HardCC:Value() and (IsHardCC(target) or self:IsUnitInEE(target)) and target.health > target.maxHealth * (Menu.Misc.AutoR.RHP:Value() / 100)
+				local hardCCTarget = Menu.Misc.AutoR.HardCC:Value() and (IsHardCC(target) or self:IsEEAboutHit(target)) and target.health > target.maxHealth * (Menu.Misc.AutoR.RHP:Value() / 100)
 				if aoeTarget or hardCCTarget then
 					self:CastGGPred(HK_R, target)
 				end
@@ -390,7 +436,7 @@ function zgHwei:Auto()
 	if Menu.Misc.AutoEW.Enabled:Value() and IsReady(_E) and self:CanCast() then
 		for _, target in ipairs(GetEnemyHeroes()) do
 			if target and myHero.pos:DistanceTo(target.pos) <= self.EWSpell.Range then
-				if Menu.Misc.AutoEW.RTarget:Value() and HaveBuff(target, "HweiR") then
+				if Menu.Misc.AutoEW.RTarget:Value() and HaveBuff(target, "HweiR") and not self:IsRKillTarget(target) then
 					if self:CastGGPred('EW', target) then
 						return
 					end
@@ -460,31 +506,30 @@ function zgHwei:GetRDmg(target)
 	return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, baseDmg)
 end
 
-function zgHwei:IsUnitInEE(unit)
-	if IsValid(unit) then
-		if(self.EEPos and self.EEPos[1]) then
-			local ePos = self.EEPos[1]
-			local line = Vector(self.EEPos[2] - ePos):Normalized()
-			local lineL = Vector(line.z, line.y, -line.x)
-			local lineR = Vector(line.z, line.y, -line.x)
-			local rotLineL1 = lineL:Rotated(0, math.rad(20), 0)*320 + ePos
-			local rotLineR1 = lineR:Rotated(0, math.rad(160), 0)*320 + ePos
-			local rotLineL2 = lineL:Rotated(0, math.rad(-20), 0)*320 + ePos
-			local rotLineR2 = lineR:Rotated(0, math.rad(200), 0)*320 + ePos
+function zgHwei:IsEEAboutHit(unit)
+	if not IsValid(unit) or not self.EEPos or self.castEETime == 0 then return false end
+	if _G.SDK.BuffManager:HasBuffTypes(unit, {[4] = true, [16] = true}) then return false end 
+	if Game.Timer() > self.castEETime + 0.627 then return false end
+	local line = Vector(self.EEPos[2] - self.EEPos[1]):Normalized()
+	local lineL = Vector(line.z, line.y, -line.x)
+	local lineR = Vector(line.z, line.y, -line.x)
+	local rotLineL1 = lineL:Rotated(0, math.rad(20), 0)*320 + self.EEPos[1]
+	local rotLineR1 = lineR:Rotated(0, math.rad(160), 0)*320 + self.EEPos[1]
+	local rotLineL2 = lineL:Rotated(0, math.rad(-20), 0)*320 + self.EEPos[1]
+	local rotLineR2 = lineR:Rotated(0, math.rad(200), 0)*320 + self.EEPos[1]
+	
+	local predTime = math.max(0, self.castEETime + 0.627 - Game.Timer())	
+	local predPos = unit:GetPrediction(math.huge, predTime)
+	if predPos == nil then predPos = unit.pos end
 
-			local predPos = unit:GetPrediction(math.huge, 0.25)
-			if predPos == nil then predPos = unit.pos end
+	local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(predPos, rotLineL1, rotLineR2)
+	if isOnSegment and GGPrediction:IsInRange(point, predPos, self.EESpell.Radius) then
+		return true
+	end
 
-			local point, isOnSegment = GGPrediction:ClosestPointOnLineSegment(predPos, rotLineL1, rotLineR2)
-			if isOnSegment and GGPrediction:IsInRange(point, predPos, self.EESpell.Radius) then
-				return true
-			end
-
-			local point2, isOnSegment2 = GGPrediction:ClosestPointOnLineSegment(predPos, rotLineR1, rotLineL2)
-			if isOnSegment2 and GGPrediction:IsInRange(point2, predPos, self.EESpell.Radius) then
-				return true
-			end
-		end
+	local point2, isOnSegment2 = GGPrediction:ClosestPointOnLineSegment(predPos, rotLineR1, rotLineL2)
+	if isOnSegment2 and GGPrediction:IsInRange(point2, predPos, self.EESpell.Radius) then
+		return true
 	end
 	return false
 end
@@ -506,19 +551,14 @@ end
 
 function zgHwei:CastGGPred(spell, target)
 	if spell == 'QQ' then
+		if self:IsQQBlocked(target) then return false end
+		if self.EEPos and self:IsEEAboutHit(target) then
+			return self:CastSpellWithWE({HK_Q, HK_Q}, self.EEPos[1])
+		end
 		local QQPrediction = GGPrediction:SpellPrediction(self.QQSpell)
 		QQPrediction:GetPrediction(target, myHero)
 		if QQPrediction:CanHit(3) then
-			local castPos = QQPrediction.CastPosition
-			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(
-				myHero.pos, castPos, self.QQSpell.Speed, self.QQSpell.Delay, self.QQSpell.Radius, 
-				{GGPrediction.COLLISION_MINION}, target.networkID)
-			if collisionCount == 0 or collisionObjects[1].pos:DistanceTo(myHero.pos) > 885 or collisionObjects[1].pos:DistanceTo(castPos) < 150 then
-				if self.EEPos and self:IsUnitInEE(target) then
-					castPos = self.EEPos[1]
-				end
-				return self:CastSpellWithWE({HK_Q, HK_Q}, castPos)
-			end
+			return self:CastSpellWithWE({HK_Q, HK_Q}, QQPrediction.CastPosition)
 		end
 		return false
 	elseif spell == 'QW' then
@@ -532,14 +572,13 @@ function zgHwei:CastGGPred(spell, target)
 		end
 		return false
 	elseif spell == 'QE' then
+		if self.EEPos and self:IsEEAboutHit(target) then
+			return self:CastSpellWithWE({HK_Q, HK_E}, self.EEPos[1])
+		end
 		local QEPrediction = GGPrediction:SpellPrediction(self.QESpell)
 		QEPrediction:GetPrediction(target, myHero)
 		if QEPrediction:CanHit(3) then
-			local castPos = QEPrediction.CastPosition
-			if self.EEPos and self:IsUnitInEE(target) then
-				castPos = self.EEPos[1]
-			end
-			return self:CastSpellWithWE({HK_Q, HK_E}, castPos)
+			return self:CastSpellWithWE({HK_Q, HK_E}, QEPrediction.CastPosition)
 		end
 		return false
 	elseif spell == 'EQ' then
@@ -583,19 +622,26 @@ function zgHwei:CastGGPred(spell, target)
 				local rightDistance = GetDistanceSqr(rightCastPos, rightPoint)
 				castPos = leftDistance < rightDistance and leftCastPos or rightCastPos
 			end
-			if castPos:DistanceTo() <= 800 then
+			if myHero.pos:DistanceTo(castPos) <= 800 then
 				return Control.CastSpell({HK_E, HK_E}, castPos)
 			end
 		end
 		return false
 	elseif spell == HK_R then
+		if self.EEPos and self:IsEEAboutHit(target) then
+			local castPos = self.EEPos[1]
+			if Control.CastSpell(HK_R, castPos) then
+				local distance = GetDistance(myHero.pos, castPos)
+				local flightTime = (self.RSpell.Delay + distance / self.RSpell.Speed) * 1000
+				lastR2 = GetTickCount() + flightTime + 200
+				return true
+			end
+			return false
+		end
 		local RPrediction = GGPrediction:SpellPrediction(self.RSpell)
 		RPrediction:GetPrediction(target, myHero)
 		if RPrediction:CanHit(3) then
 			local castPos = RPrediction.CastPosition
-			if self.EEPos and self:IsUnitInEE(target) then
-				castPos = self.EEPos[1]
-			end
 			if Control.CastSpell(HK_R, castPos) then
 				local distance = GetDistance(myHero.pos, castPos)
 				local flightTime = (self.RSpell.Delay + distance / self.RSpell.Speed) * 1000
@@ -658,26 +704,27 @@ end
 
 function zgHwei:Combo()
 	if not self:CanCast() then return end
-	if Menu.Combo.aoeQE:Value() and IsReady(_Q) then
-		self:CastQEAOE()
-	end
+	local rocketbeltTarget = self:GetComboTarget(self.EESpell.Range + RocketbeltRange)
+	if self:UseRocketbelt(rocketbeltTarget) then return end
 	if IsReady(_E) and Menu.Combo.E:Value() then
-		local target = GetTarget(self.EESpell.Range)
+		local target = self:GetComboTarget(self.EESpell.Range)
 		if IsValid(target) then
 			local enemyCount = GetEnemyCount(500, target.pos)
 			if enemyCount >= 2 or not FacingMe(target) or not self:CastGGPred('EQ', target) then
-				self:CastGGPred('EE', target)
+				if self:CastGGPred('EE', target) then return end
 			end
 		end
 	end
 	if IsReady(_Q) and Menu.Combo.Q:Value() and lastEQ < GetTickCount() and lastR2 < GetTickCount() then
-		local target, isRTarget = GetTarget(self.QQSpell.Range), false
+		local target, isRTarget = self:GetComboTarget(self.QQSpell.Range), false
 		local rTarget = self:GetRBuffTarget()
 		if rTarget ~= nil then
-			if rTarget.distance <= 800 then
-				target, isRTarget = rTarget, true
-			elseif GetEnemyCount(500, myHero.pos) == 0 then
-				return
+			if not self:IsRKillTarget(rTarget) then
+				if rTarget.distance <= 800 then
+					target, isRTarget = rTarget, true
+				elseif GetEnemyCount(500, myHero.pos) == 0 then
+					return
+				end
 			end
 		end
 		if IsValid(target) and (isRTarget or not IsReady(_E) or not Menu.Combo.E:Value()) then
@@ -685,7 +732,7 @@ function zgHwei:Combo()
 				if self:CastGGPred('QE', target) then return end
 			elseif self:CastGGPred('QQ', target) then
 				return
-			elseif self:IsUnitInEE(target) then
+			elseif self.EEPos and self:IsEEAboutHit(target) then
 				if self:CastGGPred('QE', target) then return end
 			end
 		end
@@ -709,7 +756,7 @@ function zgHwei:Harass()
 	if IsReady(_E) and Menu.Harass.E:Value() then
 		local target = GetTarget(self.EESpell.Range)
 		if IsValid(target) then
-			self:CastGGPred('EE', target)
+			if self:CastGGPred('EE', target) then return end
 		end
 	end
 	if IsReady(_Q) and Menu.Harass.Q:Value() and lastR2 < GetTickCount() then
@@ -727,7 +774,7 @@ function zgHwei:Harass()
 				if self:CastGGPred('QE', target) then return end
 			elseif self:CastGGPred('QQ', target) then
 				return
-			elseif self:IsUnitInEE(target) then	
+			elseif self.EEPos and self:IsEEAboutHit(target) then
 				if self:CastGGPred('QE', target) then return end
 			end
 		end

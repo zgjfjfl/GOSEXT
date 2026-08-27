@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -10,8 +10,6 @@ function zgCaitlyn:__init()
 	self:LoadMenu()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:Tick() end)
-	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	_G.SDK.Orbwalker:OnPostAttack(function(...) self:OnPostAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.625, Radius = 60, Range = 1240, Speed = 2200, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 1.25, Radius = 15, Range = 800, Speed = math.huge, Collision = false}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.15, Radius = 70, Range = 750, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
@@ -110,54 +108,6 @@ function zgCaitlyn:Tick()
 		self:JungleClear()
 	elseif Mode == "Flee" then
 		self:Flee()
-	end
-end
-
-_G.CTRLCait = true
-_G.lastEProc = 0
-_G.lastWProc = {}
-local currentBuffTarget = nil
-
-function zgCaitlyn:OnPreAttack(args)
-	local heroes = _G.SDK.ObjectManager:GetEnemyHeroes(1300)
-	local Buff = _G.SDK.BuffManager
-	local bestTarget = nil
-	local shortestBuffTime = math.huge
-	for i, enemy in pairs(heroes) do
-		if enemy then
-			if Buff:HasBuff(enemy, "eternals_caitlyneheadshottracker") and _G.lastEProc + 3 < Game.Timer() then
-				local buffTime = Buff:GetBuffDuration(enemy, "eternals_caitlyneheadshottracker")
-				if buffTime < shortestBuffTime then
-					bestTarget = enemy
-					shortestBuffTime = buffTime
-					currentBuffTarget = {target = enemy, buffType = "E"}
-				end
-			end
-			
-			if Buff:HasBuff(enemy, "caitlynwsight") and (_G.lastWProc[enemy.networkID] == nil or _G.lastWProc[enemy.networkID] + 3 < Game.Timer()) then
-				local buffTime = Buff:GetBuffDuration(enemy, "caitlynwsight")
-				if buffTime < shortestBuffTime then
-					bestTarget = enemy
-					shortestBuffTime = buffTime
-					currentBuffTarget = {target = enemy, buffType = "W"}
-				end
-			end
-		end
-	end
-	if bestTarget then
-		args.Target = bestTarget
-	end
-end
-
-function zgCaitlyn:OnPostAttack()
-	if currentBuffTarget and currentBuffTarget.target then
-		local target = currentBuffTarget.target
-		if currentBuffTarget.buffType == "E" then
-			_G.lastEProc = Game.Timer()
-		elseif currentBuffTarget.buffType == "W" then
-			_G.lastWProc[target.networkID] = Game.Timer()
-		end
-		currentBuffTarget = nil
 	end
 end
 
