@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -67,6 +67,14 @@ end
 function zgSenna:OnPreAttack(args)
 	if Menu.SupportMode:Value() and GetMode() == "Harass" then
 		if args.Target.type ~= Obj_AI_Hero and args.Target.charName ~= "SennaSoul" then
+			local souls = _G.SDK.ObjectManager:GetPlants()
+			for i = 1, #souls do
+				local soul = souls[i]
+				if soul.charName == "SennaSoul" and _G.SDK.Data:IsInAutoAttackRange(myHero, soul) then
+					args.Target = soul
+					return
+				end
+			end
 			args.Process = false
 		end
 	end
