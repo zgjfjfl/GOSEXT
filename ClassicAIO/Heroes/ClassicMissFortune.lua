@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ClassicAIO\\Utils")
@@ -344,7 +344,7 @@ end
 
 function ClassicMissFortune:GetQDmg(target)
 		local level = myHero:GetSpellData(_Q).level
-		local QDmg = ({25, 60, 95, 130, 165})[level] + myHero.totalDamage * 0.75
+		local QDmg = ({35, 70, 105, 140, 175})[level] + myHero.totalDamage * 0.75
 		return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, QDmg)
 end
 
