@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ClassicAIO\\Utils")
@@ -279,7 +279,7 @@ function ClassicMissFortune:QLogic(target, UseQBounce)
 		Control.CastSpell(HK_Q, target)
 	else
 		if UseQBounce then
-			local tarPred = target:GetPrediction(self.QSpell.Speed, self.QSpell.Delay)
+			local tarPred = target:GetPrediction(math.huge, self.QSpell.Delay)
 			local bounceFirstTar = {}
 			local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.QSpell.Range)
 			local enemies = _G.SDK.ObjectManager:GetEnemyHeroes(self.QSpell.Range)
@@ -298,7 +298,7 @@ function ClassicMissFortune:QLogic(target, UseQBounce)
 				local obj = objTable[i]
 				if IsValid(obj) and obj.networkID ~= target.networkID then
 					local angle = Menu.Misc.Qangle:Value()/2
-					local objPred = obj:GetPrediction(self.QSpell.Speed, self.QSpell.Delay)
+					local objPred = obj:GetPrediction(math.huge, self.QSpell.Delay)
 					local middlePos = myHero.pos:Extended(objPred, myHero.pos:DistanceTo(objPred) + 500)
 					local leftVector = (middlePos - objPred):Rotated(0, angle * math.pi / 180, 0)
 					local rightVector = (middlePos - objPred):Rotated(0, -angle * math.pi / 180, 0)
