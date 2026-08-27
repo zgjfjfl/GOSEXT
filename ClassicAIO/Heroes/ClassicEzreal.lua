@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ClassicAIO\\Utils")
@@ -28,7 +28,7 @@ function ClassicEzreal:__init()
 	Callback.Add("Tick", function() self:Tick() end)
 	Callback.Add("WndMsg", function(msg, wParam) self:OnWndMsg(msg, wParam) end)
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1150, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL, GGPrediction.COLLISION_MINION}}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 1050, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL, GGPrediction.COLLISION_MINION}}
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 80, Range = 1050, Speed = 1600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 1.00, Radius = 160, Range = 25000, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.lastQ = 0
@@ -359,7 +359,7 @@ end
 
 function ClassicEzreal:GetQDmg(unit)
 	local qLevel = myHero:GetSpellData(_Q).level
-	local dmg = (25 * qLevel + 15) + (1.2 * myHero.totalDamage)
+	local dmg = (25 * qLevel + 15) + (1.1 * myHero.totalDamage)
 	if qLevel > 0 then
 		return _G.SDK.Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_PHYSICAL, dmg)
 	else
@@ -379,7 +379,7 @@ end
 
 function ClassicEzreal:GetRDmg(unit)
 	local rLevel = myHero:GetSpellData(_R).level
-	local dmg = (150 * rLevel + 200) + 0.7 * myHero.ap
+	local dmg = (150 * rLevel + 200) + 1.0 * myHero.ap
 	if rLevel > 0 then
 		return _G.SDK.Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_MAGICAL, dmg)
 	else
