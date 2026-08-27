@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -22,6 +22,8 @@ function zgViktor:__init()
 	self.startPos = nil
 	self.endPos = nil
 	self.mPos = nil
+	self.lastHitQTarget = nil
+	self.lastHitQBlockUntil = 0
 end
 
 function zgViktor:LoadMenu()
@@ -69,6 +71,10 @@ end
 function zgViktor:OnPreAttack(args)
 	local target = args.Target
 	local mode = GetMode()
+	if self.lastHitQTarget == target.handle and GetTickCount() < self.lastHitQBlockUntil then
+		args.Process = false
+		return
+	end
 	if (mode == "Combo" or mode == "Harass") and target.type == Obj_AI_Hero then
 		if (IsReady(_Q) or IsReady(_E)) and not HaveBuff(myHero, "viktorq") then
 			args.Process = false
@@ -236,7 +242,11 @@ function zgViktor:LastHitQ()
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.charName:find("Siege") and GetDistance(myHero.pos, minion.pos) <= (600 + myHero.boundingRadius + minion.boundingRadius) then
 				if minion.health <= self:QDamage(minion) then
-					return Control.CastSpell(HK_Q, minion)
+					if Control.CastSpell(HK_Q, minion) then
+						self.lastHitQTarget = minion.handle
+						self.lastHitQBlockUntil = GetTickCount() + 300 + GetDistance(myHero.pos, minion.pos) / 2 + Game.Latency()
+						return true
+					end
 				end
 			end
 		end
