@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -12,10 +12,10 @@ function zgCassiopeia:__init()
 	Callback.Add("Draw", function() self:Draw() end)
 	Callback.Add("Tick", function() self:OnTick() end)
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
-	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.75, Radius = 150, Range = 850, Speed = math.huge, Collision = false}
-	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.6, Radius = 200, Range = 880, Speed = 3000, Collision = false}
+	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.75, Radius = 200, Range = 850, Speed = math.huge, Collision = false}
+	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.6, Radius = 200, Range = 700, Speed = 3000, Collision = false}
 	self.ESpell = {Delay = 0.125, Range = 700, Speed = 2500}
-	self.RSpell = {Type = GGPrediction.SPELLTYPE_CONE, Delay = 0.5, Angle = 80, Range = 825, Speed = 1500, Collision = false}
+	self.RSpell = {Type = GGPrediction.SPELLTYPE_CONE, Delay = 0.5, Angle = 80, Range = 825, Speed = math.huge, Collision = false}
 end
 
 function zgCassiopeia:LoadMenu()
@@ -146,16 +146,16 @@ function zgCassiopeia:SemiR()
 end
 
 function zgCassiopeia:Combo()
-	if Menu.Combo.W:Value() and IsReady(_W) then
-		local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.WSpell.Range)
-		if IsValid(target) and not self:IsPoisoned(target) and lastQ + 1000 < GetTickCount() then
-			self:CastW(target)
-		end
-	end
 	if Menu.Combo.Q:Value() and IsReady(_Q) then
 		local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.QSpell.Range)
 		if IsValid(target) and not self:IsPoisoned(target) and lastW + 1000 < GetTickCount() then
 			self:CastQ(target)
+		end
+	end
+	if Menu.Combo.W:Value() and IsReady(_W) then
+		local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.WSpell.Range)
+		if IsValid(target) and not self:IsPoisoned(target) and lastQ + 1000 < GetTickCount() then
+			self:CastW(target)
 		end
 	end
 	if Menu.Combo.E:Value() and IsReady(_E) then
@@ -293,7 +293,7 @@ function zgCassiopeia:GetEDmg(unit)
 	local elvl = myHero:GetSpellData(_E).level
 	local dmg = 48 + 4 * lvl + myHero.ap * 0.1
 	if self:IsPoisoned(unit) then
-		dmg = dmg + ({20, 40, 60, 80, 100})[elvl] + 0.55 * myHero.ap
+		dmg = dmg + ({20, 45, 70, 95, 120})[elvl] + 0.55 * myHero.ap
 	end
 	return _G.SDK.Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_MAGICAL, dmg)
 end
