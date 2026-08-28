@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -196,6 +196,15 @@ local function CalculateCollisionTime(startPos, endPos, unitPos, startTime, spee
 	return GetDistance(unitPos, pos) / speed
 end
 
+local function AngleFromHero(pos)
+	return math.atan2((pos.z or pos.y) - (myHero.pos.z or myHero.pos.y), pos.x - myHero.pos.x)
+end
+
+local function AngleBetween(a1, a2)
+	local diff = (a1 - a2) % (2 * math.pi)
+	return diff > math.pi and 2 * math.pi - diff or diff
+end
+
 class "zgSamira"
 
 function zgSamira:__init()
@@ -204,11 +213,13 @@ function zgSamira:__init()
 	Callback.Add("Tick", function() self:Tick() end)
 	Callback.Add("Draw", function() self:Draw() end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.25, Radius = 60, Range = 950, Speed = 2600, Collision = true, CollisionTypes = {GGPrediction.COLLISION_MINION, GGPrediction.COLLISION_YASUOWALL}}
+	self.QSword = {Range = 325, Angle = 100, Delay = 0.25}
 	self.WSpell = {Range = 390}
 	self.ESpell = {Range = 650}
 	self.RSpell = {Range = 600}
 	self.DetectedSpells = {}
 	self.ProcessedSpells = {}
+	self.LastQ = 0
 end
 
 function zgSamira:LoadMenu()                     	
@@ -240,7 +251,7 @@ Menu:MenuElement({type = MENU, id = "Clear", name = "Clear"})
 	--LaneClear Menu
 	Menu.Clear:MenuElement({type = MENU, id = "LaneClear", name = "Lane Clear"})
 	Menu.Clear.LaneClear:MenuElement({id = "UseQ", name = "[Q2]", value = true})
-	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "min Minions for [Q2]", value = 3, min = 1, max = 7, step = 1})	
+	Menu.Clear.LaneClear:MenuElement({id = "QCount", name = "Q2 can hits >= X?", value = 3, min = 1, max = 7, step = 1})	
 	
 	--JungleClear Menu
 	Menu.Clear:MenuElement({type = MENU, id = "JungleClear", name = "Jungle Clear"})
@@ -310,8 +321,9 @@ function zgSamira:Tick()
 		self:LastHit()
 	elseif Mode == "LaneClear" then
 		self:JungleClear()
-		self:LaneClear()
-		self:LastHit()
+		if not self:LaneClear() then
+			self:LastHit()
+		end
 	elseif Mode == "LastHit" then
 		self:LastHit()
 	end	
@@ -545,7 +557,7 @@ function zgSamira:JungleClear()
 				Control.CastSpell(HK_Q, minion)
 			end	
 			
-			if myHero.pos:DistanceTo(minion.pos) < self.WSpell.Range and Menu.Clear.JungleClear.UseQ2:Value() and IsReady(_Q) then
+			if myHero.pos:DistanceTo(minion.pos) <= self.QSword.Range and Menu.Clear.JungleClear.UseQ2:Value() and IsReady(_Q) then
 				Control.CastSpell(HK_Q, minion)
 			end			
         end
@@ -553,18 +565,41 @@ function zgSamira:JungleClear()
 end
 			
 function zgSamira:LaneClear()
-	if Menu.Clear.LaneClear.UseQ:Value() and IsReady(_Q) then
-		for i = 1, Game.MinionCount() do
-		local minion = Game.Minion(i)
+	if not Menu.Clear.LaneClear.UseQ:Value() or not IsReady(_Q) then return false end
+	
+	local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.QSword.Range, true)
+	local targets = {}
+	for i = 1, #minions do
+		local minion = minions[i]
+		if minion.team ~= 300 and IsValid(minion) then
+			targets[#targets + 1] = {
+				pos = minion.pos,
+				angle = AngleFromHero(minion.pos)
+			}
+		end
+	end
+	if #targets == 0 then return false end
 
-			if minion.team ~= 300 and IsValid(minion) and myHero.pos:DistanceTo(minion.pos) < self.WSpell.Range then				
-				local Count = GetMinionCount(300, minion.pos)
-				if Count >= Menu.Clear.LaneClear.QCount:Value() then
-					Control.CastSpell(HK_Q, minion.pos)
-				end			
+	local halfAngle = math.rad(self.QSword.Angle / 2)
+	local bestPos, bestHits = nil, 0
+	for i = 1, #targets do
+		-- only aim at a minion already inside melee range, otherwise Q fires the single target shot instead
+		local hits = 0
+		for j = 1, #targets do
+			if AngleBetween(targets[i].angle, targets[j].angle) <= halfAngle then
+				hits = hits + 1
 			end
 		end
-	end	
+		if hits > bestHits then
+			bestPos, bestHits = targets[i].pos, hits
+		end
+	end
+
+	if bestPos and bestHits >= Menu.Clear.LaneClear.QCount:Value() then
+		Control.CastSpell(HK_Q, bestPos)
+		return true
+	end
+	return false
 end
 
 function zgSamira:LastHit()
@@ -572,10 +607,8 @@ function zgSamira:LastHit()
 	if next(minionInRange) == nil then return end
 
 	for i = 1, #minionInRange do
-        	local minion = minionInRange[i]
-
-		local AARange = myHero.range + myHero.boundingRadius
-		if IsReady(_Q) and myHero.pos:DistanceTo(minion.pos) > AARange then
+        local minion = minionInRange[i]
+		if IsReady(_Q) and not _G.SDK.Data:IsInAutoAttackRange(myHero, minion) then
 			local QDmg = self:GetQDmg(minion)
 			if QDmg >= _G.SDK.HealthPrediction:GetPrediction(minion, 0.25+myHero.pos:DistanceTo(minion.pos)/2600) then
 				Control.CastSpell(HK_Q, minion.pos)
