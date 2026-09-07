@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -29,6 +29,7 @@ function zgYone:__init()
 	self.lastW = 0
 	self.lastE = 0
 	self.lastR = 0
+	self.q3RBlockUntil = 0
 	self.eStartTick = 0
 	self:LoadMenu()
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
@@ -112,10 +113,14 @@ end
 
 function zgYone:GetTarget(range)
 	local target = _G.SDK.Orbwalker and _G.SDK.Orbwalker.GetTarget and _G.SDK.Orbwalker:GetTarget()
-	if IsValid(target) and target.type == Obj_AI_Hero and target.distance <= range then
+	if IsValid(target) and target.type == Obj_AI_Hero and target.distance <= range and target.pos and target.pos:ToScreen().onScreen then
 		return target
 	end
-	return GetTarget(range)
+	target = GetTarget(range)
+	if IsValid(target) and target.type == Obj_AI_Hero and target.distance <= range and target.pos and target.pos:ToScreen().onScreen then
+		return target
+	end
+	return nil
 end
 
 function zgYone:CastQ(target, forceQ3)
@@ -252,7 +257,7 @@ end
 
 function zgYone:OnPreAttack(args)
 	local target = args and args.Target
-	if self:IsQ3RSetup(target) then args.Process = false end
+	if self.q3RBlockUntil > GetTickCount() or self:IsQ3RSetup(target) then args.Process = false end
 end
 
 function zgYone:IsInAARange(target)
@@ -264,17 +269,21 @@ end
 function zgYone:Combo()
 	local rMode = Menu.Combo.RMode:Value()
 	local rAfterQ3 = rMode == 1 and self:HasQ3Knockup()
+	local q3RBlock = self.q3RBlockUntil > GetTickCount()
 	local canR = rAfterQ3 or rMode == 2
 	local q3RSequence = Menu.Combo.R:Value()
 		and rMode == 1
 		and self:CanCast(_R, self.lastR, 400)
-		and (rAfterQ3 or self:IsQ3RSetup(self:GetTarget(self.q3Spell.Range)))
+		and (rAfterQ3 or q3RBlock or self:IsQ3RSetup(self:GetTarget(self.q3Spell.Range)))
 	if Menu.Combo.R:Value() and canR and self:CastR(false, rAfterQ3) then return end
 	if Menu.Combo.E1:Value() and not self:IsEActive() then
 		local target = self:GetTarget(self:GetE1Range())
 		if not self:IsInAARange(target) and self:CastEStart(target) then return end
 	end
-	if Menu.Combo.Q3:Value() and self:IsQ3Ready() and self:CastQ(self:GetTarget(self.q3Spell.Range), true) then return end
+	if Menu.Combo.Q3:Value() and self:IsQ3Ready() and self:CastQ(self:GetTarget(self.q3Spell.Range), true) then
+		if q3RSequence then self.q3RBlockUntil = GetTickCount() + 1200 end
+		return
+	end
 	if Menu.Combo.Q:Value() and not self:IsQ3Ready() and self:CastQ(self:GetTarget(self.qSpell.Range), false) then return end
 	if Menu.Combo.W:Value() and not q3RSequence and self:CastW(self:GetTarget(self.wSpell.Range)) then return end
 end
@@ -412,7 +421,7 @@ function zgYone:StackQ()
 end
 
 function zgYone:KillSteal()
-	if Menu.Auto.RKill:Value() and self:CastR(true) then return end
+	if Menu.Auto.RKill:Value() and self.q3RBlockUntil <= GetTickCount() and self:CastR(true) then return end
 	local q3 = self:IsQ3Ready()
 	if Menu.Auto.QKill:Value() then
 		for _, enemy in ipairs(_G.SDK.ObjectManager:GetEnemyHeroes(q3 and self.q3Spell.Range or self.qSpell.Range)) do
@@ -421,7 +430,7 @@ function zgYone:KillSteal()
 			end
 		end
 	end
-	if Menu.Auto.WKill:Value() then
+	if Menu.Auto.WKill:Value() and self.q3RBlockUntil <= GetTickCount() then
 		for _, enemy in ipairs(_G.SDK.ObjectManager:GetEnemyHeroes(self.wSpell.Range)) do
 			if IsValid(enemy) and self:GetWDamage(enemy) >= EffectiveHealth(enemy) then
 				if self:CastW(enemy) then return end
