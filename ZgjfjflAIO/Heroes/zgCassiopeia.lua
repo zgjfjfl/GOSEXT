@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -291,9 +291,9 @@ end
 function zgCassiopeia:GetEDmg(unit)
 	local lvl = myHero.levelData.lvl
 	local elvl = myHero:GetSpellData(_E).level
-	local dmg = 48 + 4 * lvl + myHero.ap * 0.1
+	local dmg = 46 + 4 * lvl + myHero.ap * 0.2
 	if self:IsPoisoned(unit) then
-		dmg = dmg + ({20, 45, 70, 95, 120})[elvl] + 0.55 * myHero.ap
+		dmg = dmg + ({20, 45, 70, 95, 120})[elvl] + 0.45 * myHero.ap
 	end
 	return _G.SDK.Damage:CalculateDamage(myHero, unit, _G.SDK.DAMAGE_TYPE_MAGICAL, dmg)
 end
