@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 if myHero.charName ~= "Jade_Fiora" then return end
 
@@ -59,7 +59,8 @@ function ClassicFiora:__init()
 end
 
 function ClassicFiora:LoadMenu()
-	Menu = MenuElement({type = MENU, id = "Classic_AIO_" .. myHero.charName, name = "Classic AIO - " .. myHero.charName .. " V: " .. Version, leftIcon = "https://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/Jade_Fiora.png"})
+	local championIcon = "http://ddragon.leagueoflegends.com/cdn/16.18.1/img/champion/"..myHero.charName..".png"
+	Menu = MenuElement({type = MENU, id = "Classic_AIO_" .. myHero.charName, name = "Classic AIO - " .. myHero.charName .. " V: " .. Version, leftIcon = championIcon})
 	Menu:MenuElement({type = MENU, id = "Combo", name = "Combo"})
 	Menu.Combo:MenuElement({id = "Q", name = "Use Q", value = true})
 	Menu.Combo:MenuElement({id = "HoldQ2", name = "Save Second Q For Chase / Expiry", value = true})
