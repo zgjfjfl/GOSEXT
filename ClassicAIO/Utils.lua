@@ -1,4 +1,4 @@
-﻿local Version = 2.02
+﻿local Version = 2.03
 
 lastQ, lastW, lastE, lastR = 0, 0, 0, 0
 
@@ -810,6 +810,8 @@ local function LoadActivatorMenu()
 	ActivatorMenu.Offensive:MenuElement({type = MENU, id = "Hydra", name = "Ravenous Hydra / Tiamat", leftIcon = ItemIcon(ITEM_HYDRA)})
 	ActivatorMenu.Offensive.Hydra:MenuElement({id = "Enabled", name = "Use Ravenous Hydra / Tiamat", value = true})
 	ActivatorMenu.Offensive.Hydra:MenuElement({id = "Range", name = "Enemy Distance <=", value = 400, min = 100, max = 500, step = 25})
+	ActivatorMenu.Offensive.Hydra:MenuElement({id = "Combo", name = "Allow in Combo", value = true})
+	ActivatorMenu.Offensive.Hydra:MenuElement({id = "LaneClear", name = "Allow in Lane / Jungle Clear", value = true})
 
 	ActivatorMenu.Offensive:MenuElement({type = MENU, id = "TrueIce", name = "Shard of True Ice", leftIcon = ItemIcon(ITEM_TRUE_ICE)})
 	ActivatorMenu.Offensive.TrueIce:MenuElement({id = "Enabled", name = "Use Shard of True Ice", value = true})
@@ -1141,10 +1143,13 @@ local function Offensive()
 		end
 	end
 
-	-- Ravenous Hydra / Tiamat
+	-- Ravenous Hydra / Tiamat (mode restricted: only the modes ticked in its submenu)
 	if menu.Hydra.Enabled:Value() then
+		local hydraMode = GetMode()
+		local hydraAllowed = (hydraMode == "Combo" and menu.Hydra.Combo:Value())
+			or (hydraMode == "LaneClear" and menu.Hydra.LaneClear:Value())
 		local range = menu.Hydra.Range:Value()
-		if GetEnemyCount(range, myHero.pos) > 0 or GetMinionCount(range, myHero.pos) > 1 then
+		if hydraAllowed and (GetEnemyCount(range, myHero.pos) > 0 or GetMinionCount(range, myHero.pos) > 1) then
 			if HasClassicItem(ITEM_HYDRA) then
 				if CastItem(ITEM_HYDRA) then return end
 			elseif HasClassicItem(ITEM_TIAMAT) then
