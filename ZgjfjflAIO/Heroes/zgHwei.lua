@@ -1,4 +1,4 @@
-local Version = 1.11
+local Version = 1.12
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -307,7 +307,7 @@ function zgHwei:GetComboTarget(range)
 end
 
 function zgHwei:UseRocketbelt(target)
-	if not Menu.Combo.Rocketbelt:Value() or not IsValid(target) then return false end
+	if not Menu.Combo.Rocketbelt:Value() or not IsValid(target) or not IsReady(_E) or not self:CanCast() then return false end
 	local distance = myHero.pos:DistanceTo(target.pos)
 	if distance <= 800 or distance > 800 + RocketbeltRange then return false end
 	for i, slot in ipairs(RocketbeltItemSlots) do
@@ -497,7 +497,8 @@ function zgHwei:GetQWDmg(target)
 end
 
 function zgHwei:GetRDmg(target)
-	local level = myHero:GetSpellData(_R).level
+	local spellData = myHero:GetSpellData(_R)
+	local level = spellData.name == "HweiR" and spellData.level or 0
 	if level == 0 then return 0 end
 	local baseDmg = ({200, 325, 450})[level] + 0.8 * myHero.ap
 	if HasItem(myHero, 4645) and target.health / target.maxHealth < 0.4 then
