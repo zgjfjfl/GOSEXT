@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -14,6 +14,7 @@ function zgViktor:__init()
 	self.WSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.5, Radius = 300, Range = 800, Speed = 1200, Collision = false}
 	self.ESpell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.07, Radius = 90, Range = 700, Speed = 1050, Collision = false}
 	self.RSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 300, Range = 850, Speed = 1200, Collision = false}
+	self.lastQ = 0
 	self.lastE = 0
 	self.lastR = 0
 	self.isCastingE = false
@@ -76,7 +77,7 @@ function zgViktor:OnPreAttack(args)
 		return
 	end
 	if (mode == "Combo" or mode == "Harass") and target.type == Obj_AI_Hero then
-		if (IsReady(_Q) or IsReady(_E)) and not HaveBuff(myHero, "viktorq") then
+		if (IsReady(_Q) or IsReady(_E)) and not HaveBuff(myHero, "ViktorQReturn") then
 			args.Process = false
 		end
 	end
@@ -102,10 +103,10 @@ function zgViktor:Tick()
 	if Mode == "Combo" then
 		self:Combo()
 	elseif Mode == "Harass" then
-		self:LastHitQ()
+		if self:LastHitQ() then return end
 		self:Harass()
 	elseif Mode == "LaneClear" then
-		self:LastHitQ()
+		if self:LastHitQ() then return end
 		self:FarmHarass()
 		if Menu.Clear.SpellFarm:Value() then
 			self:LaneClear()
@@ -177,9 +178,18 @@ function zgViktor:SemiR()
 end
 
 function zgViktor:Combo()
-	if Menu.Combo.E:Value() and IsReady(_E) and self.lastE + 1100 < GetTickCount() then
+	if Menu.Combo.Q:Value() and IsReady(_Q) and not self.isCastingE then
+		local target = GetTarget(800)
+		if IsValid(target) and GetDistance(myHero.pos, target.pos) <= (600 + myHero.boundingRadius + target.boundingRadius) then
+			if Control.CastSpell(HK_Q, target) then
+				self.lastQ = GetTickCount()
+				return true
+			end
+		end
+	end
+	if Menu.Combo.E:Value() and IsReady(_E) and self.lastE + 1100 < GetTickCount() and self.lastQ + 500 < GetTickCount() then
 		local target = GetTarget(Menu.Combo.ERange:Value())
-		if IsValid(target) then
+		if IsValid(target) and (not HaveBuff(myHero, "ViktorQReturn") or not _G.SDK.Data:IsInAutoAttackRange(myHero, target)) then
 			local EStartPos = myHero.pos + (target.pos - myHero.pos):Normalized() * 525
 			if GetDistance(myHero.pos, target.pos) < 525 then
 				EStartPos = target.pos
@@ -201,18 +211,21 @@ function zgViktor:Combo()
 			return self:CastW(target)
 		end
 	end
-	if Menu.Combo.Q:Value() and IsReady(_Q) and not self.isCastingE then
-		local target = GetTarget(800)
-		if IsValid(target) and GetDistance(myHero.pos, target.pos) <= (600 + myHero.boundingRadius + target.boundingRadius) then
-			return Control.CastSpell(HK_Q, target)
-		end
-	end
 end
 
 function zgViktor:Harass()
-	if Menu.Harass.E:Value() and IsReady(_E) and self.lastE + 1100 < GetTickCount() then
+	if Menu.Harass.Q:Value() and IsReady(_Q) and not self.isCastingE then
+		local target = GetTarget(800)
+		if IsValid(target) and GetDistance(myHero.pos, target.pos) <= (600 + myHero.boundingRadius + target.boundingRadius) then
+			if Control.CastSpell(HK_Q, target) then
+				self.lastQ = GetTickCount()
+				return true
+			end
+		end
+	end
+	if Menu.Harass.E:Value() and IsReady(_E) and self.lastE + 1100 < GetTickCount() and self.lastQ + 500 < GetTickCount() then
 		local target = GetTarget(Menu.Harass.ERange:Value())
-		if IsValid(target) then
+		if IsValid(target) and (not HaveBuff(myHero, "ViktorQReturn") or not _G.SDK.Data:IsInAutoAttackRange(myHero, target)) then
 			local EStartPos = myHero.pos + (target.pos - myHero.pos):Normalized() * 525
 			if GetDistance(myHero.pos, target.pos) < 525 then
 				EStartPos = target.pos
@@ -228,12 +241,6 @@ function zgViktor:Harass()
 			end
 		end
 	end
-	if Menu.Harass.Q:Value() and IsReady(_Q) and not self.isCastingE then
-		local target = GetTarget(800)
-		if IsValid(target) and GetDistance(myHero.pos, target.pos) <= (600 + myHero.boundingRadius + target.boundingRadius) then
-			return Control.CastSpell(HK_Q, target)
-		end
-	end
 end
 
 function zgViktor:LastHitQ()
@@ -241,8 +248,10 @@ function zgViktor:LastHitQ()
 		local minions = _G.SDK.ObjectManager:GetEnemyMinions(800)
 		for i, minion in ipairs(minions) do
 			if IsValid(minion) and minion.charName:find("Siege") and GetDistance(myHero.pos, minion.pos) <= (600 + myHero.boundingRadius + minion.boundingRadius) then
-				if minion.health <= self:QDamage(minion) then
+				local predHP = _G.SDK.HealthPrediction:GetPrediction(minion, 0.25 + GetDistance(myHero.pos, minion.pos) / 2000 + Game.Latency() / 1000)
+				if predHP <= self:QDamage(minion) then
 					if Control.CastSpell(HK_Q, minion) then
+						self.lastQ = GetTickCount()
 						self.lastHitQTarget = minion.handle
 						self.lastHitQBlockUntil = GetTickCount() + 300 + GetDistance(myHero.pos, minion.pos) / 2 + Game.Latency()
 						return true
@@ -290,6 +299,17 @@ function zgViktor:LaneClear()
 end
 
 function zgViktor:JungleClear()
+	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) and not self.isCastingE then
+		local monsters = _G.SDK.ObjectManager:GetMonsters(800)
+		for i, monster in ipairs(monsters) do
+			if IsValid(monster) and GetDistance(myHero.pos, monster.pos) <= (600 + myHero.boundingRadius + monster.boundingRadius) then
+				if Control.CastSpell(HK_Q, monster) then
+					self.lastQ = GetTickCount()
+					return true
+				end
+			end
+		end
+	end
 	if Menu.Clear.JungleClear.E:Value() and IsReady(_E) and self.lastE + 1100 < GetTickCount() then
 		local monsters = _G.SDK.ObjectManager:GetMonsters(800)
 		local bestHitCount = 0
@@ -329,14 +349,6 @@ function zgViktor:JungleClear()
 			local EEndPos = EStartPos + (monster.pos - EStartPos):Normalized() * 300
 			if self:CastE(EStartPos, EEndPos) then
 				self.lastE = GetTickCount()
-			end
-		end
-	end
-	if Menu.Clear.JungleClear.Q:Value() and IsReady(_Q) and not self.isCastingE then
-		local monsters = _G.SDK.ObjectManager:GetMonsters(800)
-		for i, monster in ipairs(monsters) do
-			if IsValid(monster) and GetDistance(myHero.pos, monster.pos) <= (600 + myHero.boundingRadius + monster.boundingRadius) then
-				return Control.CastSpell(HK_Q, monster)
 			end
 		end
 	end
@@ -468,6 +480,16 @@ function zgViktor:QDamage(unit)
 	local baseDamage = {60, 75, 90, 105, 120}
 	if level > 0 then
 		local damage = baseDamage[level] + myHero.ap * 0.40
+		return _G.SDK.Damage:CalculateDamage(myHero, unit, DAMAGE_TYPE_MAGICAL, damage)
+	end
+	return 0
+end
+
+function zgViktor:QBonusDamage(unit)
+	local level = myHero:GetSpellData(_Q).level
+	local baseDamage = {20, 45, 70, 95, 120}
+	if level > 0 then
+		local damage = baseDamage[level] + myHero.ap * 0.50
 		return _G.SDK.Damage:CalculateDamage(myHero, unit, DAMAGE_TYPE_MAGICAL, damage)
 	end
 	return 0
