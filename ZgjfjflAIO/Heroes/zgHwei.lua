@@ -1,4 +1,4 @@
-local Version = 1.12
+local Version = 1.13
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -550,6 +550,13 @@ function zgHwei:IsQQBlocked(target)
 	return false
 end
 
+function zgHwei:IsWallBetween(castPos)
+	-- Only checks Yasuo Wind Wall (GGPrediction particle based); speed/delay/radius are unused for this type, so pass nil
+	if not castPos then return false end
+	local isWall = GGPrediction:GetCollision(myHero.pos, castPos, nil, nil, nil, {GGPrediction.COLLISION_YASUOWALL}, nil)
+	return isWall
+end
+
 function zgHwei:CastGGPred(spell, target)
 	if spell == 'QQ' then
 		if self:IsQQBlocked(target) then return false end
@@ -573,7 +580,7 @@ function zgHwei:CastGGPred(spell, target)
 		end
 		return false
 	elseif spell == 'QE' then
-		if self.EEPos and self:IsEEAboutHit(target) then
+		if self.EEPos and self:IsEEAboutHit(target) and not self:IsWallBetween(self.EEPos[1]) then
 			return self:CastSpellWithWE({HK_Q, HK_E}, self.EEPos[1])
 		end
 		local QEPrediction = GGPrediction:SpellPrediction(self.QESpell)
@@ -629,7 +636,7 @@ function zgHwei:CastGGPred(spell, target)
 		end
 		return false
 	elseif spell == HK_R then
-		if self.EEPos and self:IsEEAboutHit(target) then
+		if self.EEPos and self:IsEEAboutHit(target) and not self:IsWallBetween(self.EEPos[1]) then
 			local castPos = self.EEPos[1]
 			if Control.CastSpell(HK_R, castPos) then
 				local distance = GetDistance(myHero.pos, castPos)
@@ -671,7 +678,7 @@ function zgHwei:CastQEAOE()
 	end
 	for i, result in ipairs(aoeResults) do
 		if result.Count >= Menu.Combo.aoeCount:Value() and GetDistance(myHero.pos, result.CastPosition) < self.QESpell.Range - 200 then
-			if self.EEPos == nil or GetDistance(self.EEPos[1], result.CastPosition) < 320 then
+			if (self.EEPos == nil or GetDistance(self.EEPos[1], result.CastPosition) < 320) and not self:IsWallBetween(result.CastPosition) then
 				return self:CastSpellWithWE({HK_Q, HK_E}, result.CastPosition)
 			end
 		end
