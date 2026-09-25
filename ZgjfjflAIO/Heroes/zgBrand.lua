@@ -1,4 +1,4 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -169,7 +169,7 @@ end
 function zgBrand:LaneClear()
 	if not Menu.Clear.SpellFarm:Value() then return end
 	if IsUnderTurret(myHero) then return end
-	local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.WSpell.Range)
+	local minions = _G.SDK.ObjectManager:GetEnemyMinions(800)
 	for _, minion in ipairs(minions) do
 		if IsValid(minion) and minion.team ~= 300 then
 			if Menu.Clear.LaneClear.W:Value() and IsReady(_W) then
