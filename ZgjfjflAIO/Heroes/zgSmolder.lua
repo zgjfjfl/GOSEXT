@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -79,6 +79,10 @@ function zgSmolder:OnPreAttack(args)
 		args.Process = false
 		return
 	end
+	if target and self.QLastHitTarget == target.networkID and self.QLastHitBlockUntil and Game.Timer() < self.QLastHitBlockUntil then
+		args.Process = false
+		return
+	end
 	if target and target.type == Obj_AI_Hero then
 		if Menu.Misc.Q:Value() and IsReady(_Q) then
 			args.Process = false
@@ -86,10 +90,13 @@ function zgSmolder:OnPreAttack(args)
 		return
 	end
 	if target and target.type == Obj_AI_Minion then
-		if (Mode == "LaneClear" or Mode == "Harass" or Mode == "LastHit") then
-			local QTotalDmg = self:GetQDmg(target) + self:GetPQDmg(target)
-			if IsReady(_Q) and target.health < QTotalDmg and target.maxHealth > 8 then
-				args.Process = false
+		if (Mode == "LaneClear" or Mode == "Harass" or Mode == "LastHit") and Menu.LastHit.Q:Value() and IsReady(_Q) then
+			if IsValid(target) and target.pos2D.onScreen and target.maxHealth > 8 and myHero.pos:DistanceTo(target.pos) <= self.QSpell.Range then
+				local QTotalDmg = self:GetQDmg(target) + self:GetPQDmg(target)
+				local hp = _G.SDK.HealthPrediction:GetPrediction(target, self.QSpell.Delay + myHero.pos:DistanceTo(target.pos)/self.QSpell.Speed)
+				if hp > 0 and hp < QTotalDmg then
+					args.Process = false
+				end
 			end
 		end
 	end
@@ -254,11 +261,15 @@ function zgSmolder:LastHit()
 	if Menu.LastHit.Q:Value() and IsReady(_Q) then
 		local minions = _G.SDK.ObjectManager:GetEnemyMinions(self.QSpell.Range)
 		for i, minion in ipairs(minions) do
-			if IsValid(minion) and minion.pos2D.onScreen then
+			if IsValid(minion) and minion.pos2D.onScreen and minion.maxHealth > 8 then
 				local QTotalDmg = self:GetQDmg(minion) + self:GetPQDmg(minion)
-				local hp = _G.SDK.HealthPrediction:GetPrediction(minion, self.QSpell.Delay + myHero.pos:DistanceTo(minion.pos)/self.QSpell.Speed)
-				if QTotalDmg > hp then
+				local QHitTime = self.QSpell.Delay + myHero.pos:DistanceTo(minion.pos)/self.QSpell.Speed
+				local hp = _G.SDK.HealthPrediction:GetPrediction(minion, QHitTime)
+				if hp > 0 and QTotalDmg > hp then
+					self.QLastHitTarget = minion.networkID
+					self.QLastHitBlockUntil = Game.Timer() + QHitTime + 0.1
 					Control.CastSpell(HK_Q, minion)
+					return
 				end
 			end
 		end
