@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -142,7 +142,7 @@ end
 
 function zgNeeko:GetEDmg(target)
 	local level = myHero:GetSpellData(_E).level
-	local EDmg = ({70, 105, 140, 175, 210})[level] + 0.65 * myHero.ap
+	local EDmg = ({80, 115, 150, 185, 220})[level] + 0.65 * myHero.ap
 	return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, EDmg)
 end
 

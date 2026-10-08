@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -240,7 +240,11 @@ function zgYunara:GetWDmg(target)
 			local WDmg = ({160, 320, 480})[rlevel] + 1.20 * myHero.bonusDamage + 0.75 * myHero.ap
 			return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg)
 		else
-			local WDmg = ({55, 95, 135, 170, 215})[wlevel] + 0.85 * myHero.bonusDamage + 0.5 * myHero.ap
+			local WDmg = ({55, 95, 135, 175, 215})[wlevel] + 0.85 * myHero.bonusDamage + 0.5 * myHero.ap
+			if target.type == Obj_AI_Minion and target.team ~= 300 then
+				local level = myHero.levelData.lvl
+				WDmg = WDmg * (level >= 13 and 1 or level >= 9 and 0.75 or 0.5)
+			end
 			return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg)
 		end
 	else

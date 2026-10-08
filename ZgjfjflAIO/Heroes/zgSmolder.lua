@@ -1,4 +1,4 @@
-local Version = 1.04
+local Version = 1.05
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -250,7 +250,7 @@ function zgSmolder:GetPQDmg(target)
 	local buff, buffData = GetBuffData(myHero, "SmolderQPassive")
 	local hasIE = HasItem(myHero, 3031)
 	if buff then
-		local Dmg = (0.25 + myHero.critChance * (hasIE and 0.39 or 0.30)) * buffData.stacks
+		local Dmg = (0.25 + myHero.critChance * (hasIE and 0.455 or 0.35)) * buffData.stacks
 		return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, Dmg)
 	else
 		return 0
