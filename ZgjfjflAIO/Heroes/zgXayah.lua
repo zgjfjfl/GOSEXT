@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.04
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -60,6 +60,9 @@ function zgXayah:OnTick()
 end
 
 function zgXayah:OnPreAttack(args)
+	if HaveBuff(myHero, "XayahR") then
+		args.Process = false
+	end
 	local target = args.Target and args.Target.type == Obj_AI_Hero
 	if target and IsReady(_W) then
 		if GetMode() == "Combo" and Menu.Combo.W:Value() or GetMode() == "Harass" and Menu.Harass.W:Value() then 
