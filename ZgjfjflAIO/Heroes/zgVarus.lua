@@ -1,4 +1,4 @@
-local Version = 1.06
+local Version = 1.07
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -307,24 +307,30 @@ function zgVarus:GetQDmg(target, wActive)
 	if qlvl == 0 then return 0 end
 	local wlvl = myHero:GetSpellData(_W).level
 	local missingHp = target.maxHealth - target.health
-	local Dmg = ({80, 150, 220, 290, 360})[qlvl] + 1.2 * myHero.bonusDamage
-	local t = wlvl > 0 and ({9, 12, 15, 18, 21})[wlvl] or 0
-	local canUseW = Game.CanUseSpell(_W) == 0 and (100 * target.health / target.maxHealth) < Menu.Combo.Whp:Value()
-	local useW = wActive ~= nil and wActive or canUseW
-	if useW then
-		local qDmg = (target.distance <= 925 and Dmg / 1.5 + t / 1.5 / 100 * missingHp) or (Dmg + t / 100 * missingHp)
-		return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg)
-	else
-		local qDmg = (target.distance <= 925 and Dmg / 1.5) or Dmg
-		return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg)
+	local Dmg = ({85, 170, 255, 340, 425})[qlvl] + 1.36 * myHero.bonusDamage
+	local t = wlvl > 0 and ({10.2, 11.9, 13.6, 15.3, 17})[wlvl] or 0
+	local useW = wActive
+	if useW == nil then
+		local mode = GetMode()
+		local modeMenu = (mode == "Combo" and Menu.Combo) or (mode == "Harass" and Menu.Harass)
+		useW = HaveBuff(myHero, "varuswempowered") or (modeMenu and wlvl > 0
+			and Game.CanUseSpell(_W) == 0 and modeMenu.W:Value()
+			and (100 * target.health / target.maxHealth) < modeMenu.Whp:Value())
 	end
+	local qDmg = (target.distance <= 925 and Dmg / 1.7) or Dmg
+	local damage = _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_PHYSICAL, qDmg)
+	if useW then
+		local wDmg = (target.distance <= 925 and t / 1.7 / 100 * missingHp) or (t / 100 * missingHp)
+		damage = damage + _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, wDmg)
+	end
+	return damage
 end
 
 function zgVarus:GetWDmg(target)
 	local level = myHero:GetSpellData(_W).level
 	local buff, buffData = GetBuffData(target, "varuswdebuff")
 	if level > 0 and buff then
-		local WDmg = (({3, 3.5, 4, 4.5, 5})[level]/100 + 0.015 * (myHero.ap/100)) * target.maxHealth
+		local WDmg = (({2.5, 3, 3.5, 4, 4.5})[level]/100 + 0.014 * (myHero.ap/100)) * target.maxHealth
 		return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg * buffData.count)
 	else
 		return 0
