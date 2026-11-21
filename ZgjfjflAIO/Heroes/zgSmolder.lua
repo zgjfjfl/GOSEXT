@@ -1,7 +1,27 @@
-local Version = 1.05
+local Version = 1.06
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
+
+local smolderEActive, smolderENextCheck = false, 0
+
+local function IsSmolderE()
+	local now = Game.Timer()
+	if now < smolderENextCheck then return smolderEActive end
+	smolderENextCheck = now + 0.1
+	smolderEActive = false
+
+	for i = 1, Game.ParticleCount() do
+		local particle = Game.Particle(i)
+		local name = particle and particle.name and particle.name:lower()
+		if name and name:find("smolder", 1, true) and name:find("_e_indicator_ring", 1, true)
+			and particle.pos:DistanceTo(myHero.pos) <= 100 then
+			smolderEActive = true
+			break
+		end
+	end
+	return smolderEActive
+end
 
 class "zgSmolder"
 
@@ -75,7 +95,7 @@ end
 function zgSmolder:OnPreAttack(args)
 	local target = args.Target
 	local Mode = GetMode()
-	if HaveBuff(myHero, "SmolderE") then
+	if IsSmolderE() then
 		args.Process = false
 		return
 	end
@@ -113,7 +133,7 @@ function zgSmolder:Tick()
 		self:OneKeyCastR()
 	end
 	
-	if Menu.Misc.E:Value() and HaveBuff(myHero, "SmolderE") then return end
+	if Menu.Misc.E:Value() and IsSmolderE() then return end
 
 	self:Auto()
 
