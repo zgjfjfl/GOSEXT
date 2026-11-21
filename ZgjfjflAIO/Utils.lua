@@ -1,4 +1,4 @@
-local Version = 1.08
+local Version = 1.09
 
 lastQ, lastW, lastE, lastR = 0, 0, 0, 0
 
@@ -311,7 +311,7 @@ end
 
 function IsCasting()
 	if myHero.activeSpell.valid then
-		if myHero.activeSpell.isCharging or
+		if -- myHero.activeSpell.isCharging or
 			(Game.Timer() >= myHero.activeSpell.startTime and Game.Timer() <= myHero.activeSpell.castEndTime)
 		then
 			return true
@@ -343,7 +343,17 @@ end
 function CastSpellAOE(spellSlot, spellData, minHitCount, source, mainTarget)
 	local SpellPred = GGPrediction:SpellPrediction(spellData)
 	local aoeResults = SpellPred:GetAOEPrediction(source)
-	if #aoeResults == 0 then
+	-- 修改原因：人数达标不能替代命中等级；只接受 High 施法目标，指定主目标也不能被回退分支绕过。
+	local mainTargetReady = mainTarget == nil
+	for i = #aoeResults, 1, -1 do
+		local result = aoeResults[i]
+		if result.HitChance < GGPrediction.HITCHANCE_HIGH then
+			table.remove(aoeResults, i)
+		elseif mainTarget and result.Unit.networkID == mainTarget.networkID then
+			mainTargetReady = true
+		end
+	end
+	if #aoeResults == 0 or not mainTargetReady then
 		return false
 	end
 	if mainTarget then
