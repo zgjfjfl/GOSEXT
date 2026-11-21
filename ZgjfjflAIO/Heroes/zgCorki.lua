@@ -1,4 +1,4 @@
-local Version = 1.01
+local Version = 1.02
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -13,7 +13,7 @@ function zgCorki:__init()
 	_G.SDK.Orbwalker:OnPreAttack(function(...) self:OnPreAttack(...) end)
 	self.QSpell = {Type = GGPrediction.SPELLTYPE_CIRCLE, Delay = 0.25, Radius = 275, Range = 950, Speed = 1100, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.ESpell = {Range = 690}
-	self.R1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1250, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
+	self.R1Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1200, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 	self.R2Spell = {Type = GGPrediction.SPELLTYPE_LINE, Delay = 0.175, Radius = 40, Range = 1450, Speed = 2000, Collision = true, CollisionTypes = {GGPrediction.COLLISION_YASUOWALL}}
 end
 
@@ -65,7 +65,7 @@ end
 
 function zgCorki:OnPreAttack(args)
 	local target = args.Target
-	if IsValid(target) and target.type == Obj_AI_Hero and not self:HaveSheenBuff() then
+	if IsValid(target) and target.type == Obj_AI_Hero then -- and not self:HaveSheenBuff() 
 		if GetMode() == "Combo" and Menu.Combo.E:Value() and IsReady(_E) then
 			Control.CastSpell(HK_E, target)
 		end
@@ -84,7 +84,7 @@ function zgCorki:Tick()
 	if IsCasting() then return end
 	self:SemiR()
 	self:AutoQ()
-	if self:HaveSheenBuff() then return end
+	-- if self:HaveSheenBuff() then return end
 	local Mode = GetMode()
 	if Mode == "Combo" then
 		self:Combo()
@@ -138,21 +138,21 @@ function zgCorki:CastQ(target)
 end
 
 function zgCorki:CastR(target)
-	if HaveBuff(myHero, "mbcheck2") then
-		local R2Prediction = GGPrediction:SpellPrediction(self.R2Spell)
-		R2Prediction:GetPrediction(target, myHero)
-		if R2Prediction:CanHit(3) then
-			local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R2Prediction.CastPosition, self.R2Spell.Speed, self.R2Spell.Delay, self.R2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
-			if collisionCount > 0 then
-				local minion = collisionObjects[1]
-				if minion.pos:DistanceTo(R2Prediction.CastPosition) < 250 then
-					Control.CastSpell(HK_R, R2Prediction.CastPosition)
-				end
-			else
-				Control.CastSpell(HK_R, R2Prediction.CastPosition)
-			end
-		end
-	else
+	-- if HaveBuff(myHero, "mbcheck2") then
+	-- 	local R2Prediction = GGPrediction:SpellPrediction(self.R2Spell)
+	-- 	R2Prediction:GetPrediction(target, myHero)
+	-- 	if R2Prediction:CanHit(3) then
+	-- 		local _, collisionObjects, collisionCount = GGPrediction:GetCollision(myHero.pos, R2Prediction.CastPosition, self.R2Spell.Speed, self.R2Spell.Delay, self.R2Spell.Radius, {GGPrediction.COLLISION_MINION}, target.networkID)
+	-- 		if collisionCount > 0 then
+	-- 			local minion = collisionObjects[1]
+	-- 			if minion.pos:DistanceTo(R2Prediction.CastPosition) < 250 then
+	-- 				Control.CastSpell(HK_R, R2Prediction.CastPosition)
+	-- 			end
+	-- 		else
+	-- 			Control.CastSpell(HK_R, R2Prediction.CastPosition)
+	-- 		end
+	-- 	end
+	-- else
 		local R1Prediction = GGPrediction:SpellPrediction(self.R1Spell)
 		R1Prediction:GetPrediction(target, myHero)
 		if R1Prediction:CanHit(3) then
@@ -166,7 +166,7 @@ function zgCorki:CastR(target)
 				Control.CastSpell(HK_R, R1Prediction.CastPosition)
 			end
 		end
-	end
+	-- end
 end
 
 function zgCorki:Harass()
@@ -280,11 +280,11 @@ function zgCorki:Draw()
 		Draw.Circle(myHero.pos, self.ESpell.Range, 1, Draw.Color(255, 244, 238, 66))
 	end
 	if Menu.Draw.R:Value() and IsReady(_R) then
-		if HaveBuff(myHero, "mbcheck2") then
-			Draw.Circle(myHero.pos, self.R2Spell.Range+50, 1, Draw.Color(255, 244, 66, 104))
-		else
+		-- if HaveBuff(myHero, "mbcheck2") then
+			-- Draw.Circle(myHero.pos, self.R2Spell.Range+50, 1, Draw.Color(255, 244, 66, 104))
+		-- else
 			Draw.Circle(myHero.pos, self.R1Spell.Range+50, 1, Draw.Color(255, 244, 66, 104))
-		end
+		-- end
 	end
 end
 

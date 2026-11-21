@@ -1,10 +1,50 @@
-local Version = 1.07
+local Version = 1.08
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
 
 local ItemSlots = { ITEM_1, ITEM_2, ITEM_3, ITEM_4, ITEM_5, ITEM_6 }
 local ItemKeys = { HK_ITEM_1, HK_ITEM_2, HK_ITEM_3, HK_ITEM_4, HK_ITEM_5, HK_ITEM_6 }
+
+local ParticleBuffInterval = 100 -- milliseconds; shared by every target/query
+local ParticleBuffTick, ParticleBuffs = nil, {}
+local ParticleBuffData = {[0] = {count = 0}, {count = 1}, {count = 2}, {count = 3}}
+
+local function GetParticleBuff(unit, buffName)
+	local now = GetTickCount()
+	if not ParticleBuffTick or now < ParticleBuffTick or now - ParticleBuffTick >= ParticleBuffInterval then
+		ParticleBuffTick, ParticleBuffs = now, {}
+		for i = 1, Game.ParticleCount() do
+			local particle = Game.Particle(i)
+			if particle and particle.name and particle.pos then
+				local name = particle.name:lower()
+				if name:find("varus", 1, true) then
+					local stacks = tonumber(name:match("_r?w_counter_0?([123])"))
+					local empowered = name:find("_w_empowerment", 1, true)
+						or name:find("_w_qwhilecharging", 1, true)
+					if stacks or empowered then
+						ParticleBuffs[#ParticleBuffs + 1] = {particle = particle, stacks = stacks or 0, empowered = empowered}
+					end
+				end
+			end
+		end
+	end
+	local count = 0
+	for _, buff in ipairs(ParticleBuffs) do
+		local pos = buff.particle.pos
+		if pos then
+			local dx, dz = pos.x - unit.pos.x, pos.z - unit.pos.z
+			if dx * dx + dz * dz <= 100 * 100 then
+				if buffName == "varuswdebuff" then
+					count = math.max(count, buff.stacks)
+				elseif buffName == "varuswempowered" and buff.empowered then
+					count = 1
+				end
+			end
+		end
+	end
+	return count > 0, ParticleBuffData[count]
+end
 
 class "zgVarus"
 
@@ -56,8 +96,9 @@ function zgVarus:LoadMenu()
 end
 
 function zgVarus:Tick()
-	self.WActive = HaveBuff(myHero, "varuswempowered")
-	if myHero.activeSpell.isCharging then
+	local Mode = GetMode()
+	self.WActive = GetParticleBuff(myHero, "varuswempowered") or false
+	if myHero.activeSpell.isCharging and not myHero.activeSpell.isAutoAttack and Control.IsKeyDown(HK_Q) == true then
 		if self.QCharging == false then
 			self.QTick = GetTickCount()
 			self.QCharging = true
@@ -82,7 +123,6 @@ function zgVarus:Tick()
 		self:CastR()
 	end
 
-	local Mode = GetMode()
 	if Mode == "Combo" then
 		self:Combo()
 	elseif Mode == "Harass" then
@@ -112,7 +152,7 @@ function zgVarus:HandleQCharging()
 			if enemy.distance > 925 then wDmg = wDmg * 1.5 end
 			if (qDmg + wDmg) > (enemy.health + enemy.hpRegen * 2) then
 				table.insert(killable, enemy)
-			elseif HaveBuff(enemy, "varuswdebuff") then
+			elseif GetParticleBuff(enemy, "varuswdebuff") then
 				table.insert(wStacked, enemy)
 			end
 		end
@@ -164,7 +204,7 @@ function zgVarus:Combo()
 					local qDmg = self:GetQDmg(target)
 					local wDmg = self:GetWDmg(target)
 					if target.distance > 925 then wDmg = wDmg * 1.5 end
-					local buff, buffData = GetBuffData(target, "varuswdebuff")
+					local buff, buffData = GetParticleBuff(target, "varuswdebuff")
 					local canAAKill = _G.SDK.Data:IsInAutoAttackRange(myHero, target) and target.health <= _G.SDK.Damage:GetAutoAttackDamage(myHero, target)
 					local inAARange = _G.SDK.Data:IsInAutoAttackRange(myHero, target)
 					local qStacks = inAARange and Menu.Combo.Qstacks:Value() or Menu.Combo.QstacksOut:Value()
@@ -196,7 +236,7 @@ function zgVarus:Combo()
 				if IsValid(target) and target.pos2D.onScreen then
 					local eDmg = self:GetEDmg(target)
 					local wDmg = self:GetWDmg(target)
-					local buff, buffData = GetBuffData(target, "varuswdebuff")
+					local buff, buffData = GetParticleBuff(target, "varuswdebuff")
 					local canAAKill = _G.SDK.Data:IsInAutoAttackRange(myHero, target) and target.health <= _G.SDK.Damage:GetAutoAttackDamage(myHero, target)
 					local inAARange = _G.SDK.Data:IsInAutoAttackRange(myHero, target)
 					local eStacks = inAARange and Menu.Combo.Estacks:Value() or Menu.Combo.EstacksOut:Value()
@@ -241,7 +281,7 @@ function zgVarus:Combo()
 	--else
 		-- Outside AA range, use stack-based priority
 		-- local wStacks = 0
-		-- local hasBuff, buffData = GetBuffData(priorityTarget, "varuswdebuff")
+		-- local hasBuff, buffData = GetParticleBuff(priorityTarget, "varuswdebuff")
 		-- if hasBuff then
 			-- wStacks = buffData.count
 		-- end
@@ -272,7 +312,7 @@ function zgVarus:Harass()
 				local wDmg = self:GetWDmg(enemy)
 				if (eDmg + wDmg) > enemy.health then
 					table.insert(killable, enemy)
-				elseif HaveBuff(enemy, "varuswdebuff") then
+				elseif GetParticleBuff(enemy, "varuswdebuff") then
 					table.insert(wStacked, enemy)
 				end
 			end
@@ -290,7 +330,7 @@ function zgVarus:Harass()
 				local canusew = Game.CanUseSpell(_W) == 0
 				local enemy = GetTarget(1650)
 				if IsValid(enemy) and enemy.pos2D.onScreen then
-					local buff, buffData = GetBuffData(enemy, "varuswdebuff")
+					local buff, buffData = GetParticleBuff(enemy, "varuswdebuff")
 					if canusew and Menu.Harass.W:Value() and (enemy.health / enemy.maxHealth * 100) < Menu.Harass.Whp:Value() then
 						Control.KeyDown(HK_W)
 						Control.KeyUp(HK_W)
@@ -313,7 +353,7 @@ function zgVarus:GetQDmg(target, wActive)
 	if useW == nil then
 		local mode = GetMode()
 		local modeMenu = (mode == "Combo" and Menu.Combo) or (mode == "Harass" and Menu.Harass)
-		useW = HaveBuff(myHero, "varuswempowered") or (modeMenu and wlvl > 0
+		useW = GetParticleBuff(myHero, "varuswempowered") or (modeMenu and wlvl > 0
 			and Game.CanUseSpell(_W) == 0 and modeMenu.W:Value()
 			and (100 * target.health / target.maxHealth) < modeMenu.Whp:Value())
 	end
@@ -328,7 +368,7 @@ end
 
 function zgVarus:GetWDmg(target)
 	local level = myHero:GetSpellData(_W).level
-	local buff, buffData = GetBuffData(target, "varuswdebuff")
+	local buff, buffData = GetParticleBuff(target, "varuswdebuff")
 	if level > 0 and buff then
 		local WDmg = (({2.5, 3, 3.5, 4, 4.5})[level]/100 + 0.014 * (myHero.ap/100)) * target.maxHealth
 		return _G.SDK.Damage:CalculateDamage(myHero, target, _G.SDK.DAMAGE_TYPE_MAGICAL, WDmg * buffData.count)
