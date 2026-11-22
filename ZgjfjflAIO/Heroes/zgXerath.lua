@@ -1,4 +1,4 @@
-local Version = 1.03
+local Version = 1.05
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
@@ -72,7 +72,7 @@ function zgXerath:LoadMenu()
 end
 
 function zgXerath:OnTick()
-	if myHero.activeSpell.isCharging then
+	if myHero.activeSpell.isCharging and Control.IsKeyDown(HK_Q) == true and not myHero.activeSpell.isAutoAttack then
 		if self.QCharging == false then
 			self.QTick = GetTickCount()
 			self.QCharging = true

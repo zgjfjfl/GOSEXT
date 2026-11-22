@@ -1,7 +1,38 @@
-local Version = 1.02
+local Version = 1.03
 
 require("GGPrediction")
 require("ZgjfjflAIO\\Utils")
+
+local markParticles, lastMarkScan = {}, -math.huge
+
+local function HasJhinWMark(unit)
+	if not unit then return false end
+	local now = GetTickCount()
+	-- Share one scan every 100 ms; reuse the list and read live positions.
+	if now - lastMarkScan >= 100 then
+		lastMarkScan = now
+		for i = #markParticles, 1, -1 do markParticles[i] = nil end
+		for i = 1, Game.ParticleCount() do
+			local particle = Game.Particle(i)
+			if particle and particle.name and particle.pos then
+				local name = particle.name:lower()
+				if name:find("jhin_", 1, true) and name:find("_e_passive_mark", 1, true) then
+					markParticles[#markParticles + 1] = particle
+				end
+			end
+		end
+	end
+	local pos = unit.pos
+	for i = 1, #markParticles do
+		local particle = markParticles[i]
+		local particlePos = particle and particle.pos
+		if particlePos then
+			local dx, dz = particlePos.x - pos.x, particlePos.z - pos.z
+			if dx * dx + dz * dz <= 2500 then return true end
+		end
+	end
+	return false
+end
 
 class "zgJhin"
 
@@ -155,7 +186,7 @@ function zgJhin:Combo()
 		local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(Menu.Combo.Wrange:Value())
 		if IsValid(target) and target.pos:ToScreen().onScreen then
 			if not Menu.Combo.Wnoaa:Value() and not self:FourthShot() or not _G.SDK.Data:IsInAutoAttackRange(myHero, target) then
-				if not Menu.Combo.Wpassive:Value() or HaveBuff(target, "jhinespotteddebuff") then
+				if not Menu.Combo.Wpassive:Value() or HasJhinWMark(target) then
 					self:CastGGPred(HK_W, target)
 				end
 			end
@@ -189,7 +220,7 @@ function zgJhin:Harass()
 	if Menu.Harass.W:Value() and IsReady(_W) then
 		local target = _G.SDK.Orbwalker:GetTarget() or GetTarget(self.WSpell.Range)
 		if IsValid(target) and target.type == Obj_AI_Hero and target.pos:ToScreen().onScreen then
-			if not Menu.Harass.Wpassive:Value() or HaveBuff(target, "jhinespotteddebuff") then
+			if not Menu.Harass.Wpassive:Value() or HasJhinWMark(target) then
 				if not _G.SDK.Data:IsInAutoAttackRange(myHero, target) or not self:FourthShot() then
 					self:CastGGPred(HK_W, target)
 				end
